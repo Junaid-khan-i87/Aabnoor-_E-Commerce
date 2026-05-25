@@ -33,9 +33,9 @@ export interface SiteSettings {
 const DEFAULT_SETTINGS: SiteSettings = {
   deliveryFee: 150,
   freeShippingThreshold: 5000,
-  storeEmail: 'HELLO@AURABRAND.PK',
+  storeEmail: 'HELLO@AABNOOR.COM',
   storePhone: '+92 (21) 111 287 233',
-  storeAddress: 'Aura Flagship Store, Ground Floor, Dolmen Mall Clifton, Karachi, Pakistan',
+  storeAddress: 'Aabnoor Flagship Store, Ground Floor, Dolmen Mall Clifton, Karachi, Pakistan',
   socialInstagram: '#',
   socialFacebook: '#',
   socialTwitter: '#',
@@ -103,7 +103,11 @@ const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
 export function SiteProvider({ children }: { children: ReactNode }) {
   const [siteName, setSiteNameState] = useState(() => {
-    return localStorage.getItem('aura_sitename') || 'Aura';
+    const saved = localStorage.getItem('aura_sitename');
+    if (!saved || saved === 'Aura') {
+      return 'Aabnoor';
+    }
+    return saved;
   });
 
   const [categories, setCategoriesState] = useState<string[]>(() => {

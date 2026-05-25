@@ -104,8 +104,17 @@ export function Header() {
 
         {/* Logo */}
         <div className="flex-1 flex justify-center">
-          <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-xl font-bold tracking-widest uppercase text-[#1A1A1A]">
-            {siteName}
+          <Link 
+            to="/" 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} 
+            className="group flex flex-col items-center justify-center outline-none select-none transition-transform duration-200 active:scale-98"
+          >
+            <span className="font-serif italic text-2xl font-normal tracking-[0.08em] text-[#1A1A1A] group-hover:text-[#CDA185] transition-colors duration-300 capitalize leading-none">
+              {siteName}
+            </span>
+            <span className="font-sans text-[7px] tracking-[0.5em] font-bold text-[#1A1A1A]/40 uppercase mt-1 leading-none mr-[-0.5em] group-hover:text-[#CDA185]/70 transition-colors duration-300">
+              beauté
+            </span>
           </Link>
         </div>
 
@@ -115,7 +124,7 @@ export function Header() {
             type="button"
             onClick={() => setIsLoyaltyOpen(true)}
             className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1A1A]/5 hover:bg-[#1A1A1A]/10 rounded-full cursor-pointer transition-all duration-200 outline-none"
-            title={`You have ${coins} Aura Coins. Click to learn how to redeem!`} 
+            title={`You have ${coins} Aabnoor Coins. Click to learn how to redeem!`} 
             aria-label={`${siteName} Coins`}
           >
             <Coins className="w-4 h-4 text-[#CDA185]" />
@@ -187,18 +196,18 @@ export function Header() {
                 <Coins className="w-6 h-6 text-[#CDA185]" />
               </div>
               <h3 className="font-display text-base font-bold uppercase tracking-wider text-[#1A1A1A]">
-                Aura Loyalty Rewards
+                Aabnoor Loyalty Rewards
               </h3>
               <p className="font-serif italic text-sm text-[#1A1A1A]/60 mt-1">
-                Your luxury beauty coin balance: {coins} Aura Coins
+                Your luxury beauty coin balance: {coins} Aabnoor Coins
               </p>
             </div>
             
             <div className="space-y-4 font-sans text-[11px] text-[#1A1A1A]/70 leading-relaxed uppercase tracking-wider">
               <div className="border-b border-[#1A1A1A]/10 pb-3">
-                <p className="font-bold text-[#1A1A1A] mb-1">✨ How to earn Aura Coins</p>
+                <p className="font-bold text-[#1A1A1A] mb-1">✨ How to earn Aabnoor Coins</p>
                 <p className="normal-case tracking-normal text-xs text-[#1A1A1A]/60">
-                  You automatically earn <strong className="text-[#1A1A1A]">1 Aura Coin for every Rs. 10</strong> spent during checkout. Place orders or leave product reviews to collect more!
+                  You automatically earn <strong className="text-[#1A1A1A]">1 Aabnoor Coin for every Rs. 10</strong> spent during checkout. Place orders or leave product reviews to collect more!
                 </p>
               </div>
               <div className="border-b border-[#1A1A1A]/10 pb-3">

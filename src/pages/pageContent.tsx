@@ -3,7 +3,7 @@ import React from 'react';
 export const PrivacyContent = (
   <>
     <p>Last updated: October 2026</p>
-    <p>Aura Moderne ("we," "us," or "our") respects your privacy. This Privacy Policy describes how we collect, use, and share your personal information when you visit or make a purchase from our website.</p>
+    <p>Aabnoor Moderne ("we," "us," or "our") respects your privacy. This Privacy Policy describes how we collect, use, and share your personal information when you visit or make a purchase from our website.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Information We Collect</h3>
     <p>We collect information that you provide directly to us, such as when you create an account, subscribe to our newsletter, or make a purchase. This may include your name, email address, shipping address, and payment information.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">How We Use Your Information</h3>
@@ -14,9 +14,9 @@ export const PrivacyContent = (
 export const TermsContent = (
   <>
     <p>Last updated: October 2026</p>
-    <p>Please read these Terms of Service completely using auramoderne.com which is owned and operated by Aura Moderne. This Agreement documents the legally binding terms and conditions attached to the use of the Site at auramoderne.com.</p>
+    <p>Please read these Terms of Service completely using aabnoormoderne.com which is owned and operated by Aabnoor Moderne. This Agreement documents the legally binding terms and conditions attached to the use of the Site at aabnoormoderne.com.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Intellectual Property</h3>
-    <p>The Site and all of its original content are the sole property of Aura Moderne and are, as such, fully protected by the appropriate international copyright and other intellectual property rights laws.</p>
+    <p>The Site and all of its original content are the sole property of Aabnoor Moderne and are, as such, fully protected by the appropriate international copyright and other intellectual property rights laws.</p>
   </>
 );
 
@@ -33,7 +33,7 @@ export const ShippingContent = (
 
 export const StoryContent = (
   <>
-    <p className="text-lg leading-relaxed mb-6">Aura Moderne was founded on a simple premise: beauty protocols should not compromise on efficacy, safety, or design.</p>
+    <p className="text-lg leading-relaxed mb-6">Aabnoor Moderne was founded on a simple premise: beauty protocols should not compromise on efficacy, safety, or design.</p>
     <p>Our founder, an experienced esthetician, observed a gap in the market for skincare that bridged the divide between clinical effectiveness and luxurious, sensorial experiences. What began as custom formulations in a small laboratory has evolved into a comprehensive line of high-performance beauty essentials.</p>
     <p>We rigorously source our active ingredients, prioritizing bioavailability and stability, ensuring that every drop delivers visible results. But we also believe that your daily routine should be a moment of respite—which is why our packaging, textures, and subtle aromas are designed to soothe the senses.</p>
   </>
@@ -41,7 +41,7 @@ export const StoryContent = (
 
 export const SustainabilityContent = (
   <>
-    <p>We recognize that true luxury does not come at the expense of our planet. Sustainability is not an afterthought; it is woven into the fabric of Aura Moderne.</p>
+    <p>We recognize that true luxury does not come at the expense of our planet. Sustainability is not an afterthought; it is woven into the fabric of Aabnoor Moderne.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Packaging</h3>
     <p>We utilize infinitely recyclable glass and aluminum for the majority of our primary packaging. Our secondary boxes are crafted from FSC-certified paper and printed with soy-based inks. We are actively working towards eliminating all single-use plastics from our supply chain by 2028.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Sourcing</h3>

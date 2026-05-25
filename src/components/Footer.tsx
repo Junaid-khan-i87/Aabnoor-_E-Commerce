@@ -97,7 +97,7 @@ export function Footer() {
               <li><Link to="/track" className="hover:text-[#1A1A1A] transition-colors">Track Order</Link></li>
             </ul>
             <div className="font-sans text-[10px] tracking-widest text-[#1A1A1A]/70">
-              <p className="mb-1">{settings.storeEmail || 'HELLO@AURABRAND.COM'}</p>
+              <p className="mb-1">{settings.storeEmail || 'HELLO@AABNOOR.COM'}</p>
               <p>{settings.storePhone || '+1 (800) 123-4567'}</p>
             </div>
           </div>

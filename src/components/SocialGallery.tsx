@@ -16,10 +16,10 @@ export function SocialGallery() {
       <div className="max-w-7xl mx-auto px-6 mb-16 flex flex-col md:flex-row justify-between items-end gap-6">
         <div>
           <h2 className="font-serif italic font-light text-4xl lg:text-5xl text-[#1A1A1A] mb-4">
-            The Aura Observer
+            The Aabnoor Observer
           </h2>
           <p className="font-sans text-[#1A1A1A]/60 max-w-sm">
-            Join our community and share your daily rituals. Tag @AuraBeauté to be featured.
+            Join our community and share your daily rituals. Tag @AabnoorBeauté to be featured.
           </p>
         </div>
         <a 

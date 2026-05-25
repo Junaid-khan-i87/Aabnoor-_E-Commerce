@@ -150,8 +150,8 @@ export function ProductPage() {
     };
 
     updateProduct(product.id, updatedProduct);
-    addCoins(15); // +15 Aura Coins reward!
-    addToast('Review posted! You received +15 Aura Coins bonus.', 'success');
+    addCoins(15); // +15 Aabnoor Coins reward!
+    addToast('Review posted! You received +15 Aabnoor Coins bonus.', 'success');
 
     // Wipe states
     setFormName('');
@@ -163,8 +163,8 @@ export function ProductPage() {
 
   const handleRedeem = () => {
     if (!currentUser) {
-      addToast('Please sign in to earn and redeem Aura Coins', 'error');
-      setRedeemMessage('Please sign in to earn and redeem Aura Coins.');
+      addToast('Please sign in to earn and redeem Aabnoor Coins', 'error');
+      setRedeemMessage('Please sign in to earn and redeem Aabnoor Coins.');
       setTimeout(() => setRedeemMessage(null), 4000);
       return;
     }
@@ -184,8 +184,8 @@ export function ProductPage() {
       }
       setIsCartOpen(true);
     } else {
-      addToast('Insufficient Aura Coins balance.', 'error');
-      setRedeemMessage('Not enough Aura Coins.');
+      addToast('Insufficient Aabnoor Coins balance.', 'error');
+      setRedeemMessage('Not enough Aabnoor Coins.');
       setTimeout(() => setRedeemMessage(null), 3000);
     }
   };
@@ -542,7 +542,7 @@ export function ProductPage() {
                 isOpen={openAccordion === 'usage'} 
                 onClick={() => toggleAccordion('usage')}
               >
-                <p>{product.howToUse || 'Apply to clean, dry skin morning and evening. Gently press into face and neck until fully absorbed. For optimal results, follow with your preferred Aura Moderne protocols.'}</p>
+                <p>{product.howToUse || 'Apply to clean, dry skin morning and evening. Gently press into face and neck until fully absorbed. For optimal results, follow with your preferred Aabnoor Moderne protocols.'}</p>
               </AccordionItem>
               {product.advantages && product.advantages.length > 0 && (
                 <AccordionItem 
@@ -655,7 +655,7 @@ export function ProductPage() {
               {/* Experience submission form (Write a Review) */}
               <form onSubmit={handleReviewSubmit} className="bg-white border border-[#1A1A1A]/10 p-6 sm:p-8 rounded-xl shadow-sm mt-12 max-w-2xl text-left">
                 <span className="inline-flex items-center gap-1 bg-[#CDA185]/15 text-[#CDA185] text-[9pt] uppercase font-bold tracking-[0.2em] px-3 py-1 rounded mb-4">
-                   ✨ Earn +15 Aura Loyalty Coins
+                   ✨ Earn +15 Aabnoor Loyalty Coins
                 </span>
                 <h4 className="font-serif italic text-xl text-[#1A1A1A] mb-1">Catalog Your Skin Ritual</h4>
                 <p className="font-sans text-[10px] text-[#1A1A1A]/50 uppercase tracking-widest mb-6 font-semibold">File your ratings and upload snapshots to advise other skincare seekers.</p>

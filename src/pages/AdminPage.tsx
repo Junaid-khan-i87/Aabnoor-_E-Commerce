@@ -274,7 +274,7 @@ export function AdminPage() {
             <Shield className="w-8 h-8 text-[#CDA185]" />
           </div>
           <h1 className="font-serif italic text-3xl mb-1 text-[#1A1A1A]">Admin Console</h1>
-          <p className="font-sans text-xs uppercase tracking-widest text-[#CDA185] font-bold mb-6">Aura Management Studio</p>
+          <p className="font-sans text-xs uppercase tracking-widest text-[#CDA185] font-bold mb-6">Aabnoor Management Studio</p>
           <p className="font-sans text-xs text-[#1A1A1A]/60 leading-relaxed mb-6">
             Authentication required. Use the demo password <strong>admin123</strong> for testing store parameters.
           </p>
@@ -344,7 +344,7 @@ export function AdminPage() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text(siteName || 'Aura', m, 20);
+    doc.text(siteName || 'Aabnoor', m, 20);
     
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
@@ -502,7 +502,7 @@ export function AdminPage() {
     doc.setTextColor(180, 180, 180);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'italic');
-    doc.text(`Thank you for shopping with ${siteName || 'Aura'}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
+    doc.text(`Thank you for shopping with ${siteName || 'Aabnoor'}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
     doc.text(`Order generated on ${new Date().toLocaleString()}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
     
     doc.save(`Receipt-${order.id.slice(0, 8)}.pdf`);
@@ -527,7 +527,7 @@ export function AdminPage() {
     doc.setTextColor(26, 26, 26);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('AURA PRIORITY SHIPPING POST', m + 6, 24);
+    doc.text('AABNOOR PRIORITY SHIPPING POST', m + 6, 24);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.text('EXPRESS FIRST-CLASS AIRWAY BILL / COMPLIMENTARY TRACKING', m + 6, 32);
@@ -539,7 +539,7 @@ export function AdminPage() {
     doc.text('POSTAGE PAID', pageWidth - m - 42, m + 13);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text('AURA MODERN BRANDS INC', pageWidth - m - 42, m + 19);
+    doc.text('AABNOOR MODERN BRANDS INC', pageWidth - m - 42, m + 19);
     doc.text('LICENSE #07492-MUM', pageWidth - m - 42, m + 24);
 
     // Return Sender info
@@ -548,7 +548,7 @@ export function AdminPage() {
     doc.setFont('helvetica', 'bold');
     doc.text('SENDER / RETURN ADDRESS:', m + 8, yPos);
     doc.setFont('helvetica', 'normal');
-    doc.text('AURA MODERNE LOGISTICS COMPLEX B', m + 8, yPos + 5);
+    doc.text('AABNOOR MODERNE LOGISTICS COMPLEX B', m + 8, yPos + 5);
     doc.text('DISTRIBUTION ROW 4A, OCHLA IND.', m + 8, yPos + 9);
     doc.text('NEW DELHI IN, 110020', m + 8, yPos + 13);
 
@@ -772,7 +772,7 @@ export function AdminPage() {
               <div className="bg-white p-6 border border-[#1A1A1A]/10 rounded-sm">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h3 className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]">Aura Logistics & Low-Stock Console</h3>
+                    <h3 className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]">Aabnoor Logistics & Low-Stock Console</h3>
                     <p className="font-sans text-[10px] text-[#1A1A1A]/50 uppercase tracking-widest mt-0.5">Real-time shade replenishment & supply chain thresholds.</p>
                   </div>
                   <span className="bg-red-500/10 text-red-600 px-2 py-1 rounded text-[9px] uppercase tracking-wider font-bold">
@@ -927,14 +927,14 @@ export function AdminPage() {
                       <div className="w-2 h-2 rounded-full bg-[#1A1A1A] mt-2"></div>
                       <div>
                         <p className="font-sans text-sm text-[#1A1A1A]"><span className="font-bold">{order.userName || order.userEmail}</span> placed an order ({order.id})</p>
-                        <p className="font-sans text-xs text-[#1A1A1A]/60 mt-1">Earned {order.coinsEarned} Aura Coins • {new Date(order.date).toLocaleDateString()}</p>
+                        <p className="font-sans text-xs text-[#1A1A1A]/60 mt-1">Earned {order.coinsEarned} Aabnoor Coins • {new Date(order.date).toLocaleDateString()}</p>
                       </div>
                     </div>
                   ))}
                   <div className="flex gap-4 items-start">
                     <div className="w-2 h-2 rounded-full bg-[#1A1A1A]/40 mt-2"></div>
                     <div>
-                      <p className="font-sans text-sm text-[#1A1A1A]"><span className="font-bold">alice.w@example.com</span> redeemed 85 Aura Coins</p>
+                      <p className="font-sans text-sm text-[#1A1A1A]"><span className="font-bold">alice.w@example.com</span> redeemed 85 Aabnoor Coins</p>
                       <p className="font-sans text-xs text-[#1A1A1A]/60 mt-1">For Product: The Cleanser • 2026-05-19</p>
                     </div>
                   </div>

@@ -60,7 +60,7 @@ export function ProfilePage() {
       {/* Account Score and Status Widget */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
         <div className="bg-white p-5 border border-[#1A1A1A]/5 rounded-xl shadow-sm flex flex-col justify-center">
-          <p className="font-sans text-[10px] uppercase tracking-widest text-[#1A1A1A]/50 font-bold mb-1">Aura Coins Balance</p>
+          <p className="font-sans text-[10px] uppercase tracking-widest text-[#1A1A1A]/50 font-bold mb-1">Aabnoor Coins Balance</p>
           <div className="flex items-center gap-2">
             <span className="font-serif italic text-3xl text-[#CDA185] font-semibold">{coins}</span>
             <span className="font-sans text-[10px] uppercase font-bold text-[#1A1A1A]/70 tracking-widest">Coins Available</span>

@@ -61,7 +61,7 @@ export function LoginOverlay() {
     setCurrentUser(email.trim());
     addToast(
       isRegister 
-        ? 'Welcome to Aura! Account created successfully.' 
+        ? 'Welcome to Aabnoor! Account created successfully.' 
         : `Signed in successfully as ${email.trim()}`, 
       'success'
     );
@@ -106,7 +106,7 @@ export function LoginOverlay() {
             
             <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
               <h2 className="font-serif italic font-light text-4xl text-[#1A1A1A] mb-2 text-center">
-                {isRegister ? 'Join Aura' : 'Welcome Back'}
+                {isRegister ? 'Join Aabnoor' : 'Welcome Back'}
               </h2>
               <p className="font-sans text-[10px] uppercase tracking-widest text-[#1A1A1A]/50 text-center mb-6 font-bold">
                 {isRegister ? 'Create your luxury profiling' : 'Sign in to access loyalty rewards'}
@@ -114,7 +114,7 @@ export function LoginOverlay() {
 
               {/* Demo Mode Box Notification */}
               <div className="bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 p-3 rounded-md mb-6 text-center text-[10px] font-sans text-[#1A1A1A]/70 leading-relaxed font-semibold">
-                ✨ <strong>Aura Demo Sandbox:</strong> Enter any email and password above 6 characters to simulate secure customer loyalty.
+                ✨ <strong>Aabnoor Demo Sandbox:</strong> Enter any email and password above 6 characters to simulate secure customer loyalty.
               </div>
 
               {error && (

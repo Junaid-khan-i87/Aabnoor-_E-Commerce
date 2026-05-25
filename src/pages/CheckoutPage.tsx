@@ -175,7 +175,7 @@ export function CheckoutPage() {
           )}
           <br/>
           <p className="text-[#1A1A1A] font-sans text-[11px] font-bold uppercase tracking-[0.2em] mb-8 mt-2">
-            You'll earn {earnedCoins} Aura Coins once shipped
+            You'll earn {earnedCoins} Aabnoor Coins once shipped
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/track" className="inline-block bg-[#1A1A1A] text-[#F9F7F2] px-8 py-3 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/90 transition-colors">
@@ -495,7 +495,7 @@ export function CheckoutPage() {
               >
                 <span>{isProcessing ? 'Processing Securely...' : 'Confirm Order & Pay'}</span>
                 <span className="text-[9px] text-[#F9F7F2]/60 tracking-wider normal-case font-normal flex items-center gap-1.5 mt-1 font-semibold">
-                  <Coins className="w-3.5 h-3.5 text-[#CDA185]" /> Earn {coinsToEarn} Aura Coins
+                  <Coins className="w-3.5 h-3.5 text-[#CDA185]" /> Earn {coinsToEarn} Aabnoor Coins
                 </span>
               </button>
             </div>
