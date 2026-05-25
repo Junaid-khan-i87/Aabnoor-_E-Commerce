@@ -12,9 +12,7 @@ import { SafeImage } from '../components/SafeImage';
 import { useUI } from '../UIContext';
 
 export function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('aura_admin_auth') === 'true';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -256,7 +254,6 @@ export function AdminPage() {
     const validPassword = (import.meta as any).env?.VITE_ADMIN_PASSWORD || 'admin123';
     if (password === validPassword) {
       setIsAuthenticated(true);
-      localStorage.setItem('aura_admin_auth', 'true');
     } else {
       setLoginError('Invalid access password string. Please try again.');
     }
@@ -623,7 +620,6 @@ export function AdminPage() {
             <button
               onClick={() => {
                 setIsAuthenticated(false);
-                localStorage.removeItem('aura_admin_auth');
               }}
               className="relative px-6 py-2.5 font-sans text-[11px] font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-colors text-red-500/80 hover:text-red-500 border-l border-[#1A1A1A]/10 ml-2"
             >
