@@ -3,16 +3,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Coins, CheckCircle, ShoppingBag, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCart } from '../CartContext';
 import { useOrders } from '../OrderContext';
-import { useProducts } from '../ProductContext';
 import { useSite } from '../SiteContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { SafeImage } from '../components/SafeImage';
+import { useUI } from '../UIContext';
 
 export function CheckoutPage() {
   const { items, cartTotal, clearCart } = useCart();
   const { placeOrder } = useOrders();
-  const { productsList, updateProduct } = useProducts();
   const { coupons, settings, currentUser, loginDiscountUsed, setLoginDiscountUsed } = useSite();
+  const { setIsLoginOpen } = useUI();
   const navigate = useNavigate();
 
   const [checkoutStep, setCheckoutStep] = useState<'details' | 'complete'>('details');
@@ -96,11 +96,15 @@ export function CheckoutPage() {
 
   const handleCheckout = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!currentUser) {
+      setIsLoginOpen(true);
+      return;
+    }
     setIsProcessing(true);
     
     const formData = new FormData(e.currentTarget);
     const formName = (formData.get('name') as string) || '';
-    const formEmail = (formData.get('email') as string) || '';
+    const formEmail = currentUser;
     const formPhone = (formData.get('phone') as string) || '';
     const formHome = (formData.get('home') as string) || '';
     const formState = (formData.get('state') as string) || '';
@@ -121,7 +125,7 @@ export function CheckoutPage() {
     await new Promise(resolve => setTimeout(resolve, 800));
 
     const newOrder = placeOrder({
-      userEmail: formEmail || 'jane.doe@example.com',
+      userEmail: formEmail,
       userName: formName || 'Jane Doe',
       items: items.map(i => ({ productId: i.id, name: i.name, price: i.price, quantity: i.quantity })),
       total: finalTotal,
@@ -131,16 +135,6 @@ export function CheckoutPage() {
     });
     
     setCompletedOrder(newOrder);
-
-    items.forEach(cartItem => {
-      const product = productsList.find(p => cartItem.id === p.id || cartItem.id.startsWith(p.id + '-'));
-      if (product) {
-        updateProduct(product.id, {
-          ...product,
-          stock: Math.max(0, (product.stock || 0) - cartItem.quantity)
-        });
-      }
-    });
 
     if (firstTimeDiscountEligible) {
       setLoginDiscountUsed(true);

@@ -7,6 +7,7 @@ import { useLoyalty } from '../LoyaltyContext';
 import { useNavigate } from 'react-router-dom';
 import { Package, Truck, CheckCircle, Clock, LogOut } from 'lucide-react';
 import { OrderStatus } from '../types';
+import { supabase } from '../lib/supabase';
 
 export function ProfilePage() {
   const { orders } = useOrders();
@@ -47,6 +48,7 @@ export function ProfilePage() {
         </div>
         <button 
           onClick={() => {
+            supabase?.auth.signOut();
             setCurrentUser(null);
             navigate('/');
           }}

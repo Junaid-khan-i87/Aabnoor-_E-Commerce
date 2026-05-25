@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 import { Coupon } from './types';
+import { deleteEntity, getStoreValue, seedEntitiesIfEmpty, setStoreValue, upsertEntity } from './lib/storeApi';
+import { supabase } from './lib/supabase';
+
+const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
 
 export interface UserAccount {
   id: string;
@@ -11,13 +15,6 @@ export interface UserAccount {
   warnings: number;
   status?: 'Active' | 'Blocked';
 }
-
-const MOCK_USERS: UserAccount[] = [
-  { id: 'USR-001', email: 'jane.doe@example.com', name: 'Jane Doe', coins: 145, joined: '2025-11-12', warnings: 0, status: 'Active' },
-  { id: 'USR-002', email: 'smith.john@example.com', name: 'John Smith', coins: 20, joined: '2026-02-05', warnings: 0, status: 'Active' },
-  { id: 'USR-003', email: 'alice.w@example.com', name: 'Alice W.', coins: 350, joined: '2024-08-22', warnings: 1, status: 'Active' },
-  { id: 'USR-004', email: 'robert.taylor@example.com', name: 'Robert Taylor', coins: 85, joined: '2025-01-30', warnings: 0, status: 'Active' },
-];
 
 export interface SiteSettings {
   deliveryFee: number;
@@ -66,6 +63,18 @@ const DEFAULT_COUPONS: Coupon[] = [
   }
 ];
 
+function readStoredJson<T>(key: string, fallback: T): T {
+  const saved = localStorage.getItem(key);
+  if (!saved) return fallback;
+
+  try {
+    return JSON.parse(saved);
+  } catch {
+    localStorage.removeItem(key);
+    return fallback;
+  }
+}
+
 interface SiteContextType {
   siteName: string;
   setSiteName: (name: string) => void;
@@ -85,6 +94,10 @@ interface SiteContextType {
   updateSettings: (settings: Partial<SiteSettings>) => void;
   currentUser: string | null;
   setCurrentUser: (email: string | null) => void;
+  authUserId: string | null;
+  isAuthLoading: boolean;
+  isAdmin: boolean;
+  refreshAdminStatus: () => Promise<boolean>;
   loginDiscountUsed: boolean;
   setLoginDiscountUsed: (used: boolean) => void;
   categories: string[];
@@ -102,6 +115,9 @@ interface SiteContextType {
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
 export function SiteProvider({ children }: { children: ReactNode }) {
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [siteName, setSiteNameState] = useState(() => {
     const saved = localStorage.getItem('aura_sitename');
     if (!saved || saved === 'Aura') {
@@ -146,8 +162,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   });
 
   const [users, setUsersState] = useState<UserAccount[]>(() => {
-    const saved = localStorage.getItem('aura_users');
-    return saved ? JSON.parse(saved) : MOCK_USERS;
+    return [];
   });
 
   const [bannerText, setBannerTextState] = useState(() => {
@@ -155,8 +170,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   });
 
   const [isBannerActive, setIsBannerActiveState] = useState(() => {
-    const saved = localStorage.getItem('aura_banner_active');
-    return saved ? JSON.parse(saved) : true;
+    return readStoredJson('aura_banner_active', true);
   });
 
   const [couponCode, setCouponCodeState] = useState(() => {
@@ -164,8 +178,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   });
 
   const [couponDiscount, setCouponDiscountState] = useState(() => {
-    const saved = localStorage.getItem('aura_coupon_discount');
-    return saved ? JSON.parse(saved) : 10;
+    return readStoredJson('aura_coupon_discount', 10);
   });
 
   const [currentUser, setCurrentUserState] = useState<string | null>(() => {
@@ -173,43 +186,210 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   });
 
   const [loginDiscountUsed, setLoginDiscountUsedState] = useState(() => {
-    const saved = localStorage.getItem('aura_login_discount_used');
-    return saved ? JSON.parse(saved) : false;
+    return readStoredJson('aura_login_discount_used', false);
   });
 
   const [coupons, setCoupons] = useState<Coupon[]>(() => {
-    const saved = localStorage.getItem('aura_coupons');
-    return saved ? JSON.parse(saved) : DEFAULT_COUPONS;
+    return readStoredJson('aura_coupons', DEFAULT_COUPONS);
   });
 
   const [settings, setSettingsState] = useState<SiteSettings>(() => {
-    const saved = localStorage.getItem('aura_settings');
-    return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+    return readStoredJson('aura_settings', DEFAULT_SETTINGS);
   });
+
+  const refreshAdminStatus = React.useCallback(async () => {
+    if (!supabase) {
+      setIsAdmin(false);
+      return false;
+    }
+
+    const { data: sessionResult } = await supabase.auth.getSession();
+    const user = sessionResult.session?.user;
+    if (!user || user.email?.toLowerCase() !== ADMIN_EMAIL) {
+      setIsAdmin(false);
+      return false;
+    }
+
+    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error || assurance.data.currentLevel !== 'aal2') {
+      setIsAdmin(false);
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const nextIsAdmin = Boolean(data && !error);
+    setIsAdmin(nextIsAdmin);
+    return nextIsAdmin;
+  }, []);
+
+  React.useEffect(() => {
+    if (!supabase) {
+      setIsAuthLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) return;
+      const user = data.session?.user || null;
+      setAuthUserId(user?.id || null);
+      setCurrentUserState(user?.email || null);
+      if (user?.email) {
+        localStorage.setItem('aura_current_user', user.email);
+      } else {
+        localStorage.removeItem('aura_current_user');
+      }
+      setIsAuthLoading(false);
+      refreshAdminStatus();
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = session?.user || null;
+      setAuthUserId(user?.id || null);
+      setCurrentUserState(user?.email || null);
+      if (user?.email) {
+        localStorage.setItem('aura_current_user', user.email);
+      } else {
+        localStorage.removeItem('aura_current_user');
+      }
+      setIsAdmin(false);
+      refreshAdminStatus();
+    });
+
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [refreshAdminStatus]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadStore = async () => {
+      const [
+        remoteUsers,
+        remoteCoupons,
+        remoteSettings,
+        remoteCategories,
+        remoteSubCategories,
+        remoteBannerText,
+        remoteBannerActive,
+        remoteCouponCode,
+        remoteCouponDiscount,
+      ] = await Promise.all([
+        seedEntitiesIfEmpty<UserAccount>('customers', []),
+        seedEntitiesIfEmpty<Coupon>('coupons', DEFAULT_COUPONS),
+        getStoreValue<SiteSettings>('settings'),
+        getStoreValue<string[]>('categories'),
+        getStoreValue<Record<string, string[]>>('subcategories'),
+        getStoreValue<string>('banner_text'),
+        getStoreValue<boolean>('banner_active'),
+        getStoreValue<string>('coupon_code'),
+        getStoreValue<number>('coupon_discount'),
+      ]);
+
+      if (!isMounted) return;
+
+      if (remoteUsers) {
+        setUsersState(remoteUsers);
+      }
+
+      if (remoteCoupons) {
+        setCoupons(remoteCoupons);
+        localStorage.setItem('aura_coupons', JSON.stringify(remoteCoupons));
+      }
+
+      if (remoteSettings) {
+        setSettingsState(remoteSettings);
+        localStorage.setItem('aura_settings', JSON.stringify(remoteSettings));
+      } else {
+        setStoreValue('settings', DEFAULT_SETTINGS);
+      }
+
+      if (remoteCategories) {
+        setCategoriesState(remoteCategories);
+        localStorage.setItem('aura_categories', JSON.stringify(remoteCategories));
+      } else {
+        setStoreValue('categories', categories);
+      }
+
+      if (remoteSubCategories) {
+        setSubCategoriesState(remoteSubCategories);
+        localStorage.setItem('aura_subcategories', JSON.stringify(remoteSubCategories));
+      } else {
+        setStoreValue('subcategories', subCategories);
+      }
+
+      if (remoteBannerText !== null) {
+        setBannerTextState(remoteBannerText);
+        localStorage.setItem('aura_banner_text', remoteBannerText);
+      } else {
+        setStoreValue('banner_text', bannerText);
+      }
+
+      if (remoteBannerActive !== null) {
+        setIsBannerActiveState(remoteBannerActive);
+        localStorage.setItem('aura_banner_active', JSON.stringify(remoteBannerActive));
+      } else {
+        setStoreValue('banner_active', isBannerActive);
+      }
+
+      if (remoteCouponCode !== null) {
+        setCouponCodeState(remoteCouponCode);
+        localStorage.setItem('aura_coupon_code', remoteCouponCode);
+      } else {
+        setStoreValue('coupon_code', couponCode);
+      }
+
+      if (remoteCouponDiscount !== null) {
+        setCouponDiscountState(remoteCouponDiscount);
+        localStorage.setItem('aura_coupon_discount', JSON.stringify(remoteCouponDiscount));
+      } else {
+        setStoreValue('coupon_discount', couponDiscount);
+      }
+    };
+
+    loadStore();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const setSiteName = (name: string) => {
     setSiteNameState(name);
     localStorage.setItem('aura_sitename', name);
+    setStoreValue('site_name', name);
   };
 
   const setBannerText = (name: string) => {
     setBannerTextState(name);
     localStorage.setItem('aura_banner_text', name);
+    setStoreValue('banner_text', name);
   };
 
   const setIsBannerActive = (active: boolean) => {
     setIsBannerActiveState(active);
     localStorage.setItem('aura_banner_active', JSON.stringify(active));
+    setStoreValue('banner_active', active);
   };
 
   const setCouponCode = (code: string) => {
     setCouponCodeState(code);
     localStorage.setItem('aura_coupon_code', code);
+    setStoreValue('coupon_code', code);
   };
 
   const setCouponDiscount = (discount: number) => {
     setCouponDiscountState(discount);
     localStorage.setItem('aura_coupon_discount', JSON.stringify(discount));
+    setStoreValue('coupon_discount', discount);
   };
 
   const setCurrentUser = (email: string | null) => {
@@ -225,6 +405,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     setCoupons(prev => {
       const next = [...prev, coupon];
       localStorage.setItem('aura_coupons', JSON.stringify(next));
+      upsertEntity('coupons', coupon);
       return next;
     });
   };
@@ -233,6 +414,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     setCoupons(prev => {
       const next = prev.map(c => c.id === id ? { ...c, ...updates } : c);
       localStorage.setItem('aura_coupons', JSON.stringify(next));
+      const updated = next.find(coupon => coupon.id === id);
+      if (updated) upsertEntity('coupons', updated);
       return next;
     });
   };
@@ -241,6 +424,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     setCoupons(prev => {
       const next = prev.filter(c => c.id !== id);
       localStorage.setItem('aura_coupons', JSON.stringify(next));
+      deleteEntity('coupons', id);
       return next;
     });
   };
@@ -249,6 +433,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     setSettingsState(prev => {
       const next = { ...prev, ...updates };
       localStorage.setItem('aura_settings', JSON.stringify(next));
+      setStoreValue('settings', next);
       return next;
     });
   };
@@ -263,11 +448,13 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       if (prev.includes(cat)) return prev;
       const next = [...prev, cat];
       localStorage.setItem('aura_categories', JSON.stringify(next));
+      setStoreValue('categories', next);
       
       // Initialize subcategories array for the new category
       setSubCategoriesState(prevSubs => {
         const nextSubs = { ...prevSubs, [cat]: [] };
         localStorage.setItem('aura_subcategories', JSON.stringify(nextSubs));
+        setStoreValue('subcategories', nextSubs);
         return nextSubs;
       });
 
@@ -279,6 +466,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     setCategoriesState(prev => {
       const next = prev.filter(c => c !== cat);
       localStorage.setItem('aura_categories', JSON.stringify(next));
+      setStoreValue('categories', next);
       return next;
     });
     // Clean up subcategories for that category
@@ -286,6 +474,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       const nextSubs = { ...prevSubs };
       delete nextSubs[cat];
       localStorage.setItem('aura_subcategories', JSON.stringify(nextSubs));
+      setStoreValue('subcategories', nextSubs);
       return nextSubs;
     });
   };
@@ -296,6 +485,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       if (currentList.includes(sub)) return prev;
       const next = { ...prev, [category]: [...currentList, sub] };
       localStorage.setItem('aura_subcategories', JSON.stringify(next));
+      setStoreValue('subcategories', next);
       return next;
     });
   };
@@ -305,6 +495,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       const currentList = prev[category] || [];
       const next = { ...prev, [category]: currentList.filter(s => s !== sub) };
       localStorage.setItem('aura_subcategories', JSON.stringify(next));
+      setStoreValue('subcategories', next);
       return next;
     });
   };
@@ -312,7 +503,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   const deleteUser = (id: string) => {
     setUsersState(prev => {
       const next = prev.filter(u => u.id !== id);
-      localStorage.setItem('aura_users', JSON.stringify(next));
+      deleteEntity('customers', id);
       return next;
     });
   };
@@ -320,7 +511,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   const updateUser = (id: string, updates: Partial<UserAccount>) => {
     setUsersState(prev => {
       const next = prev.map(u => (u.id === id ? { ...u, ...updates } : u));
-      localStorage.setItem('aura_users', JSON.stringify(next));
+      const updated = next.find(user => user.id === id);
+      if (updated) upsertEntity('customers', updated);
       return next;
     });
   };
@@ -328,7 +520,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   const warnUser = (id: string) => {
     setUsersState(prev => {
       const next = prev.map(u => (u.id === id ? { ...u, warnings: (u.warnings || 0) + 1 } : u));
-      localStorage.setItem('aura_users', JSON.stringify(next));
+      const updated = next.find(user => user.id === id);
+      if (updated) upsertEntity('customers', updated);
       return next;
     });
   };
@@ -339,7 +532,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       couponCode, setCouponCode, couponDiscount, setCouponDiscount, 
       coupons, addCoupon, updateCoupon, deleteCoupon,
       settings, updateSettings,
-      currentUser, setCurrentUser, loginDiscountUsed, setLoginDiscountUsed, 
+      currentUser, setCurrentUser, authUserId, isAuthLoading, isAdmin, refreshAdminStatus, loginDiscountUsed, setLoginDiscountUsed, 
       categories, addCategory, removeCategory,
       subCategories, addSubCategory, removeSubCategory,
       users, deleteUser, updateUser, warnUser 

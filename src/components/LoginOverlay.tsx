@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Lock, Mail, User } from 'lucide-react';
 import { useUI } from '../UIContext';
 import { useSite } from '../SiteContext';
+import { supabase } from '../lib/supabase';
 
 export function LoginOverlay() {
   const { isLoginOpen, setIsLoginOpen, addToast } = useUI();
@@ -34,7 +35,7 @@ export function LoginOverlay() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setIsLoginOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -57,12 +58,49 @@ export function LoginOverlay() {
       return;
     }
 
-    // Success login
-    setCurrentUser(email.trim());
+    if (!supabase) {
+      setError('Supabase is not configured for this build.');
+      addToast('Login backend is not configured', 'error');
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const authResult = isRegister
+      ? await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: { data: { full_name: name.trim() } },
+        })
+      : await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+
+    if (authResult.error) {
+      setError(authResult.error.message);
+      addToast(authResult.error.message, 'error');
+      return;
+    }
+
+    setCurrentUser(cleanEmail);
+
+    if (isRegister && authResult.data.user) {
+      const customer = {
+        id: `USR-${authResult.data.user.id}`,
+        email: cleanEmail,
+        name: name.trim(),
+        coins: 0,
+        joined: new Date().toISOString().slice(0, 10),
+        warnings: 0,
+        status: 'Active',
+      };
+      await supabase.from('customers').upsert({ id: customer.id, data: customer });
+    }
+
     addToast(
       isRegister 
         ? 'Welcome to Aabnoor! Account created successfully.' 
-        : `Signed in successfully as ${email.trim()}`, 
+        : `Signed in successfully as ${cleanEmail}`, 
       'success'
     );
     setIsLoginOpen(false);
@@ -93,7 +131,7 @@ export function LoginOverlay() {
           >
             <div className="flex justify-between items-center pb-4 border-b border-[#1A1A1A]/5 mb-6">
               <span className="font-sans text-[10px] uppercase font-bold tracking-[0.2em] text-[#CDA185] bg-[#CDA185]/10 px-3 py-1 rounded-full">
-                Demo Environment
+                Secure Account
               </span>
               <button 
                 onClick={() => setIsLoginOpen(false)} 
@@ -111,11 +149,6 @@ export function LoginOverlay() {
               <p className="font-sans text-[10px] uppercase tracking-widest text-[#1A1A1A]/50 text-center mb-6 font-bold">
                 {isRegister ? 'Create your luxury profiling' : 'Sign in to access loyalty rewards'}
               </p>
-
-              {/* Demo Mode Box Notification */}
-              <div className="bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 p-3 rounded-md mb-6 text-center text-[10px] font-sans text-[#1A1A1A]/70 leading-relaxed font-semibold">
-                ✨ <strong>Aabnoor Demo Sandbox:</strong> Enter any email and password above 6 characters to simulate secure customer loyalty.
-              </div>
 
               {error && (
                 <div className="text-red-600 bg-red-50 border border-red-200 p-3 rounded-sm text-xs font-bold font-sans mb-4">

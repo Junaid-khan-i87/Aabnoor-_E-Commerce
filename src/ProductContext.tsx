@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Product } from './types';
 import { products as initialProducts } from './data';
+import { deleteEntity, replaceEntities, seedEntitiesIfEmpty, upsertEntity } from './lib/storeApi';
 
 interface ProductContextType {
   productsList: Product[];
@@ -25,6 +26,24 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     return initialProducts.map(p => ({...p, stock: 15}));
   });
 
+  useEffect(() => {
+    let isMounted = true;
+
+    seedEntitiesIfEmpty<Product>(
+      'products',
+      initialProducts.map(p => ({ ...p, stock: p.stock ?? 15 })),
+    ).then(remoteProducts => {
+      if (isMounted && remoteProducts) {
+        setProductsList(remoteProducts);
+        updateProductsStorage(remoteProducts);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const updateProductsStorage = (newProducts: Product[]) => {
     localStorage.setItem('aura_products', JSON.stringify(newProducts));
   };
@@ -33,6 +52,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     setProductsList(prev => {
       const next = [...prev, product];
       updateProductsStorage(next);
+      upsertEntity('products', product);
       return next;
     });
   };
@@ -41,6 +61,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     setProductsList(prev => {
       const next = prev.map(p => p.id === id ? updatedProduct : p);
       updateProductsStorage(next);
+      upsertEntity('products', updatedProduct);
       return next;
     });
   };
@@ -49,6 +70,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     setProductsList(prev => {
       const next = prev.filter(p => p.id !== id);
       updateProductsStorage(next);
+      deleteEntity('products', id);
       return next;
     });
   };
@@ -56,6 +78,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   const saveProductsList = (newList: Product[]) => {
     setProductsList(newList);
     updateProductsStorage(newList);
+    replaceEntities('products', newList);
   };
 
   return (

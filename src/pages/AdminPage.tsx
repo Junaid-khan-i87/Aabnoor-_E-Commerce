@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Users, ShoppingBag, Coins, BarChart3, Shield, Key, Package, Edit, Plus, Trash2, ChevronDown, ChevronUp, FileText, Eye, EyeOff, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Users, ShoppingBag, Coins, BarChart3, Shield, Key, Package, Edit, Plus, Trash2, ChevronDown, ChevronUp, FileText, Eye, EyeOff, X, Mail } from 'lucide-react';
 import { motion } from 'motion/react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { useProducts } from '../ProductContext';
@@ -10,10 +10,19 @@ import { Product, OrderStatus } from '../types';
 import jsPDF from 'jspdf';
 import { SafeImage } from '../components/SafeImage';
 import { useUI } from '../UIContext';
+import { supabase } from '../lib/supabase';
+
+const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
 
 export function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaFactorId, setMfaFactorId] = useState('');
+  const [mfaQrCode, setMfaQrCode] = useState('');
+  const [mfaSecret, setMfaSecret] = useState('');
+  const [adminStep, setAdminStep] = useState<'password' | 'mfa' | 'enroll'>('password');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'customers' | 'products' | 'discounts' | 'settings'>('dashboard');
@@ -77,7 +86,8 @@ export function AdminPage() {
     settings, updateSettings,
     categories, addCategory, removeCategory,
     subCategories, addSubCategory, removeSubCategory,
-    users, deleteUser, updateUser, warnUser 
+    users, deleteUser, updateUser, warnUser,
+    isAuthLoading, isAdmin, refreshAdminStatus,
   } = useSite();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedSubCatEditing, setSelectedSubCatEditing] = useState<string>('Skin Care');
@@ -246,20 +256,155 @@ export function AdminPage() {
 
   const COLORS = ['#1A1A1A', '#404040', '#737373', '#A3A3A3', '#D4D4D4'];
 
-  // NOTE: This is a front-end simulation credentials gate for CMS preview testing.
-  // In production, replaces these lines with backend secure session headers and server cookies.
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError('');
-    const validPassword = (import.meta as any).env?.VITE_ADMIN_PASSWORD || 'admin123';
-    if (password === validPassword) {
+  useEffect(() => {
+    if (isAdmin) {
       setIsAuthenticated(true);
-    } else {
-      setLoginError('Invalid access password string. Please try again.');
     }
+  }, [isAdmin]);
+
+  const claimAdminAccess = async () => {
+    if (!supabase) return false;
+
+    const { data: sessionResult } = await supabase.auth.getSession();
+    const user = sessionResult.session?.user;
+    if (!user || user.email?.toLowerCase() !== ADMIN_EMAIL) return false;
+
+    const existing = await refreshAdminStatus();
+    if (existing) {
+      setIsAuthenticated(true);
+      return true;
+    }
+
+    const { error } = await supabase.from('admin_users').insert({
+      user_id: user.id,
+      email: ADMIN_EMAIL,
+      role: 'admin',
+    });
+
+    if (error) {
+      setLoginError(error.message);
+      return false;
+    }
+
+    const ok = await refreshAdminStatus();
+    setIsAuthenticated(ok);
+    if (ok) {
+      setTimeout(() => window.location.reload(), 250);
+    }
+    return ok;
   };
 
-  if (!isAuthenticated) {
+  const beginMfaFlow = async () => {
+    if (!supabase) return;
+
+    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.error) {
+      setLoginError(assurance.error.message);
+      return;
+    }
+
+    if (assurance.data.currentLevel === 'aal2') {
+      await claimAdminAccess();
+      return;
+    }
+
+    const factors = await supabase.auth.mfa.listFactors();
+    if (factors.error) {
+      setLoginError(factors.error.message);
+      return;
+    }
+
+    const verifiedTotp = factors.data.totp.find(factor => factor.status === 'verified');
+    if (verifiedTotp) {
+      setMfaFactorId(verifiedTotp.id);
+      setAdminStep('mfa');
+      setLoginError('');
+      return;
+    }
+
+    const enrolledTotp = (factors.data.totp as Array<{ id: string; status: string }>).find(factor => factor.status === 'unverified');
+    if (enrolledTotp) {
+      setMfaFactorId(enrolledTotp.id);
+      setAdminStep('enroll');
+      setLoginError('Finish authenticator setup by entering the current code from your app.');
+      return;
+    }
+
+    const enrollment = await supabase.auth.mfa.enroll({
+      factorType: 'totp',
+      friendlyName: 'Aabnoor Admin',
+    });
+
+    if (enrollment.error) {
+      setLoginError(enrollment.error.message);
+      return;
+    }
+
+    setMfaFactorId(enrollment.data.id);
+    setMfaQrCode(enrollment.data.totp.qr_code);
+    setMfaSecret(enrollment.data.totp.secret);
+    setAdminStep('enroll');
+    setLoginError('');
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+
+    if (!supabase) {
+      setLoginError('Supabase is not configured for this build.');
+      return;
+    }
+
+    const cleanEmail = adminEmail.trim().toLowerCase();
+    if (cleanEmail !== ADMIN_EMAIL) {
+      setLoginError(`Admin access is restricted to ${ADMIN_EMAIL}.`);
+      return;
+    }
+
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
+
+    if (authError) {
+      setLoginError(authError.message);
+      return;
+    }
+
+    if (authData.user.email?.toLowerCase() !== ADMIN_EMAIL) {
+      await supabase.auth.signOut();
+      setLoginError(`Admin access is restricted to ${ADMIN_EMAIL}.`);
+      return;
+    }
+
+    await beginMfaFlow();
+  };
+
+  const handleMfaVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+
+    if (!supabase || !mfaFactorId) {
+      setLoginError('Authenticator factor is not ready. Sign in again.');
+      return;
+    }
+
+    const verification = await supabase.auth.mfa.challengeAndVerify({
+      factorId: mfaFactorId,
+      code: mfaCode.trim(),
+    });
+
+    if (verification.error) {
+      setLoginError(verification.error.message);
+      return;
+    }
+
+    setMfaCode('');
+    await claimAdminAccess();
+  };
+
+  if (!isAuthenticated || isAuthLoading) {
     return (
       <div className="min-h-[85vh] flex items-center justify-center bg-[#F9F7F2] p-4 font-sans">
         <motion.div 
@@ -273,7 +418,7 @@ export function AdminPage() {
           <h1 className="font-serif italic text-3xl mb-1 text-[#1A1A1A]">Admin Console</h1>
           <p className="font-sans text-xs uppercase tracking-widest text-[#CDA185] font-bold mb-6">Aabnoor Management Studio</p>
           <p className="font-sans text-xs text-[#1A1A1A]/60 leading-relaxed mb-6">
-            Authentication required. Use the demo password <strong>admin123</strong> for testing store parameters.
+            Sign in as junaidmushtaq988@gmail.com, then verify the code from your authenticator app.
           </p>
 
           {loginError && (
@@ -282,16 +427,43 @@ export function AdminPage() {
             </div>
           )}
           
-          <form onSubmit={handleLogin} className="space-y-6 text-left">
+          <form onSubmit={adminStep === 'password' ? handleLogin : handleMfaVerify} className="space-y-6 text-left">
+            {adminStep === 'enroll' && mfaQrCode && (
+              <div className="rounded-md border border-[#1A1A1A]/10 bg-[#1A1A1A]/5 p-4 text-center">
+                <p className="font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/60 mb-3">
+                  Scan in Google Authenticator or Microsoft Authenticator
+                </p>
+                <img src={mfaQrCode} alt="Authenticator QR code" className="mx-auto h-44 w-44 bg-white p-2" />
+                <p className="mt-3 break-all font-mono text-[10px] text-[#1A1A1A]/70">{mfaSecret}</p>
+              </div>
+            )}
+            {adminStep === 'password' && (
+            <>
             <div>
               <label className="block text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/50 mb-2">
-                Secure Access Certificate
+                Admin Email
+              </label>
+              <div className="relative border-b border-[#1A1A1A]/20 focus-within:border-[#1A1A1A] transition-colors pb-1">
+                <Mail className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
+                <input
+                  type="email"
+                  placeholder="admin@example.com"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  className="w-full bg-transparent py-2 pl-8 pr-10 font-sans text-sm outline-none"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/50 mb-2">
+                Password
               </label>
               <div className="relative border-b border-[#1A1A1A]/20 focus-within:border-[#1A1A1A] transition-colors pb-1">
                 <Key className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Password (e.g., admin123)"
+                  placeholder="Supabase account password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-transparent py-2 pl-8 pr-10 font-sans text-sm outline-none"
@@ -312,12 +484,33 @@ export function AdminPage() {
                 </button>
               </div>
             </div>
+            </>
+            )}
+            <div>
+              <label className="block text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/50 mb-2">
+                Authenticator Code
+              </label>
+              <div className="relative border-b border-[#1A1A1A]/20 focus-within:border-[#1A1A1A] transition-colors pb-1">
+                <Shield className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder={adminStep === 'password' ? 'Required after password sign in' : '6-digit code'}
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="w-full bg-transparent py-2 pl-8 pr-10 font-sans text-sm outline-none"
+                  disabled={adminStep === 'password'}
+                  required={adminStep !== 'password'}
+                />
+              </div>
+            </div>
             
             <button 
               type="submit"
               className="w-full h-12 bg-[#1A1A1A] text-[#F9F7F2] font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#CDA185] transition-all rounded-full shadow-sm cursor-pointer mt-4"
             >
-              Authenticate
+              {adminStep === 'password' ? 'Continue' : 'Verify Authenticator'}
             </button>
           </form>
         </motion.div>
