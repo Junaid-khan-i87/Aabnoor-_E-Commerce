@@ -7,6 +7,17 @@ const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.e
 
 const allowedStatuses = new Set(['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled']);
 
+const decodeJwtPayload = (token: string) => {
+  const payload = token.split('.')[1];
+  if (!payload) return null;
+
+  try {
+    return JSON.parse(Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
+};
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -49,8 +60,8 @@ export default async function handler(req: any, res: any) {
     return res.status(403).json({ error: 'Only the configured admin can update orders.' });
   }
 
-  const { data: assurance, error: assuranceError } = await userClient.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (assuranceError || assurance?.currentLevel !== 'aal2') {
+  const tokenClaims = decodeJwtPayload(token);
+  if (tokenClaims?.aal !== 'aal2') {
     return res.status(403).json({ error: 'Authenticator verification is required before updating orders.' });
   }
 

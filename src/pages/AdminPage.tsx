@@ -149,9 +149,9 @@ export function AdminPage() {
     const shouldAddCoins = !coinsAdded && (newStatus === 'Shipped' || newStatus === 'Delivered');
     if (shouldAddCoins) markCoinsAdded = true;
 
-    const saved = await updateOrderStatus(orderId, newStatus, undefined, markCoinsAdded);
-    if (!saved) {
-      addToast('Order status was not saved. Sign in again with authenticator and try once more.', 'error');
+    const result = await updateOrderStatus(orderId, newStatus, undefined, markCoinsAdded);
+    if (!result.ok) {
+      addToast(result.error || 'Order status was not saved. Sign in again with authenticator and try once more.', 'error');
       return;
     }
 

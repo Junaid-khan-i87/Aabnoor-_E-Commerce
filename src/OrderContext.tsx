@@ -6,7 +6,7 @@ import { supabase } from './lib/supabase';
 interface OrderContextType {
   orders: Order[];
   placeOrder: (order: Omit<Order, 'id' | 'date' | 'status' | 'trackingUpdates' | 'trackingNumber'>) => Promise<Order>;
-  updateOrderStatus: (id: string, status: OrderStatus, note?: string, coinsAdded?: boolean) => Promise<boolean>;
+  updateOrderStatus: (id: string, status: OrderStatus, note?: string, coinsAdded?: boolean) => Promise<{ ok: boolean; error?: string }>;
   deleteOrder: (id: string) => void;
   updateOrder: (id: string, updatedOrder: Partial<Order>) => void;
   getUserOrders: (email: string) => Order[];
@@ -133,12 +133,12 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       return next;
     });
 
-    if (!orderToSave) return false;
+    if (!orderToSave) return { ok: false, error: 'Order not found.' };
 
     const token = (await supabase?.auth.getSession())?.data.session?.access_token;
     if (!token) {
       await refreshOrders();
-      return false;
+      return { ok: false, error: 'Missing admin session.' };
     }
 
     const response = await fetch('/api/admin-update-order-status', {
@@ -159,11 +159,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     if (!response.ok || !result?.order) {
       console.error('Admin order status update failed.', result?.error || response.statusText);
       await refreshOrders();
-      return false;
+      return { ok: false, error: result?.error || response.statusText || 'Order status update failed.' };
     }
 
     setOrders(prev => prev.map(order => order.id === id ? result.order : order));
-    return true;
+    return { ok: true };
   };
 
   const getUserOrders = (email: string) => {
