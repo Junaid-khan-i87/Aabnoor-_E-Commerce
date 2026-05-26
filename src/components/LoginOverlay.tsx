@@ -63,41 +63,50 @@ export function LoginOverlay() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
 
-    if (!otpSent) {
-      const { error: otpError } = await supabase.auth.signInWithOtp({
+    if (isRegister && !otpSent) {
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        addToast('Password must be at least 6 characters', 'error');
+        return;
+      }
+
+      const { error: signUpError } = await supabase.auth.signUp({
           email: cleanEmail,
-          options: {
-            shouldCreateUser: isRegister,
-            data: isRegister ? { full_name: cleanName } : undefined,
-          },
+          password,
+          options: { data: { full_name: cleanName } },
         });
 
-      if (otpError) {
-        setError(otpError.message);
-        addToast(otpError.message, 'error');
+      if (signUpError) {
+        setError(signUpError.message);
+        addToast(signUpError.message, 'error');
         return;
       }
 
       setOtpSent(true);
       setPendingName(cleanName);
       setPassword('');
-      setError('OTP sent to your email. Enter the code in the code field.');
-      addToast('OTP sent to your email', 'success');
+      setError('Verification OTP sent to your email. Enter it below to confirm your account.');
+      addToast('Verification OTP sent to your email', 'success');
       return;
     }
 
-    const otpCode = password.replace(/\s/g, '');
-    if (!/^\d{6}$/.test(otpCode)) {
-      setError('Enter the 6-digit OTP from your email.');
-      addToast('Enter the 6-digit OTP', 'error');
-      return;
-    }
+    const authResult = isRegister
+      ? await (async () => {
+          const otpCode = password.replace(/\s/g, '');
+          if (!/^\d{6}$/.test(otpCode)) {
+            return { data: { session: null, user: null }, error: new Error('Enter the 6-digit OTP from your email.') };
+          }
 
-    const authResult = await supabase.auth.verifyOtp({
-      email: cleanEmail,
-      token: otpCode,
-      type: 'email',
-    });
+          return supabase.auth.verifyOtp({
+            email: cleanEmail,
+            token: otpCode,
+            type: 'signup',
+          });
+        })()
+      : await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
 
     if (authResult.error) {
       setError(authResult.error.message);
@@ -223,13 +232,17 @@ export function LoginOverlay() {
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
                   <input 
-                    type="text" 
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
+                    type={isRegister && otpSent ? 'text' : 'password'} 
+                    inputMode={isRegister && otpSent ? 'numeric' : undefined}
+                    autoComplete={isRegister && otpSent ? 'one-time-code' : 'current-password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder={otpSent ? 'Enter Email OTP Code' : 'OTP will appear after email step'} 
-                    disabled={!otpSent}
+                    onChange={(e) => {
+                      const nextValue = isRegister && otpSent
+                        ? e.target.value.replace(/\D/g, '').slice(0, 6)
+                        : e.target.value;
+                      setPassword(nextValue);
+                    }}
+                    placeholder={isRegister && otpSent ? 'Enter Email OTP Code' : 'Password'} 
                     className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm"
                   />
                 </div>
@@ -238,7 +251,7 @@ export function LoginOverlay() {
                   type="submit"
                   className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-4 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#CDA185] transition-all flex items-center justify-center gap-2 cursor-pointer mt-6 shadow-md"
                 >
-                  {otpSent ? 'Verify OTP' : isRegister ? 'Send Signup OTP' : 'Send Login OTP'}
+                  {isRegister && otpSent ? 'Verify OTP' : isRegister ? 'Create Account' : 'Sign In'}
                 </button>
               </form>
 
