@@ -13,6 +13,8 @@ export function LoginOverlay() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [pendingName, setPendingName] = useState('');
 
   // Scroll lock when modal is open
   useEffect(() => {
@@ -52,12 +54,6 @@ export function LoginOverlay() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      addToast('Password must be at least 6 characters', 'error');
-      return;
-    }
-
     if (!supabase) {
       setError('Supabase is not configured for this build.');
       addToast('Login backend is not configured', 'error');
@@ -65,16 +61,43 @@ export function LoginOverlay() {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const authResult = isRegister
-      ? await supabase.auth.signUp({
+    const cleanName = name.trim();
+
+    if (!otpSent) {
+      const { error: otpError } = await supabase.auth.signInWithOtp({
           email: cleanEmail,
-          password,
-          options: { data: { full_name: name.trim() } },
-        })
-      : await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
+          options: {
+            shouldCreateUser: isRegister,
+            data: isRegister ? { full_name: cleanName } : undefined,
+          },
         });
+
+      if (otpError) {
+        setError(otpError.message);
+        addToast(otpError.message, 'error');
+        return;
+      }
+
+      setOtpSent(true);
+      setPendingName(cleanName);
+      setPassword('');
+      setError('OTP sent to your email. Enter the code in the code field.');
+      addToast('OTP sent to your email', 'success');
+      return;
+    }
+
+    const otpCode = password.replace(/\s/g, '');
+    if (!/^\d{6}$/.test(otpCode)) {
+      setError('Enter the 6-digit OTP from your email.');
+      addToast('Enter the 6-digit OTP', 'error');
+      return;
+    }
+
+    const authResult = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: otpCode,
+      type: 'email',
+    });
 
     if (authResult.error) {
       setError(authResult.error.message);
@@ -85,14 +108,6 @@ export function LoginOverlay() {
     const session = authResult.data.session;
     const user = authResult.data.user;
 
-    if (isRegister && user && !session) {
-      addToast('Account created. Check your email to confirm before signing in.', 'success');
-      setIsRegister(false);
-      setPassword('');
-      setError('Check your email to confirm your account, then sign in.');
-      return;
-    }
-
     if (!session || !user) {
       setError('Sign in could not be completed. Please try again.');
       addToast('Sign in could not be completed', 'error');
@@ -101,11 +116,11 @@ export function LoginOverlay() {
 
     setCurrentUser(cleanEmail);
 
-    if (isRegister || user.user_metadata?.full_name) {
+    if (isRegister || pendingName || user.user_metadata?.full_name) {
       const customer = {
         id: `USR-${user.id}`,
         email: cleanEmail,
-        name: name.trim() || user.user_metadata?.full_name || cleanEmail.split('@')[0],
+        name: pendingName || user.user_metadata?.full_name || cleanEmail.split('@')[0],
         coins: 0,
         joined: new Date().toISOString().slice(0, 10),
         warnings: 0,
@@ -130,6 +145,8 @@ export function LoginOverlay() {
     setEmail('');
     setPassword('');
     setName('');
+    setOtpSent(false);
+    setPendingName('');
     setError('');
   };
 
@@ -206,10 +223,13 @@ export function LoginOverlay() {
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
                   <input 
-                    type="password" 
+                    type="text" 
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password" 
+                    onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder={otpSent ? 'Enter Email OTP Code' : 'OTP will appear after email step'} 
+                    disabled={!otpSent}
                     className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm"
                   />
                 </div>
@@ -218,7 +238,7 @@ export function LoginOverlay() {
                   type="submit"
                   className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-4 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#CDA185] transition-all flex items-center justify-center gap-2 cursor-pointer mt-6 shadow-md"
                 >
-                  {isRegister ? 'Create Account' : 'Sign In'}
+                  {otpSent ? 'Verify OTP' : isRegister ? 'Send Signup OTP' : 'Send Login OTP'}
                 </button>
               </form>
 
@@ -226,6 +246,9 @@ export function LoginOverlay() {
                 <button 
                   onClick={() => {
                     setIsRegister(!isRegister);
+                    setOtpSent(false);
+                    setPassword('');
+                    setPendingName('');
                     setError('');
                   }}
                   className="font-sans text-[11px] uppercase tracking-widest font-bold text-[#1A1A1A]/70 hover:text-[#CDA185] transition-colors border-b border-[#1A1A1A]/20 hover:border-[#CDA185]/50 pb-1 cursor-pointer"
