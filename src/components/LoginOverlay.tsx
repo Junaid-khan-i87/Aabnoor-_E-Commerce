@@ -15,6 +15,7 @@ export function LoginOverlay() {
   const [error, setError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [pendingName, setPendingName] = useState('');
+  const [pendingPassword, setPendingPassword] = useState('');
 
   // Scroll lock when modal is open
   useEffect(() => {
@@ -70,20 +71,27 @@ export function LoginOverlay() {
         return;
       }
 
-      const { error: signUpError } = await supabase.auth.signUp({
+      const response = await fetch('/api/signup-start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: cleanName,
           email: cleanEmail,
           password,
-          options: { data: { full_name: cleanName } },
-        });
+        }),
+      });
 
-      if (signUpError) {
-        setError(signUpError.message);
-        addToast(signUpError.message, 'error');
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = result.error || 'Could not send signup OTP.';
+        setError(message);
+        addToast(message, 'error');
         return;
       }
 
       setOtpSent(true);
       setPendingName(cleanName);
+      setPendingPassword(password);
       setPassword('');
       setError('Verification OTP sent to your email. Enter it below to confirm your account.');
       addToast('Verification OTP sent to your email', 'success');
@@ -97,10 +105,25 @@ export function LoginOverlay() {
             return { data: { session: null, user: null }, error: new Error('Enter the 6-digit OTP from your email.') };
           }
 
-          return supabase.auth.verifyOtp({
+          const response = await fetch('/api/signup-verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: pendingName || cleanName,
+              email: cleanEmail,
+              password: pendingPassword,
+              otp: otpCode,
+            }),
+          });
+
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            return { data: { session: null, user: null }, error: new Error(result.error || 'Could not verify signup OTP.') };
+          }
+
+          return supabase.auth.signInWithPassword({
             email: cleanEmail,
-            token: otpCode,
-            type: 'signup',
+            password: pendingPassword,
           });
         })()
       : await supabase.auth.signInWithPassword({
@@ -156,6 +179,7 @@ export function LoginOverlay() {
     setName('');
     setOtpSent(false);
     setPendingName('');
+    setPendingPassword('');
     setError('');
   };
 
@@ -262,6 +286,7 @@ export function LoginOverlay() {
                     setOtpSent(false);
                     setPassword('');
                     setPendingName('');
+                    setPendingPassword('');
                     setError('');
                   }}
                   className="font-sans text-[11px] uppercase tracking-widest font-bold text-[#1A1A1A]/70 hover:text-[#CDA185] transition-colors border-b border-[#1A1A1A]/20 hover:border-[#CDA185]/50 pb-1 cursor-pointer"
