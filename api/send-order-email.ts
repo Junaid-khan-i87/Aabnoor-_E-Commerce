@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const resendApiKey = process.env.RESEND_API_KEY;
-const fromEmail = process.env.ORDER_EMAIL_FROM || 'Aabnoor <onboarding@resend.dev>';
+const fromEmail = process.env.ORDER_EMAIL_FROM || 'Aabnoor <noreply@aabnoor.shop>';
 
 const escapeHtml = (value: unknown) =>
   String(value ?? '')

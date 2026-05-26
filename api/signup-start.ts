@@ -6,7 +6,7 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const resendApiKey = process.env.RESEND_API_KEY;
 const otpSecret = process.env.SIGNUP_OTP_SECRET || resendApiKey;
-const fromEmail = process.env.AUTH_EMAIL_FROM || process.env.ORDER_EMAIL_FROM || 'Aabnoor <onboarding@resend.dev>';
+const fromEmail = process.env.AUTH_EMAIL_FROM || process.env.ORDER_EMAIL_FROM || 'Aabnoor <noreply@aabnoor.shop>';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
