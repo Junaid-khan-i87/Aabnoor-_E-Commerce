@@ -5,6 +5,7 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const resendApiKey = process.env.RESEND_API_KEY;
 const fromEmail = process.env.ORDER_EMAIL_FROM || 'Aabnoor <noreply@aabnoor.shop>';
+const trackingUrl = process.env.ORDER_TRACKING_URL || 'https://aabnoor.shop/track';
 
 const escapeHtml = (value: unknown) =>
   String(value ?? '')
@@ -79,6 +80,11 @@ export default async function handler(req: any, res: any) {
       <p>Thank you for your purchase, ${escapeHtml(order.userName || user.email)}.</p>
       <p><strong>Order:</strong> ${escapeHtml(order.id)}</p>
       <p><strong>Tracking:</strong> ${escapeHtml(order.trackingNumber || 'Pending')}</p>
+      <div style="background:#f7f3ee;border:1px solid #eadfd6;padding:16px 18px;margin:18px 0 24px;">
+        <p style="margin:0 0 12px;font-size:14px;">Track your order anytime using your tracking number.</p>
+        <a href="${trackingUrl}" style="display:inline-block;background:#1A1A1A;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Track your order</a>
+        <p style="margin:12px 0 0;font-size:12px;color:#666;">Tracking page: <a href="${trackingUrl}" style="color:#1A1A1A;">${trackingUrl}</a></p>
+      </div>
       <table style="width:100%;border-collapse:collapse;margin:24px 0;">
         <thead>
           <tr>
