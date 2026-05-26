@@ -135,12 +135,34 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
     if (!orderToSave) return false;
 
-    const saved = await upsertEntity('orders', orderToSave);
-    if (!saved) {
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) {
       await refreshOrders();
       return false;
     }
 
+    const response = await fetch('/api/admin-update-order-status', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        orderId: id,
+        status,
+        note: note || `Order marked as ${status}`,
+        ...(coinsAdded !== undefined ? { coinsAdded } : {}),
+      }),
+    });
+
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result?.order) {
+      console.error('Admin order status update failed.', result?.error || response.statusText);
+      await refreshOrders();
+      return false;
+    }
+
+    setOrders(prev => prev.map(order => order.id === id ? result.order : order));
     return true;
   };
 
