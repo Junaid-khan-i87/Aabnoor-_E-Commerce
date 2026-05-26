@@ -7,6 +7,7 @@ import { useSite } from '../SiteContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { SafeImage } from '../components/SafeImage';
 import { useUI } from '../UIContext';
+import { supabase } from '../lib/supabase';
 
 export function CheckoutPage() {
   const { items, cartTotal, clearCart } = useCart();
@@ -133,6 +134,24 @@ export function CheckoutPage() {
       shippingAddress: formattedAddress,
       paymentMethod: paymentMethod === 'credit_card' ? 'Credit Card' : 'Cash on Delivery',
     });
+
+    if (supabase) {
+      supabase.auth.getSession().then(({ data }) => {
+        const token = data.session?.access_token;
+        if (!token) return;
+
+        fetch('/api/send-order-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ orderId: newOrder.id }),
+        }).catch(() => {
+          // Order completion should not fail if the email provider is temporarily unavailable.
+        });
+      });
+    }
     
     setCompletedOrder(newOrder);
 
