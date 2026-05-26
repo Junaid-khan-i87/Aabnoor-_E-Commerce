@@ -82,19 +82,41 @@ export function LoginOverlay() {
       return;
     }
 
+    const session = authResult.data.session;
+    const user = authResult.data.user;
+
+    if (isRegister && user && !session) {
+      addToast('Account created. Check your email to confirm before signing in.', 'success');
+      setIsRegister(false);
+      setPassword('');
+      setError('Check your email to confirm your account, then sign in.');
+      return;
+    }
+
+    if (!session || !user) {
+      setError('Sign in could not be completed. Please try again.');
+      addToast('Sign in could not be completed', 'error');
+      return;
+    }
+
     setCurrentUser(cleanEmail);
 
-    if (isRegister && authResult.data.user) {
+    if (isRegister || user.user_metadata?.full_name) {
       const customer = {
-        id: `USR-${authResult.data.user.id}`,
+        id: `USR-${user.id}`,
         email: cleanEmail,
-        name: name.trim(),
+        name: name.trim() || user.user_metadata?.full_name || cleanEmail.split('@')[0],
         coins: 0,
         joined: new Date().toISOString().slice(0, 10),
         warnings: 0,
         status: 'Active',
       };
-      await supabase.from('customers').upsert({ id: customer.id, data: customer });
+      const { error: customerError } = await supabase.from('customers').upsert({ id: customer.id, data: customer });
+      if (customerError) {
+        setError(customerError.message);
+        addToast(customerError.message, 'error');
+        return;
+      }
     }
 
     addToast(
