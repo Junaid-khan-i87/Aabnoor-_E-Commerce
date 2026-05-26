@@ -523,269 +523,326 @@ export function AdminPage() {
     );
   }
 
+  const formatPdfMoney = (amount: number) => `Rs. ${Number(amount || 0).toFixed(2)}`;
+
+  const getOrderContact = (order: typeof orders[0]) => {
+    const rawAddress = order.shippingAddress || '';
+    const emailMatch = rawAddress.match(/Email:\s*([^\n]+)/i);
+    const phoneMatch = rawAddress.match(/Phone:\s*([^\n]+)/i);
+    const email = (emailMatch?.[1] || order.userEmail || '').trim();
+    const phone = (phoneMatch?.[1] || '').trim();
+    const address = rawAddress
+      .replace(/Phone:\s*[^\n]+/i, '')
+      .replace(/Email:\s*[^\n]+/i, '')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .join('\n');
+
+    return {
+      name: order.userName || 'Guest Customer',
+      email,
+      phone,
+      address: address || 'No shipping address provided.',
+    };
+  };
+
+  const drawPdfBarcode = (doc: any, value: string, x: number, y: number, width: number, height: number) => {
+    const seed = value.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    let cursor = x;
+    let index = 0;
+
+    doc.setFillColor(26, 26, 26);
+    while (cursor < x + width) {
+      const barWidth = [0.7, 1.1, 1.8, 2.4][(seed + index) % 4];
+      if ((seed + index) % 3 !== 1) {
+        doc.rect(cursor, y, Math.min(barWidth, x + width - cursor), height, 'F');
+      }
+      cursor += barWidth + 0.9;
+      index += 1;
+    }
+  };
+
   const generateInvoice = async (order: typeof orders[0]) => {
     const { default: jsPDF } = await import('jspdf');
-    // Generate a beautiful, modern receipt (using A5 size for better layout)
-    const doc = new jsPDF({ format: 'a5' }); 
+    const doc = new jsPDF({ format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    
-    // --- Dark Header Block ---
-    doc.setFillColor(26, 26, 26);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-    
-    const m = 15; // horizontal margin
-    
-    // Title
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text(siteName || 'Aabnoor', m, 20);
-    
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    // Sub-title
-    doc.text('Smart Shopping. Better Living.', m, 26);
-    
-    // Receipt text
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('RECEIPT', pageWidth - m, 22, { align: 'right' });
-    
-    // --- Order & Billed To Section ---
-    let yPos = 45;
-    const splitCol = pageWidth / 2 + 5;
-    
-    // Left: Order Info
-    doc.setTextColor(120, 120, 120);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ORDER NUMBER', m, yPos);
-    
-    doc.setTextColor(30, 30, 30);
-    doc.setFontSize(9);
-    doc.text(order.id.toUpperCase(), m, yPos + 5);
-    
-    doc.setTextColor(120, 120, 120);
-    doc.setFontSize(7);
-    doc.text('DATE', m, yPos + 14);
-    
-    doc.setTextColor(30, 30, 30);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(new Date(order.date).toLocaleString(), m, yPos + 19);
-    
-    // Right: Customer Info
-    doc.setTextColor(120, 120, 120);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text('BILLED TO', splitCol, yPos);
-    
-    doc.setTextColor(30, 30, 30);
-    doc.setFontSize(9);
-    doc.text(order.userName || 'Guest', splitCol, yPos + 5);
-    
-    let addressStr = order.shippingAddress || '';
-    const emailMatch = addressStr.match(/Email:\s*([^\n]+)/);
-    let emailFound = emailMatch ? emailMatch[1] : (order.userEmail || '');
-    const phoneMatch = addressStr.match(/Phone:\s*([^\n]+)/);
-    let phoneFound = phoneMatch ? phoneMatch[1] : '';
-    
-    // Remove phone and email from the raw address string to clean it up
-    let addressClean = addressStr.replace(/Phone:\s*[^\n]+/, '').replace(/Email:\s*[^\n]+/, '').trim();
-    
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    
-    let currentYRight = yPos + 10;
-    
-    if (emailFound) {
-       doc.text(emailFound, splitCol, currentYRight);
-       currentYRight += 5;
-    }
-    
-    if (phoneFound) {
-       doc.setFont('helvetica', 'bold');
-       doc.text(`Phone:`, splitCol, currentYRight);
-       doc.setFont('helvetica', 'normal');
-       doc.text(phoneFound, splitCol + 11, currentYRight);
-       currentYRight += 5;
-    }
-    
-    if (addressClean) {
-       // Constrain text to fit the right half of the page
-       const addrLines = doc.splitTextToSize(addressClean, (pageWidth - splitCol) - m);
-       doc.text(addrLines, splitCol, currentYRight);
-       currentYRight += addrLines.length * 5;
-    }
-    
-    // Ensure table draws below both the left and right columns!
-    yPos = Math.max(yPos + 25, currentYRight + 8);
-    
-    // --- Table Header ---
-    doc.setFillColor(245, 245, 245);
-    doc.rect(m, yPos, pageWidth - (m * 2), 8, 'F');
-    
-    doc.setTextColor(100, 100, 100);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DESCRIPTION', m + 3, yPos + 5.5);
-    doc.text('QTY', pageWidth - 35, yPos + 5.5, { align: 'center' });
-    doc.text('TOTAL', pageWidth - m - 3, yPos + 5.5, { align: 'right' });
-    
-    yPos += 12;
-    
-    // --- Table Rows ---
-    order.items.forEach((item) => {
-      const product = productsList.find(p => p.id === item.productId || item.productId.startsWith(p.id));
-      const categoryName = product?.category || 'General';
+    const margin = 16;
+    const contact = getOrderContact(order);
+    const brandName = siteName || 'Aabnoor';
+    const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const totalQty = order.items.reduce((sum, item) => sum + item.quantity, 0);
+    const trackingNumber = order.trackingNumber || 'Not assigned';
+    let y = 0;
 
-      const splitName = doc.splitTextToSize(item.name, pageWidth - 60);
-      const rowHeight = splitName.length * 5 + 3;
-      
-      doc.setTextColor(30, 30, 30);
-      doc.setFontSize(9);
+    const drawPageHeader = () => {
+      doc.setFillColor(26, 26, 26);
+      doc.rect(0, 0, pageWidth, 42, 'F');
+      doc.setFillColor(205, 161, 133);
+      doc.rect(0, 40, pageWidth, 2, 'F');
+
+      doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.text(splitName, m + 3, yPos);
-      
-      doc.setTextColor(150, 150, 150);
-      doc.setFontSize(7);
+      doc.setFontSize(24);
+      doc.text(brandName, margin, 20);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Category: ${categoryName}`, m + 3, yPos + (splitName.length * 4) + 1);
-      
-      doc.setTextColor(30, 30, 30);
-      doc.setFontSize(9);
-      doc.text(`${item.quantity}`, pageWidth - 35, yPos, { align: 'center' });
-      doc.text(`Rs. ${(item.price * item.quantity).toFixed(2)}`, pageWidth - m - 3, yPos, { align: 'right' });
-      
-      yPos += rowHeight;
-      
-      // subtle line between items
-      doc.setDrawColor(240, 240, 240);
-      doc.line(m, yPos, pageWidth - m, yPos);
-      yPos += 5;
-    });
-    
-    yPos += 4;
-    
-    // --- Totals Section ---
-    const totalsLeft = pageWidth - 65;
-    
-    doc.setTextColor(120, 120, 120);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Subtotal', totalsLeft, yPos);
-    doc.setTextColor(30, 30, 30);
-    doc.text(`Rs. ${order.total.toFixed(2)}`, pageWidth - m - 3, yPos, { align: 'right' });
-    
-    yPos += 6;
-    doc.setTextColor(120, 120, 120);
-    doc.text('Tax (0%)', totalsLeft, yPos);
-    doc.setTextColor(30, 30, 30);
-    doc.text('Rs. 0.00', pageWidth - m - 3, yPos, { align: 'right' });
-    
-    yPos += 8;
-    // Bold separator for total
-    doc.setDrawColor(200, 200, 200);
-    doc.line(totalsLeft, yPos - 5, pageWidth - m - 3, yPos - 5);
-    
-    doc.setFontSize(11);
+      doc.setFontSize(8);
+      doc.text('Premium beauty order invoice', margin, 28);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text('INVOICE', pageWidth - margin, 20, { align: 'right' });
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Generated ${new Date().toLocaleString()}`, pageWidth - margin, 29, { align: 'right' });
+    };
+
+    const ensureInvoiceSpace = (requiredHeight: number) => {
+      if (y + requiredHeight <= pageHeight - 28) return;
+      doc.addPage();
+      drawPageHeader();
+      y = 56;
+    };
+
+    drawPageHeader();
+    y = 56;
+
+    doc.setFillColor(249, 247, 242);
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 32, 2, 2, 'F');
+    doc.setTextColor(26, 26, 26);
     doc.setFont('helvetica', 'bold');
-    doc.text('Total', totalsLeft, yPos);
-    doc.text(`Rs. ${order.total.toFixed(2)}`, pageWidth - m - 3, yPos, { align: 'right' });
-    
-    // --- Footer ---
-    doc.setTextColor(180, 180, 180);
+    doc.setFontSize(9);
+    doc.text('ORDER', margin + 6, y + 9);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(order.id.toUpperCase(), margin + 6, y + 17);
+    doc.text(new Date(order.date).toLocaleString(), margin + 6, y + 25);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('TRACKING', pageWidth / 2 - 5, y + 9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(trackingNumber, pageWidth / 2 - 5, y + 17);
+    doc.text(`Status: ${order.status}`, pageWidth / 2 - 5, y + 25);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('PAYMENT', pageWidth - margin - 48, y + 9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(order.paymentMethod || 'Not specified', pageWidth - margin - 48, y + 17);
+    doc.text(`${totalQty} item${totalQty === 1 ? '' : 's'}`, pageWidth - margin - 48, y + 25);
+
+    y += 46;
+    const colWidth = (pageWidth - margin * 2 - 10) / 2;
+    const addressLines = doc.splitTextToSize(contact.address, colWidth - 10);
+    const storeLines = doc.splitTextToSize(settings.storeAddress || 'Aabnoor', colWidth - 10);
+    const infoBoxHeight = Math.max(43, 26 + Math.max(addressLines.length, storeLines.length) * 5);
+
+    doc.setDrawColor(226, 220, 211);
+    doc.roundedRect(margin, y, colWidth, infoBoxHeight, 2, 2);
+    doc.roundedRect(margin + colWidth + 10, y, colWidth, infoBoxHeight, 2, 2);
+
+    doc.setTextColor(120, 91, 73);
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    doc.text(`Thank you for shopping with ${siteName || 'Aabnoor'}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
-    doc.text(`Order generated on ${new Date().toLocaleString()}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-    
-    doc.save(`Receipt-${order.id.slice(0, 8)}.pdf`);
+    doc.text('BILL / SHIP TO', margin + 6, y + 9);
+    doc.text('FROM', margin + colWidth + 16, y + 9);
+
+    doc.setTextColor(26, 26, 26);
+    doc.setFontSize(11);
+    doc.text(contact.name, margin + 6, y + 17);
+    doc.text(brandName, margin + colWidth + 16, y + 17);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(addressLines, margin + 6, y + 25);
+    doc.text(storeLines, margin + colWidth + 16, y + 25);
+    const customerMetaY = y + 27 + addressLines.length * 5;
+    if (contact.phone) doc.text(`Phone: ${contact.phone}`, margin + 6, customerMetaY);
+    if (contact.email) doc.text(`Email: ${contact.email}`, margin + 6, customerMetaY + (contact.phone ? 5 : 0));
+    doc.text(settings.storePhone || '', margin + colWidth + 16, y + 27 + storeLines.length * 5);
+    doc.text(settings.storeEmail || '', margin + colWidth + 16, y + 32 + storeLines.length * 5);
+
+    y += infoBoxHeight + 16;
+
+    const drawTableHeader = () => {
+      doc.setFillColor(26, 26, 26);
+      doc.rect(margin, y, pageWidth - margin * 2, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('ITEM', margin + 4, y + 6.5);
+      doc.text('QTY', pageWidth - margin - 64, y + 6.5, { align: 'center' });
+      doc.text('PRICE', pageWidth - margin - 39, y + 6.5, { align: 'right' });
+      doc.text('TOTAL', pageWidth - margin - 4, y + 6.5, { align: 'right' });
+      y += 14;
+    };
+
+    drawTableHeader();
+    order.items.forEach((item, index) => {
+      const product = productsList.find(p => p.id === item.productId || item.productId.startsWith(p.id));
+      const itemName = doc.splitTextToSize(item.name, pageWidth - margin * 2 - 82);
+      const rowHeight = Math.max(15, itemName.length * 5 + 7);
+      ensureInvoiceSpace(rowHeight + 8);
+
+      if (index % 2 === 0) {
+        doc.setFillColor(252, 251, 248);
+        doc.rect(margin, y - 6, pageWidth - margin * 2, rowHeight, 'F');
+      }
+
+      doc.setTextColor(26, 26, 26);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(itemName, margin + 4, y);
+      doc.setTextColor(120, 120, 120);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.text(product?.category ? `Category: ${product.category}` : `SKU: ${item.productId}`, margin + 4, y + itemName.length * 5 + 1);
+
+      doc.setTextColor(26, 26, 26);
+      doc.setFontSize(9);
+      doc.text(String(item.quantity), pageWidth - margin - 64, y, { align: 'center' });
+      doc.text(formatPdfMoney(item.price), pageWidth - margin - 39, y, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.text(formatPdfMoney(item.price * item.quantity), pageWidth - margin - 4, y, { align: 'right' });
+
+      y += rowHeight;
+      doc.setDrawColor(235, 230, 222);
+      doc.line(margin, y - 4, pageWidth - margin, y - 4);
+    });
+
+    ensureInvoiceSpace(58);
+    y += 4;
+    const totalsX = pageWidth - margin - 72;
+    doc.setFillColor(249, 247, 242);
+    doc.roundedRect(totalsX, y, 72, 42, 2, 2, 'F');
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Subtotal', totalsX + 6, y + 10);
+    doc.text('Shipping / Fees', totalsX + 6, y + 19);
+    doc.text('Tax', totalsX + 6, y + 28);
+    doc.setTextColor(26, 26, 26);
+    doc.text(formatPdfMoney(subtotal), totalsX + 66, y + 10, { align: 'right' });
+    doc.text(formatPdfMoney(Math.max(order.total - subtotal, 0)), totalsX + 66, y + 19, { align: 'right' });
+    doc.text(formatPdfMoney(0), totalsX + 66, y + 28, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('TOTAL', totalsX + 6, y + 38);
+    doc.text(formatPdfMoney(order.total), totalsX + 66, y + 38, { align: 'right' });
+
+    doc.setTextColor(120, 91, 73);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('CUSTOMER NOTE', margin, y + 10);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Thank you for shopping with Aabnoor. Please keep this invoice for order support and returns.', margin, y + 18);
+    doc.text(`Track this order at https://aabnoor.shop/track using ${trackingNumber}.`, margin, y + 25);
+
+    doc.setDrawColor(226, 220, 211);
+    doc.line(margin, pageHeight - 18, pageWidth - margin, pageHeight - 18);
+    doc.setTextColor(140, 140, 140);
+    doc.setFontSize(8);
+    doc.text(`${brandName} | ${settings.storeEmail || ''} | ${settings.storePhone || ''}`, pageWidth / 2, pageHeight - 11, { align: 'center' });
+
+    doc.save(`Invoice-${order.id.slice(0, 8)}.pdf`);
   };
 
   const generateShippingLabel = async (order: typeof orders[0]) => {
     const { default: jsPDF } = await import('jspdf');
-    // Standard a5 packet label template 
-    const doc = new jsPDF({ format: 'a5' }); 
+    const doc = new jsPDF({ unit: 'mm', format: [101.6, 152.4] });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const m = 12; // margins
-    
-    // Physical packaging border line details
+    const margin = 6;
+    const contact = getOrderContact(order);
+    const brandName = siteName || 'Aabnoor';
+    const trackingNumber = order.trackingNumber || order.id.toUpperCase();
+    const storeAddressLines = doc.splitTextToSize(settings.storeAddress || 'Aabnoor', pageWidth - margin * 2 - 8);
+    const shipAddressLines = doc.splitTextToSize(contact.address, pageWidth - margin * 2 - 10);
+
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
     doc.setDrawColor(26, 26, 26);
-    doc.setLineWidth(1.5);
-    doc.rect(m, m, pageWidth - m * 2, pageHeight - m * 2);
-    
-    doc.setLineWidth(0.6);
-    doc.line(m, 42, pageWidth - m, 42);
-    
-    // Header Label info
-    doc.setTextColor(26, 26, 26);
-    doc.setFontSize(14);
+    doc.setLineWidth(0.7);
+    doc.rect(margin, margin, pageWidth - margin * 2, pageHeight - margin * 2);
+
+    doc.setFillColor(26, 26, 26);
+    doc.rect(margin, margin, pageWidth - margin * 2, 18, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.text('AABNOOR PRIORITY SHIPPING POST', m + 6, 24);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('EXPRESS FIRST-CLASS AIRWAY BILL / COMPLIMENTARY TRACKING', m + 6, 32);
-    
-    // Indication Postal stamp box
-    doc.rect(pageWidth - m - 46, m + 6, 40, 22);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('POSTAGE PAID', pageWidth - m - 42, m + 13);
+    doc.setFontSize(15);
+    doc.text(brandName.toUpperCase(), margin + 4, margin + 8);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text('AABNOOR MODERN BRANDS INC', pageWidth - m - 42, m + 19);
-    doc.text('LICENSE #07492-MUM', pageWidth - m - 42, m + 24);
-
-    // Return Sender info
-    let yPos = 54;
-    doc.setFontSize(7.5);
+    doc.text('SHIPPING LABEL', margin + 4, margin + 14);
     doc.setFont('helvetica', 'bold');
-    doc.text('SENDER / RETURN ADDRESS:', m + 8, yPos);
+    doc.text(order.status.toUpperCase(), pageWidth - margin - 4, margin + 14, { align: 'right' });
+
+    let y = margin + 27;
+    doc.setTextColor(120, 91, 73);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.text('FROM', margin + 4, y);
+    doc.text('ORDER', pageWidth - margin - 30, y);
+    doc.setTextColor(26, 26, 26);
+    doc.setFontSize(8);
+    doc.text(brandName, margin + 4, y + 5);
     doc.setFont('helvetica', 'normal');
-    doc.text('AABNOOR MODERNE LOGISTICS COMPLEX B', m + 8, yPos + 5);
-    doc.text('DISTRIBUTION ROW 4A, OCHLA IND.', m + 8, yPos + 9);
-    doc.text('NEW DELHI IN, 110020', m + 8, yPos + 13);
+    doc.setFontSize(6.8);
+    doc.text(storeAddressLines.slice(0, 3), margin + 4, y + 10);
+    doc.text(order.id.toUpperCase(), pageWidth - margin - 30, y + 5);
+    doc.text(new Date(order.date).toLocaleDateString(), pageWidth - margin - 30, y + 10);
 
-    // Separator line
-    doc.line(m, yPos + 18, pageWidth - m, yPos + 18);
-
-    // Delivery Recipient info
-    yPos = 84;
-    doc.setFontSize(10);
+    y += 27;
+    doc.setDrawColor(26, 26, 26);
+    doc.line(margin, y - 5, pageWidth - margin, y - 5);
+    doc.setTextColor(120, 91, 73);
     doc.setFont('helvetica', 'bold');
-    doc.text('DELIVER / SHIP TO:', m + 12, yPos);
-    
-    doc.setFontSize(13);
-    doc.text((order.userName || 'Boutique Client').toUpperCase(), m + 12, yPos + 8);
-    
+    doc.setFontSize(8);
+    doc.text('SHIP TO', margin + 4, y);
+
+    doc.setTextColor(26, 26, 26);
+    doc.setFontSize(17);
+    doc.text(contact.name.toUpperCase(), margin + 4, y + 10);
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    const addressLines = doc.splitTextToSize(order.shippingAddress || 'No shipping address provided.', pageWidth - m * 2 - 24);
-    doc.text(addressLines, m + 12, yPos + 16);
-
-    // Barcode zone separator line
-    const barcodeY = pageHeight - m - 40;
-    doc.line(m, barcodeY - 5, pageWidth - m, barcodeY - 5);
-
-    // Generate beautiful thick-thin vectors simulating industrial barcode lines 
-    doc.setFillColor(26, 26, 26);
-    const barcodeX = m + 15;
-    const barcodeWidth = pageWidth - m * 2 - 30;
-    const barHeight = 16;
-    
-    for (let i = 0; i < barcodeWidth; i += 3) {
-      // Deterministically configure thick vs thin barcode strips 
-      const barThickness = (i % 9 === 0) ? 2 : ((i % 15 === 0) ? 3 : ((i % 6 === 0) ? 1.2 : 0.6));
-      doc.rect(barcodeX + i, barcodeY, barThickness, barHeight, 'F');
+    doc.text(shipAddressLines.slice(0, 6), margin + 4, y + 20);
+    let contactY = y + 23 + Math.min(shipAddressLines.length, 6) * 5;
+    if (contact.phone) {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`PHONE: ${contact.phone}`, margin + 4, contactY);
+      contactY += 5;
     }
-    
-    // Barcode text numbers beneath
-    doc.setFontSize(8.5);
-    doc.setFont('monospace', 'normal');
-    doc.text(`*(H) ${order.id.toUpperCase().slice(0, 15)}*`, pageWidth / 2, barcodeY + barHeight + 6, { align: 'center' });
+    if (contact.email) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.text(contact.email, margin + 4, contactY);
+    }
+
+    const serviceY = pageHeight - 62;
+    doc.setFillColor(249, 247, 242);
+    doc.rect(margin, serviceY, pageWidth - margin * 2, 18, 'F');
+    doc.setTextColor(26, 26, 26);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('SERVICE', margin + 4, serviceY + 7);
+    doc.text('PAYMENT', pageWidth / 2, serviceY + 7);
+    doc.text('ITEMS', pageWidth - margin - 18, serviceY + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Standard', margin + 4, serviceY + 14);
+    doc.text(order.paymentMethod || 'N/A', pageWidth / 2, serviceY + 14);
+    doc.text(String(order.items.reduce((sum, item) => sum + item.quantity, 0)), pageWidth - margin - 18, serviceY + 14);
+
+    const barcodeY = pageHeight - 37;
+    doc.setTextColor(26, 26, 26);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('TRACKING NUMBER', margin + 4, barcodeY - 3);
+    drawPdfBarcode(doc, trackingNumber, margin + 7, barcodeY, pageWidth - margin * 2 - 14, 18);
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(10);
+    doc.text(trackingNumber, pageWidth / 2, barcodeY + 26, { align: 'center' });
 
     doc.save(`Shipping-Label-${order.id.slice(0, 8)}.pdf`);
   };
