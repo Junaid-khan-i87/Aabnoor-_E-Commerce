@@ -97,11 +97,28 @@ export default async function handler(req: any, res: any) {
     to: email,
     subject: 'Your Aabnoor verification code',
     html: `
-      <div style="font-family:Arial,sans-serif;color:#1A1A1A;line-height:1.5;max-width:560px;margin:0 auto;padding:24px;">
-        <h1 style="font-family:Georgia,serif;font-weight:400;">Aabnoor verification</h1>
-        <p>Use this one-time code to verify your email address:</p>
-        <p style="font-size:32px;letter-spacing:8px;font-weight:700;margin:24px 0;">${otp}</p>
-        <p>This code expires in 10 minutes.</p>
+      <div style="margin:0;background:#f7f3ee;padding:32px 16px;font-family:Arial,sans-serif;color:#1a1a1a;">
+        <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #eadfd6;border-radius:18px;overflow:hidden;">
+          <div style="background:#1a1a1a;padding:28px 32px;text-align:center;">
+            <div style="font-family:Georgia,serif;font-size:34px;font-style:italic;color:#ffffff;letter-spacing:.02em;">Aabnoor</div>
+            <div style="margin-top:8px;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:#cda185;">Secure Email Verification</div>
+          </div>
+
+          <div style="padding:34px 32px;text-align:center;">
+            <h1 style="margin:0 0 12px;font-family:Georgia,serif;font-size:28px;font-weight:400;color:#1a1a1a;">Your verification code is this</h1>
+            <p style="margin:0 auto 26px;max-width:390px;font-size:14px;line-height:1.7;color:#5f5a55;">Enter this one-time code to verify your email address and finish creating your Aabnoor account.</p>
+
+            <div style="display:inline-block;background:#f7f3ee;border:1px solid #e6d6ca;border-radius:14px;padding:18px 24px;margin-bottom:24px;">
+              <div style="font-size:36px;line-height:1;font-weight:700;letter-spacing:12px;color:#1a1a1a;font-family:Arial,sans-serif;">${otp}</div>
+            </div>
+
+            <p style="margin:0;font-size:13px;color:#7a736c;">This code expires in 10 minutes.</p>
+          </div>
+
+          <div style="border-top:1px solid #eadfd6;padding:18px 32px;text-align:center;background:#fbfaf8;">
+            <p style="margin:0;font-size:11px;line-height:1.6;color:#8a8179;">If you did not request this code, you can safely ignore this email.</p>
+          </div>
+        </div>
       </div>
     `,
   });
