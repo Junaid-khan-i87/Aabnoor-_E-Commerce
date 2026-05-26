@@ -7,7 +7,6 @@ import { useOrders } from '../OrderContext';
 import { useLoyalty } from '../LoyaltyContext';
 import { useSite } from '../SiteContext';
 import { Product, OrderStatus } from '../types';
-import jsPDF from 'jspdf';
 import { SafeImage } from '../components/SafeImage';
 import { useUI } from '../UIContext';
 import { supabase } from '../lib/supabase';
@@ -518,7 +517,8 @@ export function AdminPage() {
     );
   }
 
-  const generateInvoice = (order: typeof orders[0]) => {
+  const generateInvoice = async (order: typeof orders[0]) => {
+    const { default: jsPDF } = await import('jspdf');
     // Generate a beautiful, modern receipt (using A5 size for better layout)
     const doc = new jsPDF({ format: 'a5' }); 
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -698,7 +698,8 @@ export function AdminPage() {
     doc.save(`Receipt-${order.id.slice(0, 8)}.pdf`);
   };
 
-  const generateShippingLabel = (order: typeof orders[0]) => {
+  const generateShippingLabel = async (order: typeof orders[0]) => {
+    const { default: jsPDF } = await import('jspdf');
     // Standard a5 packet label template 
     const doc = new jsPDF({ format: 'a5' }); 
     const pageWidth = doc.internal.pageSize.getWidth();
