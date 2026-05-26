@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { Category, Product } from '../types';
 import { useCart } from '../CartContext';
@@ -189,7 +189,29 @@ export function ProductGrid() {
   const [activeSubCategory, setActiveSubCategory] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState('popular');
-  const [priceRange, setPriceRange] = useState(300);
+  const [priceRange, setPriceRange] = useState<number | null>(null);
+
+  const maxAvailablePrice = useMemo(() => {
+    const highestPrice = productsList.reduce((max, product) => Math.max(max, product.price), 0);
+    return Math.max(100, Math.ceil(highestPrice / 100) * 100);
+  }, [productsList]);
+
+  React.useEffect(() => {
+    setPriceRange(currentPrice => {
+      if (currentPrice === null || currentPrice > maxAvailablePrice) {
+        return maxAvailablePrice;
+      }
+
+      return currentPrice;
+    });
+  }, [maxAvailablePrice]);
+
+  const selectedMaxPrice = priceRange ?? maxAvailablePrice;
+
+  const updateMaxPrice = (value: number) => {
+    const normalized = Number.isFinite(value) ? value : maxAvailablePrice;
+    setPriceRange(Math.min(Math.max(0, normalized), maxAvailablePrice));
+  };
 
   React.useEffect(() => {
     setActiveSubCategory('All');
@@ -212,7 +234,7 @@ export function ProductGrid() {
     filteredProducts = filteredProducts.filter(p => p.subCategory === activeSubCategory);
   }
 
-  filteredProducts = filteredProducts.filter(p => p.price <= priceRange);
+  filteredProducts = filteredProducts.filter(p => p.price <= selectedMaxPrice);
 
   if (sortBy === 'low-to-high') {
     filteredProducts.sort((a, b) => a.price - b.price);
@@ -282,13 +304,26 @@ export function ProductGrid() {
             
             {/* Sorting & Filter Controls */}
             <div className="flex flex-wrap items-center gap-6 text-[10px] uppercase tracking-widest font-sans font-bold justify-start md:justify-end w-full md:w-auto">
-              <div className="flex items-center gap-2">
-                <span className="text-[#1A1A1A]/60">Max Price: Rs. {Number(priceRange).toFixed(2)}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[#1A1A1A]/60">Max Price:</span>
+                <input
+                  type="number"
+                  min="0"
+                  max={maxAvailablePrice}
+                  step="10"
+                  value={selectedMaxPrice}
+                  onChange={(e) => updateMaxPrice(Number(e.target.value))}
+                  className="w-24 bg-transparent border-b border-[#1A1A1A]/30 text-[#1A1A1A] outline-none pb-1 font-bold"
+                  aria-label="Maximum product price"
+                />
+                <span className="text-[#1A1A1A]/60">/ Rs. {maxAvailablePrice.toFixed(2)}</span>
                 <input 
                   type="range" 
-                  min="0" max="300" step="10"
-                  value={priceRange} 
-                  onChange={(e) => setPriceRange(Number(e.target.value))}
+                  min="0"
+                  max={maxAvailablePrice}
+                  step="10"
+                  value={selectedMaxPrice} 
+                  onChange={(e) => updateMaxPrice(Number(e.target.value))}
                   className="w-32 accent-[#1A1A1A] cursor-pointer"
                 />
               </div>
@@ -310,7 +345,7 @@ export function ProductGrid() {
         </div>
 
         {/* Active Filters Chips Bar */}
-        {(activeCategory !== 'All' || priceRange < 300 || sortBy !== 'popular') && (
+        {(activeCategory !== 'All' || selectedMaxPrice < maxAvailablePrice || sortBy !== 'popular') && (
           <div className="flex flex-wrap items-center gap-2 mb-12 font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A] animate-slide-in-right">
             <span className="text-[#1A1A1A]/50 pr-1">Active filters:</span>
             {activeCategory !== 'All' && (
@@ -319,10 +354,10 @@ export function ProductGrid() {
                 <button onClick={() => setActiveCategory('All')} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">✕</button>
               </span>
             )}
-            {priceRange < 300 && (
+            {selectedMaxPrice < maxAvailablePrice && (
               <span className="flex items-center gap-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 px-3 py-1.5 rounded-full text-[#1A1A1A]/80">
-                Under Rs. {Number(priceRange).toFixed(2)}
-                <button onClick={() => setPriceRange(300)} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">✕</button>
+                Under Rs. {Number(selectedMaxPrice).toFixed(2)}
+                <button onClick={() => setPriceRange(maxAvailablePrice)} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">✕</button>
               </span>
             )}
             {sortBy !== 'popular' && (
@@ -334,7 +369,7 @@ export function ProductGrid() {
             <button 
               onClick={() => {
                 setActiveCategory('All');
-                setPriceRange(300);
+                setPriceRange(maxAvailablePrice);
                 setSortBy('popular');
               }}
               className="text-[#CDA185] hover:text-[#1A1A1A] underline cursor-pointer transition-colors duration-200 ml-2"
