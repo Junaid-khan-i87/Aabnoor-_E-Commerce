@@ -144,12 +144,18 @@ export function AdminPage() {
     }
   };
 
-  const handleStatusChange = (orderId: string, currentStatus: OrderStatus, newStatus: OrderStatus, coinsEarned: number, coinsAdded?: boolean) => {
+  const handleStatusChange = async (orderId: string, currentStatus: OrderStatus, newStatus: OrderStatus, coinsEarned: number, coinsAdded?: boolean) => {
     let markCoinsAdded = coinsAdded;
-    if (!coinsAdded && (newStatus === 'Shipped' || newStatus === 'Delivered')) {
-      addCoins(coinsEarned);
-      markCoinsAdded = true;
+    const shouldAddCoins = !coinsAdded && (newStatus === 'Shipped' || newStatus === 'Delivered');
+    if (shouldAddCoins) markCoinsAdded = true;
+
+    const saved = await updateOrderStatus(orderId, newStatus, undefined, markCoinsAdded);
+    if (!saved) {
+      addToast('Order status was not saved. Sign in again with authenticator and try once more.', 'error');
+      return;
     }
+
+    if (shouldAddCoins) addCoins(coinsEarned);
 
     if (newStatus === 'Delivered' && currentStatus !== 'Delivered') {
       const order = orders.find(o => o.id === orderId);
@@ -160,15 +166,15 @@ export function AdminPage() {
       }
     }
 
-    updateOrderStatus(orderId, newStatus, undefined, markCoinsAdded);
+    addToast(`Order ${orderId} updated to ${newStatus}.`, 'success');
   };
 
   const handleBulkStatusChange = (newStatus: OrderStatus) => {
     if (selectedOrders.length === 0) return;
-    selectedOrders.forEach(orderId => {
+    selectedOrders.forEach(async orderId => {
       const order = orders.find(o => o.id === orderId);
       if (order && order.status !== newStatus) {
-        handleStatusChange(order.id, order.status, newStatus, order.coinsEarned, order.coinsAdded);
+        await handleStatusChange(order.id, order.status, newStatus, order.coinsEarned, order.coinsAdded);
       }
     });
     setSelectedOrders([]);

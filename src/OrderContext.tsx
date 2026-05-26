@@ -6,7 +6,7 @@ import { supabase } from './lib/supabase';
 interface OrderContextType {
   orders: Order[];
   placeOrder: (order: Omit<Order, 'id' | 'date' | 'status' | 'trackingUpdates' | 'trackingNumber'>) => Promise<Order>;
-  updateOrderStatus: (id: string, status: OrderStatus, note?: string, coinsAdded?: boolean) => void;
+  updateOrderStatus: (id: string, status: OrderStatus, note?: string, coinsAdded?: boolean) => Promise<boolean>;
   deleteOrder: (id: string) => void;
   updateOrder: (id: string, updatedOrder: Partial<Order>) => void;
   getUserOrders: (email: string) => Order[];
@@ -102,12 +102,21 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     return newOrder;
   };
 
-  const updateOrderStatus = (id: string, status: OrderStatus, note?: string, coinsAdded?: boolean) => {
+  const refreshOrders = async () => {
+    const remoteOrders = await listEntities<Order>('orders');
+    if (remoteOrders) {
+      setOrders(remoteOrders);
+    }
+  };
+
+  const updateOrderStatus = async (id: string, status: OrderStatus, note?: string, coinsAdded?: boolean) => {
+    let orderToSave: Order | undefined;
+
     setOrders(prev => {
       const next = prev.map(order => {
         if (order.id === id) {
           const updateNote = note || `Order marked as ${status}`;
-          return {
+          orderToSave = {
             ...order,
             status,
             ...(coinsAdded !== undefined ? { coinsAdded } : {}),
@@ -116,14 +125,23 @@ export function OrderProvider({ children }: { children: ReactNode }) {
               { status, date: new Date().toISOString(), note: updateNote }
             ]
           };
+          return orderToSave;
         }
         return order;
       });
       updateOrdersStorage(next);
-      const updated = next.find(order => order.id === id);
-      if (updated) upsertEntity('orders', updated);
       return next;
     });
+
+    if (!orderToSave) return false;
+
+    const saved = await upsertEntity('orders', orderToSave);
+    if (!saved) {
+      await refreshOrders();
+      return false;
+    }
+
+    return true;
   };
 
   const getUserOrders = (email: string) => {
