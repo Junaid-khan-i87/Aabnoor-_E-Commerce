@@ -127,7 +127,7 @@ export function CheckoutPage() {
 
     const newOrder = placeOrder({
       userEmail: formEmail,
-      userName: formName || 'Jane Doe',
+      userName: formName || formEmail.split('@')[0],
       items: items.map(i => ({ productId: i.id, name: i.name, price: i.price, quantity: i.quantity })),
       total: finalTotal,
       coinsEarned: coinsToEarn,

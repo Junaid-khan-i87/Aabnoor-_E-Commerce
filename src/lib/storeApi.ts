@@ -41,34 +41,6 @@ export async function listEntities<T extends { id: string }>(table: EntityTable)
   return entities.sort((a, b) => naturalIdNumber(a.id) - naturalIdNumber(b.id));
 }
 
-export async function seedEntitiesIfEmpty<T extends { id: string }>(
-  table: EntityTable,
-  entities: T[],
-): Promise<T[] | null> {
-  if (!canUseSupabase()) return null;
-
-  const { data, error } = await supabase!
-    .from(table)
-    .select('id')
-    .limit(1);
-
-  if (error) {
-    warnSupabaseError(`check seed ${table}`, error);
-    return null;
-  }
-
-  if (data && data.length > 0) {
-    return listEntities<T>(table);
-  }
-
-  if (entities.length === 0) {
-    return [];
-  }
-
-  const seeded = await upsertEntities(table, entities);
-  return seeded ? entities : null;
-}
-
 export async function upsertEntity<T extends { id: string }>(table: EntityTable, entity: T) {
   return upsertEntities(table, [entity]);
 }

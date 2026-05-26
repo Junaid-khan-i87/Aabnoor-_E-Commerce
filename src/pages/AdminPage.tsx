@@ -1062,13 +1062,13 @@ export function AdminPage() {
                 <div className="grid grid-cols-2 gap-4 bg-[#CDA185]/5 p-3 rounded mb-4">
                   <div>
                     <span className="block text-[8px] uppercase tracking-wider text-[#CDA185] font-bold">Average Order Size</span>
-                    <span className="font-serif italic text-lg text-[#1A1A1A]">Rs. 2490.00</span>
-                    <span className="text-[8px] text-green-700 block uppercase font-bold mt-0.5">↑ +8.4% Season Yield</span>
+                    <span className="font-serif italic text-lg text-[#1A1A1A]">Rs. {totalOrders ? (totalRevenue / totalOrders).toFixed(2) : '0.00'}</span>
+                    <span className="text-[8px] text-[#1A1A1A]/45 block uppercase font-bold mt-0.5">{totalOrders} backend orders</span>
                   </div>
                   <div>
                     <span className="block text-[8px] uppercase tracking-wider text-[#CDA185] font-bold">Loyalty Redemptions</span>
-                    <span className="font-serif italic text-lg text-[#1A1A1A]">124 Coupons Unlocked</span>
-                    <span className="text-[8px] text-green-700 block uppercase font-bold mt-0.5">↑ 34% Campaign CTR</span>
+                    <span className="font-serif italic text-lg text-[#1A1A1A]">{coupons.reduce((sum, coupon) => sum + (coupon.usageCount || 0), 0)} Coupons Used</span>
+                    <span className="text-[8px] text-[#1A1A1A]/45 block uppercase font-bold mt-0.5">{coupons.filter(coupon => coupon.isActive).length} active backend codes</span>
                   </div>
                 </div>
 
@@ -1076,27 +1076,27 @@ export function AdminPage() {
                 <div>
                   <h4 className="font-sans text-[9px] font-bold uppercase tracking-[0.1em] text-[#1A1A1A]/60 mb-2 border-b border-[#1A1A1A]/5 pb-1">Current Promotion Metrics Checklist</h4>
                   <div className="space-y-2.5">
-                    {[
-                      { code: 'WELCOME10', discount: '10% OFF', redemptions: 48, savings: 'Rs. 9120.00', status: 'Active Campaign' },
-                      { code: 'GLOW25', discount: '25% Custom OFF', redemptions: 34, savings: 'Rs. 15480.00', status: 'Newsletter VIP' },
-                      { code: 'SILK35', discount: 'Rs. 350.00 Flat OFF', redemptions: 19, savings: 'Rs. 6650.00', status: 'VIP Mystery' },
-                      { code: 'AURAFREE', discount: 'Free Serum on Rs. 1200.00', redemptions: 12, savings: 'Rs. 4800.00', status: 'First Purchase' }
-                    ].map((promo, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-xs font-sans pb-2 border-b border-[#1A1A1A]/5 last:border-0 last:pb-0">
+                    {coupons.length === 0 ? (
+                      <div className="py-6 text-center text-[#1A1A1A]/40 font-sans text-xs italic">
+                        No backend discount codes have been created yet.
+                      </div>
+                    ) : coupons.map((promo) => (
+                      <div key={promo.id} className="flex justify-between items-center text-xs font-sans pb-2 border-b border-[#1A1A1A]/5 last:border-0 last:pb-0">
                         <div className="flex items-center gap-2">
                           <input 
                             type="checkbox" 
-                            defaultChecked
+                            checked={promo.isActive}
+                            readOnly
                             className="accent-[#CDA185] rounded cursor-pointer"
                           />
                           <div>
                             <span className="font-mono font-bold text-[#1A1A1A] bg-[#1A1A1A]/5 px-1.5 py-0.5 rounded mr-1.5 text-[10px]">{promo.code}</span>
-                            <span className="text-[#1A1A1A]/40 text-[9px] uppercase tracking-wider">({promo.discount})</span>
+                            <span className="text-[#1A1A1A]/40 text-[9px] uppercase tracking-wider">({promo.discountPercentage}% OFF)</span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="font-bold text-[#1A1A1A] text-[11px] block">{promo.savings} saved</span>
-                          <span className="text-[8px] text-[#CDA185] uppercase tracking-widest font-bold">({promo.redemptions} Redemptions)</span>
+                          <span className="font-bold text-[#1A1A1A] text-[11px] block">{promo.isActive ? 'Active' : 'Inactive'}</span>
+                          <span className="text-[8px] text-[#CDA185] uppercase tracking-widest font-bold">({promo.usageCount || 0} Redemptions)</span>
                         </div>
                       </div>
                     ))}
@@ -2435,7 +2435,7 @@ export function AdminPage() {
                         type="text" 
                         value={bannerText}
                         onChange={(e) => setBannerText(e.target.value)}
-                        placeholder="e.g. Use code WELCOME10 for 10% off your first order"
+                        placeholder="e.g. Announce a new backend promotion"
                         className="flex-1 border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" 
                       />
                     </div>

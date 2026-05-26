@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Product } from './types';
-import { products as initialProducts } from './data';
-import { deleteEntity, replaceEntities, seedEntitiesIfEmpty, upsertEntity } from './lib/storeApi';
+import { deleteEntity, listEntities, replaceEntities, upsertEntity } from './lib/storeApi';
 
 interface ProductContextType {
   productsList: Product[];
@@ -14,28 +13,14 @@ interface ProductContextType {
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export function ProductProvider({ children }: { children: ReactNode }) {
-  const [productsList, setProductsList] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('aura_products');
-    if (saved) {
-        try {
-            return JSON.parse(saved);
-        } catch (e) {
-            return initialProducts.map(p => ({...p, stock: 15}));
-        }
-    }
-    return initialProducts.map(p => ({...p, stock: 15}));
-  });
+  const [productsList, setProductsList] = useState<Product[]>([]);
 
   useEffect(() => {
     let isMounted = true;
 
-    seedEntitiesIfEmpty<Product>(
-      'products',
-      initialProducts.map(p => ({ ...p, stock: p.stock ?? 15 })),
-    ).then(remoteProducts => {
-      if (isMounted && remoteProducts) {
-        setProductsList(remoteProducts);
-        updateProductsStorage(remoteProducts);
+    listEntities<Product>('products').then(remoteProducts => {
+      if (isMounted) {
+        setProductsList(remoteProducts || []);
       }
     });
 
@@ -44,14 +29,9 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const updateProductsStorage = (newProducts: Product[]) => {
-    localStorage.setItem('aura_products', JSON.stringify(newProducts));
-  };
-
   const addProduct = (product: Product) => {
     setProductsList(prev => {
       const next = [...prev, product];
-      updateProductsStorage(next);
       upsertEntity('products', product);
       return next;
     });
@@ -60,7 +40,6 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   const updateProduct = (id: string, updatedProduct: Product) => {
     setProductsList(prev => {
       const next = prev.map(p => p.id === id ? updatedProduct : p);
-      updateProductsStorage(next);
       upsertEntity('products', updatedProduct);
       return next;
     });
@@ -69,7 +48,6 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   const deleteProduct = (id: string) => {
     setProductsList(prev => {
       const next = prev.filter(p => p.id !== id);
-      updateProductsStorage(next);
       deleteEntity('products', id);
       return next;
     });
@@ -77,7 +55,6 @@ export function ProductProvider({ children }: { children: ReactNode }) {
 
   const saveProductsList = (newList: Product[]) => {
     setProductsList(newList);
-    updateProductsStorage(newList);
     replaceEntities('products', newList);
   };
 
