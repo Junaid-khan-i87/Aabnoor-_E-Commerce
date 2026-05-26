@@ -96,7 +96,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
     const saved = await upsertEntity('orders', newOrder);
     if (!saved) {
-      console.error('Order could not be saved to the backend.');
+      throw new Error('Order could not be saved to the backend.');
     }
 
     return newOrder;

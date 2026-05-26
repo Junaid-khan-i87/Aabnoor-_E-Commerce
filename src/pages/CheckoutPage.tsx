@@ -13,7 +13,7 @@ export function CheckoutPage() {
   const { items, cartTotal, clearCart } = useCart();
   const { placeOrder } = useOrders();
   const { coupons, settings, currentUser, loginDiscountUsed, setLoginDiscountUsed } = useSite();
-  const { setIsLoginOpen } = useUI();
+  const { setIsLoginOpen, addToast } = useUI();
   const navigate = useNavigate();
 
   const [checkoutStep, setCheckoutStep] = useState<'details' | 'complete'>('details');
@@ -125,15 +125,22 @@ export function CheckoutPage() {
     
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const newOrder = await placeOrder({
-      userEmail: formEmail,
-      userName: formName || formEmail.split('@')[0],
-      items: items.map(i => ({ productId: i.id, name: i.name, price: i.price, quantity: i.quantity })),
-      total: finalTotal,
-      coinsEarned: coinsToEarn,
-      shippingAddress: formattedAddress,
-      paymentMethod: paymentMethod === 'credit_card' ? 'Credit Card' : 'Cash on Delivery',
-    });
+    let newOrder;
+    try {
+      newOrder = await placeOrder({
+        userEmail: formEmail,
+        userName: formName || formEmail.split('@')[0],
+        items: items.map(i => ({ productId: i.id, name: i.name, price: i.price, quantity: i.quantity })),
+        total: finalTotal,
+        coinsEarned: coinsToEarn,
+        shippingAddress: formattedAddress,
+        paymentMethod: paymentMethod === 'credit_card' ? 'Credit Card' : 'Cash on Delivery',
+      });
+    } catch {
+      addToast('Order could not be saved. Please try again.', 'error');
+      setIsProcessing(false);
+      return;
+    }
 
     if (supabase) {
       supabase.auth.getSession().then(({ data }) => {
