@@ -10,26 +10,50 @@ export function TrackPage() {
   const [searched, setSearched] = useState(false);
   const [orderDetails, setOrderDetails] = useState<Order | undefined>(undefined);
   const [error, setError] = useState('');
+  const [isTracking, setIsTracking] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleTrack = (e: React.FormEvent) => {
+  const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!trackingNumber.trim()) {
       setError('Please enter a tracking number.');
       return;
     }
 
-    const order = trackOrder(trackingNumber.trim());
+    const cleanTrackingNumber = trackingNumber.trim().toUpperCase();
+    const order = trackOrder(cleanTrackingNumber);
     setSearched(true);
     if (order) {
       setOrderDetails(order);
       setError('');
-    } else {
+      return;
+    }
+
+    setIsTracking(true);
+    try {
+      const response = await fetch('/api/track-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackingNumber: cleanTrackingNumber }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.order) {
+        setOrderDetails(undefined);
+        setError(result.error || 'No order found with the provided details.');
+        return;
+      }
+
+      setOrderDetails(result.order);
+      setError('');
+    } catch {
       setOrderDetails(undefined);
-      setError('No order found with the provided details.');
+      setError('Tracking service is temporarily unavailable. Please try again.');
+    } finally {
+      setIsTracking(false);
     }
   };
 
@@ -83,7 +107,7 @@ export function TrackPage() {
             type="submit"
             className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-4 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/90 transition-colors flex items-center justify-center gap-2"
           >
-            <Search className="w-4 h-4" /> Track Package
+            <Search className="w-4 h-4" /> {isTracking ? 'Checking...' : 'Track Package'}
           </button>
         </form>
       </div>

@@ -125,7 +125,7 @@ export function CheckoutPage() {
     
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const newOrder = placeOrder({
+    const newOrder = await placeOrder({
       userEmail: formEmail,
       userName: formName || formEmail.split('@')[0],
       items: items.map(i => ({ productId: i.id, name: i.name, price: i.price, quantity: i.quantity })),

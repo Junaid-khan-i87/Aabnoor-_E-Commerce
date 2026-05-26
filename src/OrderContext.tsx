@@ -5,7 +5,7 @@ import { supabase } from './lib/supabase';
 
 interface OrderContextType {
   orders: Order[];
-  placeOrder: (order: Omit<Order, 'id' | 'date' | 'status' | 'trackingUpdates' | 'trackingNumber'>) => Order;
+  placeOrder: (order: Omit<Order, 'id' | 'date' | 'status' | 'trackingUpdates' | 'trackingNumber'>) => Promise<Order>;
   updateOrderStatus: (id: string, status: OrderStatus, note?: string, coinsAdded?: boolean) => void;
   deleteOrder: (id: string) => void;
   updateOrder: (id: string, updatedOrder: Partial<Order>) => void;
@@ -73,7 +73,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const placeOrder = (orderData: Omit<Order, 'id' | 'date' | 'status' | 'trackingUpdates' | 'trackingNumber'>) => {
+  const placeOrder = async (orderData: Omit<Order, 'id' | 'date' | 'status' | 'trackingUpdates' | 'trackingNumber'>) => {
     const generatedTracking = generateTrackingNumber();
 
     const newOrder: Order = {
@@ -91,9 +91,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     setOrders(prev => {
       const next = [newOrder, ...prev];
       updateOrdersStorage(next);
-      upsertEntity('orders', newOrder);
       return next;
     });
+
+    const saved = await upsertEntity('orders', newOrder);
+    if (!saved) {
+      console.error('Order could not be saved to the backend.');
+    }
+
     return newOrder;
   };
 
