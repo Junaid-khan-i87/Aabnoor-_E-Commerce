@@ -77,6 +77,39 @@ interface SiteContextType {
 
 const SiteContext = createContext<SiteContextType | undefined>(undefined);
 
+const syncCustomerProfile = async (user: { id: string; email?: string | null; user_metadata?: Record<string, any> }) => {
+  if (!supabase || !user.email) return;
+
+  const email = user.email.toLowerCase();
+  const name =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.user_metadata?.display_name ||
+    email.split('@')[0];
+
+  const customerId = `USR-${user.id}`;
+  const { data: existingCustomer } = await supabase
+    .from('customers')
+    .select('id')
+    .eq('id', customerId)
+    .maybeSingle();
+
+  if (existingCustomer) return;
+
+  await supabase.from('customers').insert({
+    id: customerId,
+    data: {
+      id: customerId,
+      email,
+      name,
+      coins: 0,
+      joined: new Date().toISOString().slice(0, 10),
+      warnings: 0,
+      status: 'Active',
+    },
+  });
+};
+
 export function SiteProvider({ children }: { children: ReactNode }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -154,6 +187,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       setCurrentUserState(user?.email || null);
       if (user?.email) {
         localStorage.setItem('aura_current_user', user.email);
+        syncCustomerProfile(user);
       } else {
         localStorage.removeItem('aura_current_user');
       }
@@ -167,6 +201,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       setCurrentUserState(user?.email || null);
       if (user?.email) {
         localStorage.setItem('aura_current_user', user.email);
+        syncCustomerProfile(user);
       } else {
         localStorage.removeItem('aura_current_user');
       }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Lock, Mail, User } from 'lucide-react';
+import { Chrome, X, Lock, Mail, User } from 'lucide-react';
 import { useUI } from '../UIContext';
 import { useSite } from '../SiteContext';
 import { supabase } from '../lib/supabase';
@@ -37,6 +37,28 @@ export function LoginOverlay() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setIsLoginOpen]);
+
+  const handleGoogleLogin = async () => {
+    setError('');
+
+    if (!supabase) {
+      setError('Supabase is not configured for this build.');
+      addToast('Login backend is not configured', 'error');
+      return;
+    }
+
+    const { error: googleError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+
+    if (googleError) {
+      setError(googleError.message);
+      addToast(googleError.message, 'error');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,6 +249,21 @@ export function LoginOverlay() {
                   {error}
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="w-full bg-white border border-[#1A1A1A]/15 text-[#1A1A1A] py-3 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.16em] hover:border-[#1A1A1A] hover:bg-[#1A1A1A]/5 transition-all flex items-center justify-center gap-2 cursor-pointer mb-4 shadow-sm"
+              >
+                <Chrome className="w-4 h-4" />
+                Continue with Google
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px flex-1 bg-[#1A1A1A]/10" />
+                <span className="font-sans text-[9px] uppercase tracking-[0.2em] text-[#1A1A1A]/35 font-bold">or</span>
+                <div className="h-px flex-1 bg-[#1A1A1A]/10" />
+              </div>
 
               <form className="space-y-4" onSubmit={handleSubmit}>
                 {isRegister && (
