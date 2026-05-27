@@ -244,10 +244,10 @@ export function LoginOverlay() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.98 }}
             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-            className="fixed inset-x-4 top-[10%] md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full max-w-md bg-[#F9F7F2] rounded-2xl z-50 p-6 md:p-8 flex flex-col shadow-2xl border border-[#1A1A1A]/10 font-sans"
+            className="fixed inset-x-3 top-4 bottom-4 md:inset-auto md:top-1/2 md:left-1/2 md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2 w-auto md:w-full md:max-w-md max-h-[calc(100dvh-2rem)] bg-[#F9F7F2] rounded-2xl z-50 p-5 sm:p-6 md:p-8 flex flex-col shadow-2xl border border-[#1A1A1A]/10 font-sans overflow-hidden"
           >
-            <div className="flex justify-between items-center pb-4 border-b border-[#1A1A1A]/5 mb-6">
-              <span className="font-sans text-[10px] uppercase font-bold tracking-[0.2em] text-[#CDA185] bg-[#CDA185]/10 px-3 py-1 rounded-full">
+            <div className="flex justify-between items-center pb-3 sm:pb-4 border-b border-[#1A1A1A]/5 mb-4 sm:mb-6 shrink-0">
+              <span className="font-sans text-[9px] sm:text-[10px] uppercase font-bold tracking-[0.18em] sm:tracking-[0.2em] text-[#CDA185] bg-[#CDA185]/10 px-3 py-1 rounded-full">
                 Secure Account
               </span>
               <button 
@@ -259,11 +259,11 @@ export function LoginOverlay() {
               </button>
             </div>
             
-            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
-              <h2 className="font-serif italic font-light text-4xl text-[#1A1A1A] mb-2 text-center">
+            <div className="flex-1 flex flex-col max-w-sm mx-auto w-full min-h-0 overflow-y-auto overscroll-contain pr-1">
+              <h2 className="font-serif italic font-light text-3xl sm:text-4xl text-[#1A1A1A] mb-2 text-center">
                 {isRegister ? 'Join Aabnoor' : 'Welcome Back'}
               </h2>
-              <p className="font-sans text-[10px] uppercase tracking-widest text-[#1A1A1A]/50 text-center mb-6 font-bold">
+              <p className="font-sans text-[9px] sm:text-[10px] uppercase tracking-widest text-[#1A1A1A]/50 text-center mb-4 sm:mb-6 font-bold">
                 {isRegister ? 'Create your luxury profiling' : 'Sign in to access loyalty rewards'}
               </p>
 
@@ -276,7 +276,7 @@ export function LoginOverlay() {
               <button
                 type="button"
                 onClick={handleGoogleLogin}
-                className="w-full bg-white border border-[#1A1A1A]/15 text-[#1A1A1A] py-3 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.16em] hover:border-[#1A1A1A] hover:bg-[#1A1A1A]/5 transition-all flex items-center justify-center gap-2 cursor-pointer mb-4 shadow-sm"
+                className="w-full min-h-11 bg-white border border-[#1A1A1A]/15 text-[#1A1A1A] py-3 px-4 rounded-full font-sans text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.13em] sm:tracking-[0.16em] hover:border-[#1A1A1A] hover:bg-[#1A1A1A]/5 transition-all flex items-center justify-center gap-2 cursor-pointer mb-4 shadow-sm"
               >
                 <GoogleIcon />
                 Continue with Google
@@ -288,7 +288,7 @@ export function LoginOverlay() {
                 <div className="h-px flex-1 bg-[#1A1A1A]/10" />
               </div>
 
-              <form className="space-y-4" onSubmit={handleSubmit}>
+              <form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit}>
                 {isRegister && (
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
@@ -297,7 +297,7 @@ export function LoginOverlay() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Full Name" 
-                      className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm"
+                      className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11"
                     />
                   </div>
                 )}
@@ -309,7 +309,7 @@ export function LoginOverlay() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email Address" 
-                    className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm"
+                    className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11"
                   />
                 </div>
 
@@ -327,19 +327,19 @@ export function LoginOverlay() {
                       setPassword(nextValue);
                     }}
                     placeholder={isRegister && otpSent ? 'Enter Email OTP Code' : 'Password'} 
-                    className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm"
+                    className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11"
                   />
                 </div>
                 
                 <button 
                   type="submit"
-                  className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-4 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#CDA185] transition-all flex items-center justify-center gap-2 cursor-pointer mt-6 shadow-md"
+                  className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-3.5 sm:py-4 rounded-full font-sans text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.2em] hover:bg-[#CDA185] transition-all flex items-center justify-center gap-2 cursor-pointer mt-5 sm:mt-6 shadow-md min-h-12"
                 >
                   {isRegister && otpSent ? 'Verify OTP' : isRegister ? 'Create Account' : 'Sign In'}
                 </button>
               </form>
 
-              <div className="mt-8 text-center pb-2">
+              <div className="mt-6 sm:mt-8 text-center pb-1 sm:pb-2">
                 <button 
                   onClick={() => {
                     setIsRegister(!isRegister);
