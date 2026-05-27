@@ -3,11 +3,26 @@ import { motion } from 'motion/react';
 import { Instagram } from 'lucide-react';
 
 const IMAGES = [
-  "https://images.unsplash.com/photo-1596755389378-c11ddeff8cf5?q=80&w=600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1512496015851-a1cbfc38ae49?q=80&w=600&auto=format&fit=crop",
+  {
+    src: "https://images.unsplash.com/photo-1596755389378-c11ddeff8cf5?q=75&w=360&auto=format&fit=crop",
+    alt: "Aabnoor skincare routine with cosmetic cream texture",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=75&w=360&auto=format&fit=crop",
+    alt: "Aabnoor makeup products arranged for daily beauty routine",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=75&w=360&auto=format&fit=crop",
+    alt: "Aabnoor serum bottle and premium skincare packaging",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=75&w=360&auto=format&fit=crop",
+    alt: "Aabnoor hair care and beauty styling inspiration",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1512496015851-a1cbfc38ae49?q=75&w=360&auto=format&fit=crop",
+    alt: "Aabnoor beauty shelf with makeup and skincare essentials",
+  },
 ];
 
 export function SocialGallery() {
@@ -35,7 +50,7 @@ export function SocialGallery() {
 
       <div className="w-full overflow-hidden px-4 md:px-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {IMAGES.map((src, i) => (
+          {IMAGES.map((image, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
@@ -45,10 +60,12 @@ export function SocialGallery() {
               className="relative aspect-square md:aspect-[4/5] bg-[#1A1A1A]/5 overflow-hidden group cursor-pointer"
             >
               <img 
-                src={src} 
-                alt={`Social media post ${i + 1}`}
+                src={image.src}
+                alt={image.alt}
+                title={image.alt}
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                 referrerPolicy="no-referrer"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-[#1A1A1A]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                 <Instagram className="w-8 h-8 text-[#F9F7F2]" />

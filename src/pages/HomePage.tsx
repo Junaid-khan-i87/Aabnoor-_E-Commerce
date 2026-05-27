@@ -34,7 +34,7 @@ export function HomePage() {
   return (
     <>
       <SEO
-        title="Aabnoor Beaute | Premium Skincare, Makeup, Hair Care and Fragrance"
+        title="Aabnoor Beaute | Premium Beauty & Skincare"
         description="Shop Aabnoor Beaute for premium skincare, makeup, hair care, fragrance, live sale offers, secure checkout and order tracking."
         canonicalPath="/"
         jsonLd={{
@@ -80,7 +80,7 @@ export function HomePage() {
                     to={`/product/${product.id}`}
                     className="flex items-center gap-3 border border-[#1A1A1A]/8 p-2 hover:border-[#CDA185] transition-colors"
                   >
-                    <img src={product.imageUrl} alt={product.name} className="w-12 h-14 object-cover bg-[#1A1A1A]/5" referrerPolicy="no-referrer" />
+                    <img src={product.imageUrl} alt={product.name} title={product.name} className="w-12 h-14 object-cover bg-[#1A1A1A]/5" referrerPolicy="no-referrer" loading="lazy" />
                     <div className="min-w-0">
                       <p className="font-sans text-[9px] uppercase tracking-widest text-[#CDA185] font-bold">{product.category}</p>
                       <h3 className="font-serif text-sm text-[#1A1A1A] line-clamp-1">{product.name}</h3>
@@ -135,7 +135,7 @@ export function HomePage() {
               {bestSellers.map((product) => (
                 <Link key={product.id} to={`/product/${product.id}`} className="group bg-white border border-[#1A1A1A]/10 overflow-hidden hover:border-[#CDA185] transition-colors">
                   <div className="aspect-[4/3] overflow-hidden bg-[#1A1A1A]/5">
-                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                    <img src={product.imageUrl} alt={product.name} title={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" loading="lazy" />
                   </div>
                   <div className="p-5">
                     <div className="flex items-center justify-between gap-2 mb-2">
@@ -155,6 +155,27 @@ export function HomePage() {
           </div>
         </section>
       )}
+      <section className="bg-[#F9F7F2] border-y border-[#1A1A1A]/10 py-14">
+        <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[0.85fr_1.15fr] gap-8 md:gap-12 items-start">
+          <div>
+            <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#CDA185] font-bold mb-3">Beauty Store in Pakistan</p>
+            <h2 className="font-serif italic text-3xl md:text-4xl text-[#1A1A1A] leading-tight">Premium skincare, makeup and hair care with clear delivery tracking.</h2>
+          </div>
+          <div className="space-y-4 font-sans text-sm leading-7 text-[#1A1A1A]/68">
+            <p>
+              Aabnoor Beaute curates daily beauty essentials for customers who want simple product discovery, clear pricing and a secure checkout experience. Browse skincare for hydration and barrier care, makeup for polished everyday looks, hair care for cleansing and repair, and fragrance picks for gifting or personal routines.
+            </p>
+            <p>
+              Every product page is built with readable descriptions, product images, pricing, availability, customer reviews and order support details. Checkout includes shipping information before purchase, and each order receives a tracking number by email so customers can follow delivery from the store to their address.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Link to="/shipping" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Shipping Details</Link>
+              <Link to="/faq" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Beauty FAQs</Link>
+              <Link to="/track" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Track Order</Link>
+            </div>
+          </div>
+        </div>
+      </section>
       <ProductGrid />
       <SocialGallery />
     </>

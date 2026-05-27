@@ -27,10 +27,12 @@ export function Hero() {
         className="absolute inset-x-0 -top-20 -bottom-20 z-0 origin-top"
       >
         <img
-          src={settings.heroImageUrl || 'https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=80&w=2400&auto=format&fit=crop'}
-          alt="Abstract elegant minimalist cosmetic texture"
+          src={settings.heroImageUrl || 'https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=75&w=1600&auto=format&fit=crop'}
+          alt="Aabnoor Beaute premium skincare and cosmetics texture"
+          title="Aabnoor Beaute premium skincare and cosmetics texture"
           className="w-full h-full object-cover opacity-40"
           referrerPolicy="no-referrer"
+          fetchPriority="high"
         />
         {/* Robust high-contrast gradient overlay to ensure optimal readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#F9F7F2] via-[#F9F7F2]/50 to-[#F9F7F2]/20" />

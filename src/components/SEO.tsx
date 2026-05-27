@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 const SITE_URL = 'https://aabnoor.shop';
-const DEFAULT_TITLE = 'Aabnoor Beaute | Premium Skincare, Makeup, Hair Care and Fragrance';
+const DEFAULT_TITLE = 'Aabnoor Beaute | Premium Beauty & Skincare';
 const DEFAULT_DESCRIPTION = 'Shop Aabnoor Beaute for curated skincare, makeup, hair care, fragrance, live sale offers, secure checkout, order tracking and premium beauty essentials.';
 
 interface SEOProps {
