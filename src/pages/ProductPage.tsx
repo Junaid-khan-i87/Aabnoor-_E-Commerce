@@ -10,6 +10,7 @@ import { useUI } from '../UIContext';
 import { Plus, Minus, ChevronDown, ChevronUp, X, ZoomIn, Heart, Star, Clock, Truck, ShieldCheck, MessageCircle, PackageCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SafeImage } from '../components/SafeImage';
+import { SEO, SEO_SITE_URL } from '../components/SEO';
 
 export function ProductPage() {
   const { id } = useParams();
@@ -283,9 +284,63 @@ export function ProductPage() {
   };
 
   const currentPrice = selectedVariant ? selectedVariant.price : product.price;
+  const seoDescription = `${product.name} from Aabnoor Beaute. ${product.description} Shop ${product.category.toLowerCase()} with secure checkout, delivery tracking and customer reviews.`;
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.fullDetails || product.description,
+    image: galleryImages.map((image) => image.startsWith('http') ? image : `${SEO_SITE_URL}${image}`),
+    brand: {
+      '@type': 'Brand',
+      name: 'Aabnoor Beaute',
+    },
+    category: product.category,
+    sku: product.id,
+    url: `${SEO_SITE_URL}/product/${product.id}`,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'PKR',
+      price: currentPrice.toFixed(2),
+      availability: product.stock === 0 ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+      url: `${SEO_SITE_URL}/product/${product.id}`,
+      itemCondition: 'https://schema.org/NewCondition',
+    },
+    ...(product.rating ? {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: product.rating.toFixed(1),
+        reviewCount: product.reviews?.length || 1,
+      },
+    } : {}),
+    ...(product.reviews?.length ? {
+      review: product.reviews.slice(0, 5).map((review) => ({
+        '@type': 'Review',
+        author: {
+          '@type': 'Person',
+          name: review.user,
+        },
+        datePublished: review.date,
+        reviewBody: review.comment,
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: review.rating,
+          bestRating: 5,
+        },
+      })),
+    } : {}),
+  };
 
   return (
     <div className="pt-24 lg:pt-32 pb-24 max-w-7xl mx-auto px-6">
+      <SEO
+        title={`${product.name} | ${product.category} | Aabnoor Beaute`}
+        description={seoDescription.slice(0, 155)}
+        canonicalPath={`/product/${product.id}`}
+        image={product.imageUrl}
+        type="product"
+        jsonLd={productJsonLd}
+      />
       {/* Breadcrumbs */}
       <div className="flex items-center gap-2 font-sans text-[9px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-8">
         <Link to="/" className="hover:text-[#1A1A1A] transition-colors">Home</Link>

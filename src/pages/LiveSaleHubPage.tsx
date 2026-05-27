@@ -5,6 +5,7 @@ import { useProducts } from '../ProductContext';
 import { useCart } from '../CartContext';
 import { Link } from 'react-router-dom';
 import { useSite } from '../SiteContext';
+import { SEO } from '../components/SEO';
 
 export function LiveSaleHubPage() {
   const { productsList } = useProducts();
@@ -53,6 +54,11 @@ export function LiveSaleHubPage() {
 
   return (
     <div className="pt-24 pb-16 bg-[#F9F7F2] min-h-screen">
+      <SEO
+        title="Aabnoor Live Sale | Flash Deals on Beauty Essentials"
+        description="Shop Aabnoor live sale offers on skincare, makeup, hair care and fragrance with limited-time discounts, secure checkout and order tracking."
+        canonicalPath="/live-sale"
+      />
       
       {/* Dynamic Master Banner */}
       <div className="max-w-7xl mx-auto px-6 mb-12">

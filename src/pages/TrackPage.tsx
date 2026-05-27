@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, Package, MapPin, Truck, CheckCircle } from 'lucide-react';
 import { useOrders } from '../OrderContext';
 import { Order } from '../types';
+import { SEO } from '../components/SEO';
 
 export function TrackPage() {
   const { trackOrder } = useOrders();
@@ -79,6 +80,11 @@ export function TrackPage() {
 
   return (
     <div className="pt-32 lg:pt-40 pb-24 max-w-4xl mx-auto px-6 min-h-screen">
+      <SEO
+        title="Track Your Aabnoor Order | Aabnoor Beaute"
+        description="Track your Aabnoor Beaute order using your tracking number and see live status updates for your beauty purchase."
+        canonicalPath="/track"
+      />
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

@@ -7,6 +7,7 @@ import { useProducts } from '../ProductContext';
 import { useSite } from '../SiteContext';
 import { Link } from 'react-router-dom';
 import { Clock, PackageCheck, Search, ShieldCheck, Sparkles, Star, Truck } from 'lucide-react';
+import { SEO, SEO_SITE_URL } from '../components/SEO';
 
 export function HomePage() {
   const { productsList } = useProducts();
@@ -32,6 +33,28 @@ export function HomePage() {
 
   return (
     <>
+      <SEO
+        title="Aabnoor Beaute | Premium Skincare, Makeup, Hair Care and Fragrance"
+        description="Shop Aabnoor Beaute for premium skincare, makeup, hair care, fragrance, live sale offers, secure checkout and order tracking."
+        canonicalPath="/"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Store',
+          name: 'Aabnoor Beaute',
+          url: SEO_SITE_URL,
+          image: `${SEO_SITE_URL}/favicon-512.png`,
+          description: 'Premium beauty essentials, skincare, makeup, hair care and fragrance.',
+          hasOfferCatalog: {
+            '@type': 'OfferCatalog',
+            name: 'Aabnoor Beauty Product Catalog',
+            itemListElement: Array.from(new Set(productsList.map((product) => product.category))).map((category) => ({
+              '@type': 'OfferCatalog',
+              name: category,
+              url: `${SEO_SITE_URL}/#shop`,
+            })),
+          },
+        }}
+      />
       <Hero />
       <Marquee />
       <section className="bg-[#F9F7F2] pt-10 pb-4">
