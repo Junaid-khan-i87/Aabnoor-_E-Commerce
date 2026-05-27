@@ -22,10 +22,13 @@ export interface SiteSettings {
   storeEmail: string;
   storePhone: string;
   storeAddress: string;
+  liveSaleEndTime: string;
   socialInstagram: string;
   socialFacebook: string;
   socialTwitter: string;
 }
+
+const getDefaultLiveSaleEndTime = () => new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString();
 
 const DEFAULT_SETTINGS: SiteSettings = {
   deliveryFee: 150,
@@ -33,6 +36,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   storeEmail: 'HELLO@AABNOOR.COM',
   storePhone: '+92 (21) 111 287 233',
   storeAddress: 'Aabnoor Flagship Store, Ground Floor, Dolmen Mall Clifton, Karachi, Pakistan',
+  liveSaleEndTime: getDefaultLiveSaleEndTime(),
   socialInstagram: '#',
   socialFacebook: '#',
   socialTwitter: '#',
@@ -258,7 +262,11 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       }
 
       if (remoteSettings) {
-        setSettingsState(remoteSettings);
+        const mergedSettings = { ...DEFAULT_SETTINGS, ...remoteSettings };
+        setSettingsState(mergedSettings);
+        if (!remoteSettings.liveSaleEndTime) {
+          setStoreValue('settings', mergedSettings);
+        }
       } else {
         setStoreValue('settings', DEFAULT_SETTINGS);
       }

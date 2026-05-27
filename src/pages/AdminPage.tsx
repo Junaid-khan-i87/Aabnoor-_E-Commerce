@@ -13,6 +13,19 @@ import { supabase } from '../lib/supabase';
 
 const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
 
+const toDateTimeLocalValue = (isoValue?: string) => {
+  if (!isoValue) return '';
+  const date = new Date(isoValue);
+  if (Number.isNaN(date.getTime())) return '';
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return offsetDate.toISOString().slice(0, 16);
+};
+
+const fromDateTimeLocalValue = (value: string) => {
+  if (!value) return '';
+  return new Date(value).toISOString();
+};
+
 export function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
@@ -119,6 +132,10 @@ export function AdminPage() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+
+  useEffect(() => {
+    setSettingsForm(settings);
+  }, [settings]);
   
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
@@ -2504,6 +2521,40 @@ export function AdminPage() {
                     </div>
                   )}
                   <p className="text-xs text-[#1A1A1A]/50 mt-2">Display announcements or active discount codes at the top of the site.</p>
+                </div>
+
+                <div className="pt-6 border-t border-[#1A1A1A]/10">
+                  <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-2">Live Sale Session End Time</label>
+                  <input
+                    type="datetime-local"
+                    value={toDateTimeLocalValue(settingsForm.liveSaleEndTime)}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, liveSaleEndTime: fromDateTimeLocalValue(e.target.value) })}
+                    className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                  />
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <button
+                      type="button"
+                      onClick={() => setSettingsForm({ ...settingsForm, liveSaleEndTime: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() })}
+                      className="px-3 py-1.5 bg-[#1A1A1A]/5 hover:bg-[#1A1A1A]/10 font-sans text-[10px] uppercase tracking-widest font-bold transition-colors"
+                    >
+                      End in 6 Hours
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSettingsForm({ ...settingsForm, liveSaleEndTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() })}
+                      className="px-3 py-1.5 bg-[#1A1A1A]/5 hover:bg-[#1A1A1A]/10 font-sans text-[10px] uppercase tracking-widest font-bold transition-colors"
+                    >
+                      End in 24 Hours
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSettingsForm({ ...settingsForm, liveSaleEndTime: new Date(Date.now() - 60 * 1000).toISOString() })}
+                      className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 font-sans text-[10px] uppercase tracking-widest font-bold transition-colors"
+                    >
+                      End Now
+                    </button>
+                  </div>
+                  <p className="text-xs text-[#1A1A1A]/50 mt-2">This saves to Supabase settings and controls the countdown on /live-sale.</p>
                 </div>
 
                 <div className="pt-6 border-t border-[#1A1A1A]/10">

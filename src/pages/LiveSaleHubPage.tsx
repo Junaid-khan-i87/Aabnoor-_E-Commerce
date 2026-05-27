@@ -4,10 +4,12 @@ import { Sparkles, ShoppingBag, Eye, Percent, Gift, Clock, Calendar, ShieldCheck
 import { useProducts } from '../ProductContext';
 import { useCart } from '../CartContext';
 import { Link } from 'react-router-dom';
+import { useSite } from '../SiteContext';
 
 export function LiveSaleHubPage() {
   const { productsList } = useProducts();
   const { addToCart } = useCart();
+  const { settings } = useSite();
   
   // Filter only flash sale items
   const flashSaleProducts = productsList.filter(p => p.isFlashSale && p.flashSalePrice);
@@ -20,26 +22,30 @@ export function LiveSaleHubPage() {
     flashSaleEndTime: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString() // 18 hrs from now
   }));
 
-  // Countdown timer for master banner (18h 45m 12s)
-  const [timeLeft, setTimeLeft] = useState({ hours: 18, minutes: 45, seconds: 12 });
+  const getTimeLeft = () => {
+    const endAt = Date.parse(settings.liveSaleEndTime || '');
+    const diff = Number.isNaN(endAt) ? 0 : Math.max(0, endAt - Date.now());
+    const totalSeconds = Math.floor(diff / 1000);
+
+    return {
+      days: Math.floor(totalSeconds / 86400),
+      hours: Math.floor((totalSeconds % 86400) / 3600),
+      minutes: Math.floor((totalSeconds % 3600) / 60),
+      seconds: totalSeconds % 60,
+      isEnded: totalSeconds <= 0,
+    };
+  };
+
+  const [timeLeft, setTimeLeft] = useState(getTimeLeft);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 };
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
-        } else if (prev.hours > 0) {
-          return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        } else {
-          clearInterval(timer);
-          return { hours: 0, minutes: 0, seconds: 0 };
-        }
-      });
+      setTimeLeft(getTimeLeft());
     }, 1000);
+
+    setTimeLeft(getTimeLeft());
     return () => clearInterval(timer);
-  }, []);
+  }, [settings.liveSaleEndTime]);
 
   return (
     <div className="pt-24 pb-16 bg-[#F9F7F2] min-h-screen">
@@ -71,10 +77,21 @@ export function LiveSaleHubPage() {
           {/* Master Countdown Timer Component */}
           <div className="bg-white/[0.04] border border-white/10 p-6 rounded-xl flex flex-col items-center justify-center min-w-[260px] relative backdrop-blur-sm self-start md:self-auto">
             <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-[#CDA185] mb-3 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 animate-pulse text-[#CDA185]" /> Flash Session Ends In
+              <Clock className="w-3.5 h-3.5 animate-pulse text-[#CDA185]" /> {timeLeft.isEnded ? 'Flash Session Ended' : 'Flash Session Ends In'}
             </span>
             
             <div className="flex gap-4 items-center">
+              {timeLeft.days > 0 && (
+                <>
+                  <div className="flex flex-col items-center">
+                    <span className="font-serif italic text-4xl text-white font-extrabold w-12 text-center">
+                      {timeLeft.days.toString().padStart(2, '0')}
+                    </span>
+                    <span className="font-sans text-[9px] uppercase font-semibold tracking-widest text-white/50 mt-1">Days</span>
+                  </div>
+                  <span className="text-white/35 font-serif text-3xl pb-5">:</span>
+                </>
+              )}
               <div className="flex flex-col items-center">
                 <span className="font-serif italic text-4xl text-white font-extrabold w-12 text-center">
                   {timeLeft.hours.toString().padStart(2, '0')}
