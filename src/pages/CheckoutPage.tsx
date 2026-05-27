@@ -34,6 +34,7 @@ export function CheckoutPage() {
   const subtotalAfterDiscount = (appliedCoupon || firstTimeDiscountEligible) ? cartTotal * (1 - effectiveDiscount / 100) : cartTotal;
   const finalTotal = subtotalAfterDiscount + deliveryFee;
   const coinsToEarn = Math.floor(finalTotal / 10);
+  const deliveryWindow = deliveryMethod === 'express' ? '1-2 business days' : '3-5 business days';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -497,6 +498,20 @@ export function CheckoutPage() {
                     <span className="font-sans font-bold">-{effectiveDiscount}%</span>
                   </div>
                 )}
+              </div>
+
+              <div className="bg-white border border-[#1A1A1A]/10 rounded-xl p-4 space-y-2">
+                <div className="flex justify-between gap-4 font-sans text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A]/65">
+                  <span>Delivery Window</span>
+                  <span className="text-[#1A1A1A]">{deliveryWindow}</span>
+                </div>
+                <div className="flex justify-between gap-4 font-sans text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A]/65">
+                  <span>Support</span>
+                  <span className="text-[#1A1A1A]">{settings.storePhone || settings.storeEmail}</span>
+                </div>
+                <p className="font-sans text-[10px] text-[#1A1A1A]/50 leading-relaxed">
+                  Order confirmation and tracking number are saved to the backend and sent by email when available.
+                </p>
               </div>
             </div>
 

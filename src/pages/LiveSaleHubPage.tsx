@@ -12,15 +12,19 @@ export function LiveSaleHubPage() {
   const { settings } = useSite();
   
   // Filter only flash sale items
-  const flashSaleProducts = productsList.filter(p => p.isFlashSale && p.flashSalePrice);
+  const flashSaleProducts = settings.liveSaleActive
+    ? productsList.filter(p => p.isFlashSale && p.flashSalePrice)
+    : [];
 
   // Fallbacks if no products are flagged as flash sales in database yet
-  const displayProducts = flashSaleProducts.length > 0 ? flashSaleProducts : productsList.slice(0, 3).map(p => ({
-    ...p,
-    isFlashSale: true,
-    flashSalePrice: Math.round(p.price * 0.8), // 20% off
-    flashSaleEndTime: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString() // 18 hrs from now
-  }));
+  const displayProducts = settings.liveSaleActive && flashSaleProducts.length === 0
+    ? productsList.slice(0, 3).map(p => ({
+        ...p,
+        isFlashSale: true,
+        flashSalePrice: Math.round(p.price * 0.8),
+        flashSaleEndTime: settings.liveSaleEndTime,
+      }))
+    : flashSaleProducts;
 
   const getTimeLeft = () => {
     const endAt = Date.parse(settings.liveSaleEndTime || '');
@@ -61,10 +65,10 @@ export function LiveSaleHubPage() {
               <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Global Live Sale Event
             </span>
             <h1 className="font-serif italic text-4xl sm:text-5xl text-white tracking-tight leading-tight">
-              Midnight Bloom Flash Series
+              {settings.liveSaleTitle || 'Midnight Bloom Flash Series'}
             </h1>
             <p className="font-sans text-xs sm:text-sm text-[#F9F7F2]/75 uppercase tracking-widest leading-relaxed">
-              Bespoke dermal oils, hydrating essences and targeted peptide serums temporarily scaled down in values up to <strong className="text-[#CDA185]">40% OFF</strong>. Restocking thresholds are highly limited.
+              {settings.liveSaleSubtitle || 'Bespoke dermal oils, hydrating essences and targeted peptide serums temporarily scaled down in values.'} <strong className="text-[#CDA185]">{settings.liveSaleDiscountText || 'up to 40% off'}</strong>. Restocking thresholds are highly limited.
             </p>
 
             <div className="flex items-center gap-4 text-[10px] text-[#F9F7F2]/60 font-sans tracking-wide uppercase font-semibold">
@@ -209,6 +213,12 @@ export function LiveSaleHubPage() {
               </div>
             );
           })}
+          {displayProducts.length === 0 && (
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 text-center py-20 bg-white border border-[#1A1A1A]/10 rounded-xl">
+              <h3 className="font-serif italic text-3xl text-[#1A1A1A] mb-2">Live Sale Is Paused</h3>
+              <p className="font-sans text-xs uppercase tracking-widest text-[#1A1A1A]/50">Enable the next sale session from Admin Settings.</p>
+            </div>
+          )}
         </div>
 
         {/* Dynamic promotional custom sections (Tiered & Bundle Offers) */}

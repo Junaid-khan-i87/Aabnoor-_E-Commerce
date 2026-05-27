@@ -22,6 +22,14 @@ export interface SiteSettings {
   storeEmail: string;
   storePhone: string;
   storeAddress: string;
+  heroEyebrow: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroImageUrl: string;
+  liveSaleActive: boolean;
+  liveSaleTitle: string;
+  liveSaleSubtitle: string;
+  liveSaleDiscountText: string;
   liveSaleEndTime: string;
   socialInstagram: string;
   socialFacebook: string;
@@ -36,6 +44,14 @@ const DEFAULT_SETTINGS: SiteSettings = {
   storeEmail: 'HELLO@AABNOOR.COM',
   storePhone: '+92 (21) 111 287 233',
   storeAddress: 'Aabnoor Flagship Store, Ground Floor, Dolmen Mall Clifton, Karachi, Pakistan',
+  heroEyebrow: 'The Future of Beauty',
+  heroTitle: 'Redefine Your Beauty Routine',
+  heroSubtitle: 'Curated skincare, makeup, hair care, and fragrance essentials designed for modern beauty.',
+  heroImageUrl: 'https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=80&w=2400&auto=format&fit=crop',
+  liveSaleActive: true,
+  liveSaleTitle: 'Midnight Bloom Flash Series',
+  liveSaleSubtitle: 'Bespoke dermal oils, hydrating essences and targeted peptide serums temporarily scaled down in values.',
+  liveSaleDiscountText: 'up to 40% off',
   liveSaleEndTime: getDefaultLiveSaleEndTime(),
   socialInstagram: '#',
   socialFacebook: '#',

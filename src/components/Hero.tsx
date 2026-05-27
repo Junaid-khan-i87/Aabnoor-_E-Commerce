@@ -1,9 +1,11 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { useCategory } from '../CategoryContext';
+import { useSite } from '../SiteContext';
 
 export function Hero() {
   const { scrollToShopAndFilter } = useCategory();
+  const { settings } = useSite();
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -25,7 +27,7 @@ export function Hero() {
         className="absolute inset-x-0 -top-20 -bottom-20 z-0 origin-top"
       >
         <img
-          src="https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=80&w=2400&auto=format&fit=crop"
+          src={settings.heroImageUrl || 'https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=80&w=2400&auto=format&fit=crop'}
           alt="Abstract elegant minimalist cosmetic texture"
           className="w-full h-full object-cover opacity-40"
           referrerPolicy="no-referrer"
@@ -43,13 +45,13 @@ export function Hero() {
           className="space-y-6"
         >
           <p className="font-sans text-[10px] uppercase tracking-[0.4em] text-[#1A1A1A]/50">
-            The Future of Beauty
+            {settings.heroEyebrow || 'The Future of Beauty'}
           </p>
           <h1 className="font-serif italic font-light text-5xl md:text-7xl lg:text-[90px] tracking-tighter text-[#1A1A1A] max-w-5xl leading-[0.9]">
-            Redefine Your <br /> Beauty Routine
+            {settings.heroTitle || 'Redefine Your Beauty Routine'}
           </h1>
           <p className="font-sans text-sm lg:text-base text-[#1A1A1A]/70 max-w-lg mx-auto leading-relaxed pt-4">
-            Curated skincare, makeup, hair care, and fragrance essentials designed for modern beauty.
+            {settings.heroSubtitle || 'Curated skincare, makeup, hair care, and fragrance essentials designed for modern beauty.'}
           </p>
         </motion.div>
 

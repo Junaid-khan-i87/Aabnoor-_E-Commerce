@@ -189,6 +189,8 @@ export function ProductGrid() {
   const [activeSubCategory, setActiveSubCategory] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState('popular');
+  const [saleOnly, setSaleOnly] = useState(false);
+  const [inStockOnly, setInStockOnly] = useState(false);
 
   React.useEffect(() => {
     setActiveSubCategory('All');
@@ -198,17 +200,25 @@ export function ProductGrid() {
     setIsLoading(true);
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
-  }, [activeCategory, activeSubCategory, sortBy]);
+  }, [activeCategory, activeSubCategory, sortBy, saleOnly, inStockOnly]);
 
   const uniqueCategories = Array.from(new Set<string>(productsList.map(p => p.category)));
   const categories: Category[] = ['All', ...uniqueCategories];
 
-  let filteredProducts = activeCategory === 'All' 
-    ? productsList 
+  let filteredProducts = activeCategory === 'All'
+    ? [...productsList]
     : productsList.filter(p => p.category === activeCategory);
 
   if (activeCategory !== 'All' && activeSubCategory !== 'All') {
     filteredProducts = filteredProducts.filter(p => p.subCategory === activeSubCategory);
+  }
+
+  if (saleOnly) {
+    filteredProducts = filteredProducts.filter(p => p.isFlashSale || Boolean(p.compareAtPrice && p.compareAtPrice > p.price));
+  }
+
+  if (inStockOnly) {
+    filteredProducts = filteredProducts.filter(p => (p.stock ?? 1) > 0);
   }
 
   if (sortBy === 'low-to-high') {
@@ -279,6 +289,24 @@ export function ProductGrid() {
             
             {/* Sorting Control */}
             <div className="flex flex-wrap items-center gap-6 text-[10px] uppercase tracking-widest font-sans font-bold justify-start md:justify-end w-full md:w-auto">
+              <label className="flex items-center gap-2 cursor-pointer text-[#1A1A1A]/70 hover:text-[#1A1A1A]">
+                <input
+                  type="checkbox"
+                  checked={saleOnly}
+                  onChange={(e) => setSaleOnly(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-[#1A1A1A]"
+                />
+                Sale Only
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-[#1A1A1A]/70 hover:text-[#1A1A1A]">
+                <input
+                  type="checkbox"
+                  checked={inStockOnly}
+                  onChange={(e) => setInStockOnly(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-[#1A1A1A]"
+                />
+                In Stock
+              </label>
               <div className="flex items-center gap-2">
                 <span className="text-[#1A1A1A]/60">Sort By:</span>
                 <select 
@@ -297,7 +325,7 @@ export function ProductGrid() {
         </div>
 
         {/* Active Filters Chips Bar */}
-        {(activeCategory !== 'All' || sortBy !== 'popular') && (
+        {(activeCategory !== 'All' || sortBy !== 'popular' || saleOnly || inStockOnly) && (
           <div className="flex flex-wrap items-center gap-2 mb-12 font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A] animate-slide-in-right">
             <span className="text-[#1A1A1A]/50 pr-1">Active filters:</span>
             {activeCategory !== 'All' && (
@@ -312,10 +340,24 @@ export function ProductGrid() {
                 <button onClick={() => setSortBy('popular')} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">✕</button>
               </span>
             )}
+            {saleOnly && (
+              <span className="flex items-center gap-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 px-3 py-1.5 rounded-full text-[#1A1A1A]/80">
+                Sale only
+                <button onClick={() => setSaleOnly(false)} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
+              </span>
+            )}
+            {inStockOnly && (
+              <span className="flex items-center gap-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 px-3 py-1.5 rounded-full text-[#1A1A1A]/80">
+                In stock
+                <button onClick={() => setInStockOnly(false)} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
+              </span>
+            )}
             <button 
               onClick={() => {
                 setActiveCategory('All');
                 setSortBy('popular');
+                setSaleOnly(false);
+                setInStockOnly(false);
               }}
               className="text-[#CDA185] hover:text-[#1A1A1A] underline cursor-pointer transition-colors duration-200 ml-2"
             >

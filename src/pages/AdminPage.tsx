@@ -2524,7 +2524,73 @@ export function AdminPage() {
                 </div>
 
                 <div className="pt-6 border-t border-[#1A1A1A]/10">
+                  <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-4">Homepage Hero Content</label>
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      value={settingsForm.heroEyebrow}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, heroEyebrow: e.target.value })}
+                      placeholder="Hero eyebrow"
+                      className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={settingsForm.heroTitle}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, heroTitle: e.target.value })}
+                      placeholder="Hero title"
+                      className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                    />
+                    <textarea
+                      value={settingsForm.heroSubtitle}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, heroSubtitle: e.target.value })}
+                      placeholder="Hero subtitle"
+                      rows={3}
+                      className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none resize-none"
+                    />
+                    <input
+                      type="url"
+                      value={settingsForm.heroImageUrl}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, heroImageUrl: e.target.value })}
+                      placeholder="Hero image URL"
+                      className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-[#1A1A1A]/10">
                   <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-2">Live Sale Session End Time</label>
+                  <label className="flex items-center gap-2 mb-4 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settingsForm.liveSaleActive}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, liveSaleActive: e.target.checked })}
+                      className="w-4 h-4 accent-[#1A1A1A]"
+                    />
+                    <span className="font-sans text-sm font-medium">Enable live sale page deals</span>
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <input
+                      type="text"
+                      value={settingsForm.liveSaleTitle}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, liveSaleTitle: e.target.value })}
+                      placeholder="Live sale title"
+                      className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={settingsForm.liveSaleDiscountText}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, liveSaleDiscountText: e.target.value })}
+                      placeholder="Discount text"
+                      className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                    />
+                    <textarea
+                      value={settingsForm.liveSaleSubtitle}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, liveSaleSubtitle: e.target.value })}
+                      placeholder="Live sale subtitle"
+                      rows={3}
+                      className="md:col-span-2 w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none resize-none"
+                    />
+                  </div>
                   <input
                     type="datetime-local"
                     value={toDateTimeLocalValue(settingsForm.liveSaleEndTime)}
