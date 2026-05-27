@@ -1,4 +1,5 @@
 import React from 'react';
+import { SUPPORT_EMAIL } from '../SiteContext';
 
 export const PrivacyContent = (
   <>
@@ -35,7 +36,7 @@ export const ContactContent = (
   <>
     <p className="text-lg leading-relaxed mb-6">Need help choosing a product, confirming delivery, or tracking an order? Our support team can help.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Customer Support</h3>
-    <p>Email: <a className="underline" href="mailto:HELLO@AABNOOR.COM">HELLO@AABNOOR.COM</a></p>
+    <p>Email: <a className="underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a></p>
     <p>Phone: +92 (21) 111 287 233</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Order Help</h3>
     <p>For order status, use the Track Order page with the tracking number sent in your confirmation email.</p>

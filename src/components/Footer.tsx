@@ -4,6 +4,7 @@ import { useSite } from '../SiteContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Instagram, Facebook, Twitter, MessageCircle } from 'lucide-react';
 import { useUI } from '../UIContext';
+import { SUPPORT_EMAIL } from '../SiteContext';
 
 export function Footer() {
   const { scrollToShopAndFilter } = useCategory();
@@ -97,11 +98,11 @@ export function Footer() {
               <li><Link to="/track" className="hover:text-[#1A1A1A] transition-colors">Track Order</Link></li>
             </ul>
             <div className="font-sans text-[10px] tracking-widest text-[#1A1A1A]/70">
-              <p className="mb-1">{settings.storeEmail || 'HELLO@AABNOOR.COM'}</p>
+              <p className="mb-1">{settings.storeEmail || SUPPORT_EMAIL}</p>
               <p>{settings.storePhone || '+1 (800) 123-4567'}</p>
             </div>
             <a
-              href={`mailto:${settings.storeEmail || 'HELLO@AABNOOR.COM'}?subject=Aabnoor support request`}
+              href={`mailto:${settings.storeEmail || SUPPORT_EMAIL}?subject=Aabnoor support request`}
               className="mt-4 inline-flex items-center gap-2 border border-[#1A1A1A]/15 px-3 py-2 font-sans text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-[#F9F7F2] transition-colors"
             >
               <MessageCircle className="w-3.5 h-3.5" />

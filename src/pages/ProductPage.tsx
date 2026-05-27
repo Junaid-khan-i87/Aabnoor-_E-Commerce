@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SafeImage } from '../components/SafeImage';
 import { SEO, SEO_SITE_URL } from '../components/SEO';
 import { supabase } from '../lib/supabase';
+import { SUPPORT_EMAIL } from '../SiteContext';
 
 export function ProductPage() {
   const { id } = useParams();
@@ -533,7 +534,7 @@ export function ProductPage() {
                 </p>
               </div>
               <a
-                href={`mailto:${settings.storeEmail || 'hello@aabnoor.com'}?subject=Aabnoor product question - ${encodeURIComponent(product.name)}`}
+                href={`mailto:${settings.storeEmail || SUPPORT_EMAIL}?subject=Aabnoor product question - ${encodeURIComponent(product.name)}`}
                 className="border border-[#1A1A1A]/10 bg-white p-4 hover:border-[#CDA185] transition-colors"
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -541,7 +542,7 @@ export function ProductPage() {
                   <span className="font-sans text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A]">Need Help?</span>
                 </div>
                 <p className="font-sans text-xs text-[#1A1A1A]/65 leading-relaxed">
-                  Ask support before ordering: {settings.storeEmail || 'hello@aabnoor.com'}.
+                  Ask support before ordering: {settings.storeEmail || SUPPORT_EMAIL}.
                 </p>
               </a>
             </div>

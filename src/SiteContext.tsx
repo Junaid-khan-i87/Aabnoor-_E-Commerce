@@ -5,6 +5,7 @@ import { deleteEntity, getStoreValue, listEntities, setStoreValue, upsertEntity 
 import { supabase } from './lib/supabase';
 
 const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
+export const SUPPORT_EMAIL = 'contact@flenogarei.resend.app';
 
 export interface UserAccount {
   id: string;
@@ -41,7 +42,7 @@ const getDefaultLiveSaleEndTime = () => new Date(Date.now() + 18 * 60 * 60 * 100
 const DEFAULT_SETTINGS: SiteSettings = {
   deliveryFee: 150,
   freeShippingThreshold: 5000,
-  storeEmail: 'HELLO@AABNOOR.COM',
+  storeEmail: SUPPORT_EMAIL,
   storePhone: '+92 (21) 111 287 233',
   storeAddress: 'Aabnoor Flagship Store, Ground Floor, Dolmen Mall Clifton, Karachi, Pakistan',
   heroEyebrow: 'The Future of Beauty',
@@ -278,9 +279,15 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       }
 
       if (remoteSettings) {
-        const mergedSettings = { ...DEFAULT_SETTINGS, ...remoteSettings };
+        const savedEmail = String(remoteSettings.storeEmail || '').trim().toLowerCase();
+        const shouldReplacePlaceholderEmail = ['hello@aabnoor.com', 'contact@aabnoor.com'].includes(savedEmail);
+        const mergedSettings = {
+          ...DEFAULT_SETTINGS,
+          ...remoteSettings,
+          storeEmail: shouldReplacePlaceholderEmail ? SUPPORT_EMAIL : remoteSettings.storeEmail || SUPPORT_EMAIL,
+        };
         setSettingsState(mergedSettings);
-        if (!remoteSettings.liveSaleEndTime) {
+        if (!remoteSettings.liveSaleEndTime || shouldReplacePlaceholderEmail) {
           setStoreValue('settings', mergedSettings);
         }
       } else {
