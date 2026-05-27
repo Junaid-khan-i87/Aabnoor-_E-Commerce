@@ -7,7 +7,7 @@ import { useProducts } from '../ProductContext';
 import { useWishlist } from '../WishlistContext';
 import { useSite } from '../SiteContext';
 import { useUI } from '../UIContext';
-import { Plus, Minus, ChevronDown, ChevronUp, X, ZoomIn, Heart, Star, Clock } from 'lucide-react';
+import { Plus, Minus, ChevronDown, ChevronUp, X, ZoomIn, Heart, Star, Clock, Truck, ShieldCheck, MessageCircle, PackageCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SafeImage } from '../components/SafeImage';
 
@@ -18,7 +18,7 @@ export function ProductPage() {
   const { addToCart, setIsCartOpen } = useCart();
   const { redeemCoins, addCoins } = useLoyalty();
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
-  const { currentUser } = useSite();
+  const { currentUser, settings } = useSite();
   const { addToast } = useUI();
   const navigate = useNavigate();
 
@@ -436,6 +436,48 @@ export function ProductPage() {
             <p className="font-sans text-sm text-[#1A1A1A]/70 leading-relaxed mb-8">
               {product.description}
             </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+              <div className="border border-[#1A1A1A]/10 bg-white p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Truck className="w-4 h-4 text-[#CDA185]" />
+                  <span className="font-sans text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A]">Delivery Estimate</span>
+                </div>
+                <p className="font-sans text-xs text-[#1A1A1A]/65 leading-relaxed">
+                  Standard delivery in 3-5 business days. Free shipping over Rs. {Number(settings.freeShippingThreshold).toFixed(0)}.
+                </p>
+              </div>
+              <div className="border border-[#1A1A1A]/10 bg-white p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShieldCheck className="w-4 h-4 text-[#CDA185]" />
+                  <span className="font-sans text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A]">Secure Purchase</span>
+                </div>
+                <p className="font-sans text-xs text-[#1A1A1A]/65 leading-relaxed">
+                  Authenticated checkout, order email, and backend tracking number are included.
+                </p>
+              </div>
+              <div className="border border-[#1A1A1A]/10 bg-white p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <PackageCheck className="w-4 h-4 text-[#CDA185]" />
+                  <span className="font-sans text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A]">Product Confidence</span>
+                </div>
+                <p className="font-sans text-xs text-[#1A1A1A]/65 leading-relaxed">
+                  Gallery images, ingredient notes, usage guidance, and customer reviews are available below.
+                </p>
+              </div>
+              <a
+                href={`mailto:${settings.storeEmail || 'hello@aabnoor.com'}?subject=Aabnoor product question - ${encodeURIComponent(product.name)}`}
+                className="border border-[#1A1A1A]/10 bg-white p-4 hover:border-[#CDA185] transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageCircle className="w-4 h-4 text-[#CDA185]" />
+                  <span className="font-sans text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A]">Need Help?</span>
+                </div>
+                <p className="font-sans text-xs text-[#1A1A1A]/65 leading-relaxed">
+                  Ask support before ordering: {settings.storeEmail || 'hello@aabnoor.com'}.
+                </p>
+              </a>
+            </div>
 
             {/* Variants Selector */}
             {product.variants && product.variants.length > 0 && (

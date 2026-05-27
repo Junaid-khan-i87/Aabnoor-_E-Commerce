@@ -42,6 +42,8 @@ import {
   SustainabilityContent,
   IngredientsContent,
   JournalContent,
+  ContactContent,
+  FAQContent,
 } from './pages/pageContent';
 
 import { CheckoutPage } from './pages/CheckoutPage';
@@ -77,6 +79,8 @@ export default function App() {
                             <Route path="/privacy" element={<TextPage title="Privacy Policy" content={PrivacyContent} />} />
                             <Route path="/terms" element={<TextPage title="Terms of Service" content={TermsContent} />} />
                             <Route path="/shipping" element={<TextPage title="Shipping & Returns" content={ShippingContent} />} />
+                            <Route path="/contact" element={<TextPage title="Contact Us" content={ContactContent} />} />
+                            <Route path="/faq" element={<TextPage title="FAQs" content={FAQContent} />} />
                             <Route path="/our-story" element={<TextPage title="Our Story" content={StoryContent} />} />
                             <Route path="/sustainability" element={<TextPage title="Sustainability" content={SustainabilityContent} />} />
                             <Route path="/ingredients" element={<TextPage title="Ingredients" content={IngredientsContent} />} />

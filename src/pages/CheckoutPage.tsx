@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Coins, CheckCircle, ShoppingBag, ChevronDown, ChevronUp } from 'lucide-react';
+import { Coins, CheckCircle, ShoppingBag, ChevronDown, ChevronUp, CreditCard, ShieldCheck, Truck } from 'lucide-react';
 import { useCart } from '../CartContext';
 import { useOrders } from '../OrderContext';
 import { useSite } from '../SiteContext';
@@ -317,6 +317,20 @@ export function CheckoutPage() {
             
             <div className="pt-8">
               <h3 className="font-sans text-xs uppercase font-bold tracking-widest text-[#1A1A1A] border-b border-[#1A1A1A]/10 pb-4 mb-6">Payment Method</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                <div className="border border-[#1A1A1A]/10 bg-white p-3 flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#CDA185] mt-0.5 shrink-0" />
+                  <span className="font-sans text-[10px] uppercase tracking-wider font-bold text-[#1A1A1A]/70">SSL protected checkout</span>
+                </div>
+                <div className="border border-[#1A1A1A]/10 bg-white p-3 flex items-start gap-2">
+                  <CreditCard className="w-4 h-4 text-[#CDA185] mt-0.5 shrink-0" />
+                  <span className="font-sans text-[10px] uppercase tracking-wider font-bold text-[#1A1A1A]/70">Card and COD options</span>
+                </div>
+                <div className="border border-[#1A1A1A]/10 bg-white p-3 flex items-start gap-2">
+                  <Truck className="w-4 h-4 text-[#CDA185] mt-0.5 shrink-0" />
+                  <span className="font-sans text-[10px] uppercase tracking-wider font-bold text-[#1A1A1A]/70">Tracking after order</span>
+                </div>
+              </div>
               <div className="space-y-4">
                 <div className={`p-6 border transition-colors ${paymentMethod === 'credit_card' ? 'border-[#1A1A1A] bg-[#1A1A1A]/5' : 'border-[#1A1A1A]/20 hover:border-[#1A1A1A]/50'}`}>
                   <label className="flex items-center gap-4 cursor-pointer">

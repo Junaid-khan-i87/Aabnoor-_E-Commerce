@@ -31,6 +31,32 @@ export const ShippingContent = (
   </>
 );
 
+export const ContactContent = (
+  <>
+    <p className="text-lg leading-relaxed mb-6">Need help choosing a product, confirming delivery, or tracking an order? Our support team can help.</p>
+    <h3 className="text-xl font-bold mt-8 mb-4">Customer Support</h3>
+    <p>Email: <a className="underline" href="mailto:HELLO@AABNOOR.COM">HELLO@AABNOOR.COM</a></p>
+    <p>Phone: +92 (21) 111 287 233</p>
+    <h3 className="text-xl font-bold mt-8 mb-4">Order Help</h3>
+    <p>For order status, use the Track Order page with the tracking number sent in your confirmation email.</p>
+    <h3 className="text-xl font-bold mt-8 mb-4">Response Time</h3>
+    <p>We usually respond within 1 business day. Please include your order number or tracking number when contacting support.</p>
+  </>
+);
+
+export const FAQContent = (
+  <>
+    <h3 className="text-xl font-bold mt-8 mb-4">How long does delivery take?</h3>
+    <p>Standard delivery usually takes 3-5 business days. Express delivery usually takes 1-2 business days.</p>
+    <h3 className="text-xl font-bold mt-8 mb-4">Where can I track my order?</h3>
+    <p>Visit the Track Order page and enter the tracking number from your confirmation email.</p>
+    <h3 className="text-xl font-bold mt-8 mb-4">Can I pay cash on delivery?</h3>
+    <p>Yes. Cash on Delivery is available at checkout along with card payment simulation.</p>
+    <h3 className="text-xl font-bold mt-8 mb-4">How do reviews work?</h3>
+    <p>Customers can rate products and leave notes on product pages. Reviews help other shoppers compare real experiences.</p>
+  </>
+);
+
 export const StoryContent = (
   <>
     <p className="text-lg leading-relaxed mb-6">Aabnoor Moderne was founded on a simple premise: beauty protocols should not compromise on efficacy, safety, or design.</p>

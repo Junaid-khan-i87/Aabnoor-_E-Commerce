@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Hero } from '../components/Hero';
 import { Marquee } from '../components/Marquee';
 import { ProductGrid } from '../components/ProductGrid';
@@ -6,20 +6,74 @@ import { SocialGallery } from '../components/SocialGallery';
 import { useProducts } from '../ProductContext';
 import { useSite } from '../SiteContext';
 import { Link } from 'react-router-dom';
-import { Clock, PackageCheck, ShieldCheck, Sparkles, Star, Truck } from 'lucide-react';
+import { Clock, PackageCheck, Search, ShieldCheck, Sparkles, Star, Truck } from 'lucide-react';
 
 export function HomePage() {
   const { productsList } = useProducts();
   const { settings } = useSite();
+  const [smartQuery, setSmartQuery] = useState('');
   const bestSellers = [...productsList]
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 3);
   const liveSaleProducts = productsList.filter(product => product.isFlashSale && product.flashSalePrice);
+  const smartResults = productsList
+    .filter((product) => {
+      const query = smartQuery.trim().toLowerCase();
+      if (!query) return false;
+      return [
+        product.name,
+        product.category,
+        product.subCategory,
+        product.description,
+        product.price.toString(),
+      ].filter(Boolean).some((value) => String(value).toLowerCase().includes(query));
+    })
+    .slice(0, 5);
 
   return (
     <>
       <Hero />
       <Marquee />
+      <section className="bg-[#F9F7F2] pt-10 pb-4">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="bg-white border border-[#1A1A1A]/10 shadow-sm p-4 sm:p-5">
+            <label className="font-sans text-[10px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A]/55 mb-3 block">
+              Smart Product Search
+            </label>
+            <div className="flex items-center gap-3 border border-[#1A1A1A]/15 px-4 py-3 bg-[#F9F7F2]">
+              <Search className="w-5 h-5 text-[#CDA185] shrink-0" />
+              <input
+                value={smartQuery}
+                onChange={(event) => setSmartQuery(event.target.value)}
+                placeholder="Search by product, category, concern, or price..."
+                className="w-full bg-transparent outline-none font-sans text-sm text-[#1A1A1A] placeholder:text-[#1A1A1A]/35"
+              />
+            </div>
+            {smartQuery.trim() && (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {smartResults.length > 0 ? smartResults.map((product) => (
+                  <Link
+                    key={product.id}
+                    to={`/product/${product.id}`}
+                    className="flex items-center gap-3 border border-[#1A1A1A]/8 p-2 hover:border-[#CDA185] transition-colors"
+                  >
+                    <img src={product.imageUrl} alt={product.name} className="w-12 h-14 object-cover bg-[#1A1A1A]/5" referrerPolicy="no-referrer" />
+                    <div className="min-w-0">
+                      <p className="font-sans text-[9px] uppercase tracking-widest text-[#CDA185] font-bold">{product.category}</p>
+                      <h3 className="font-serif text-sm text-[#1A1A1A] line-clamp-1">{product.name}</h3>
+                      <p className="font-sans text-xs text-[#1A1A1A]/65">Rs. {Number(product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price).toFixed(2)}</p>
+                    </div>
+                  </Link>
+                )) : (
+                  <p className="sm:col-span-2 font-sans text-xs uppercase tracking-widest text-[#1A1A1A]/45 py-4 text-center">
+                    No product matched. Try Skin Care, Makeup, Serum, or a price.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
       <section className="bg-[#F9F7F2] border-y border-[#1A1A1A]/10">
         <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
