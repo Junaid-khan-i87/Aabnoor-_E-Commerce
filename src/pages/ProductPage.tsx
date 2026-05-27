@@ -11,6 +11,7 @@ import { Plus, Minus, ChevronDown, ChevronUp, X, ZoomIn, Heart, Star, Clock, Tru
 import { motion, AnimatePresence } from 'motion/react';
 import { SafeImage } from '../components/SafeImage';
 import { SEO, SEO_SITE_URL } from '../components/SEO';
+import { supabase } from '../lib/supabase';
 
 export function ProductPage() {
   const { id } = useParams();
@@ -123,34 +124,45 @@ export function ProductPage() {
     }
   }, [product]);
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
+  const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!product) return;
 
-    const newReview = {
-      id: `rev-${Date.now()}`,
-      user: formName.trim() || 'Valued Boutique Client',
-      rating: formRating,
-      comment: formComment.trim() || 'Remarkable molecular texture! Skin feels fully regenerated.',
-      date: new Date().toISOString(),
-      tags: formSelectedTags.length > 0 ? formSelectedTags : ['Hydrating', 'Premium Feel'],
-      photos: formPhoto ? [formPhoto] : []
-    };
+    if (!currentUser || !supabase) {
+      addToast('Please sign in before posting a review.', 'error');
+      return;
+    }
 
-    const currentReviews = product.reviews || [];
-    const updatedReviews = [newReview, ...currentReviews];
+    const { data: sessionResult } = await supabase.auth.getSession();
+    const token = sessionResult.session?.access_token;
+    if (!token) {
+      addToast('Please sign in before posting a review.', 'error');
+      return;
+    }
 
-    // Recalculate rating average
-    const sum = updatedReviews.reduce((acc, r) => acc + r.rating, 0);
-    const avg = Math.round((sum / updatedReviews.length) * 10) / 10;
+    const response = await fetch('/api/submit-review', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        productId: product.id,
+        name: formName.trim(),
+        rating: formRating,
+        comment: formComment.trim(),
+        tags: formSelectedTags,
+        photos: formPhoto ? [formPhoto] : [],
+      }),
+    });
 
-    const updatedProduct = {
-      ...product,
-      reviews: updatedReviews,
-      rating: avg
-    };
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.product) {
+      addToast(result.error || 'Review could not be saved.', 'error');
+      return;
+    }
 
-    updateProduct(product.id, updatedProduct);
+    updateProduct(product.id, result.product, false);
     addCoins(15); // +15 Aabnoor Coins reward!
     addToast('Review posted! You received +15 Aabnoor Coins bonus.', 'success');
 

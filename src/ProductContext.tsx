@@ -5,7 +5,7 @@ import { deleteEntity, listEntities, replaceEntities, upsertEntity } from './lib
 interface ProductContextType {
   productsList: Product[];
   addProduct: (product: Product) => void;
-  updateProduct: (id: string, product: Product) => void;
+  updateProduct: (id: string, product: Product, persist?: boolean) => void;
   deleteProduct: (id: string) => void;
   saveProductsList: (newList: Product[]) => void;
 }
@@ -37,10 +37,10 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateProduct = (id: string, updatedProduct: Product) => {
+  const updateProduct = (id: string, updatedProduct: Product, persist = true) => {
     setProductsList(prev => {
       const next = prev.map(p => p.id === id ? updatedProduct : p);
-      upsertEntity('products', updatedProduct);
+      if (persist) upsertEntity('products', updatedProduct);
       return next;
     });
   };
