@@ -16,6 +16,6 @@
     { "src": "/sustainability", "dest": "/index.html" },
     { "src": "/ingredients", "dest": "/index.html" },
     { "src": "/journal", "dest": "/index.html" },
-    { "src": "/.*", "status": 404, "dest": "/404.html" }
+    { "src": "/.*", "dest": "/api/not-found" }
   ]
 }
