@@ -177,9 +177,30 @@ export function AdminPage() {
     if (newStatus === 'Delivered' && currentStatus !== 'Delivered') {
       const order = orders.find(o => o.id === orderId);
       if (order) {
-        setTimeout(() => {
-          addToast(`Email receipt sent to ${order.userEmail} for Order #${order.id}.`, 'info');
-        }, 300);
+        try {
+          const { data: sessionResult } = await supabase?.auth.getSession() || { data: { session: null } };
+          const token = sessionResult.session?.access_token;
+          if (!token) {
+            addToast('Order delivered, but email was not sent. Sign in again with authenticator.', 'error');
+          } else {
+            const emailResponse = await fetch('/api/admin-send-delivery-email', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ orderId }),
+            });
+            const emailResult = await emailResponse.json().catch(() => ({}));
+            if (!emailResponse.ok) {
+              addToast(emailResult.error || 'Order delivered, but delivery email was not sent.', 'error');
+            } else {
+              addToast(`Delivery email sent to ${emailResult.to || order.userEmail}.`, 'info');
+            }
+          }
+        } catch {
+          addToast('Order delivered, but delivery email was not sent.', 'error');
+        }
       }
     }
 
