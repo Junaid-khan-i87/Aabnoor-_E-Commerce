@@ -76,6 +76,7 @@ export function Footer() {
               {categories.slice(0, 4).map(cat => (
                 <li key={cat}><a href="/#shop" onClick={(e) => { e.preventDefault(); handleNav(cat); }} className="hover:text-[#1A1A1A] transition-colors">{cat}</a></li>
               ))}
+              <li><Link to="/live-sale" className="hover:text-[#1A1A1A] transition-colors">Live Sale</Link></li>
             </ul>
           </div>
 

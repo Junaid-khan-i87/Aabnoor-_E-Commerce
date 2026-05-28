@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 
 interface TextPageProps {
@@ -45,6 +46,16 @@ export function TextPage({ title, content, canonicalPath }: TextPageProps) {
       <div className="prose prose-sm md:prose-base prose-neutral max-w-none text-[#1A1A1A]/80 leading-relaxed space-y-6">
         {content}
       </div>
+      <nav className="mt-16 border-t border-[#1A1A1A]/10 pt-8" aria-label="Related customer links">
+        <p className="font-sans text-[10px] uppercase tracking-[0.22em] font-bold text-[#1A1A1A]/45 mb-4">Related Aabnoor Help</p>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/" className="text-[10px] uppercase tracking-[0.18em] font-bold border border-[#1A1A1A]/12 px-4 py-2 hover:bg-[#1A1A1A] hover:text-[#F9F7F2] transition-colors">Shop Beauty</Link>
+          <Link to="/shipping" className="text-[10px] uppercase tracking-[0.18em] font-bold border border-[#1A1A1A]/12 px-4 py-2 hover:bg-[#1A1A1A] hover:text-[#F9F7F2] transition-colors">Shipping</Link>
+          <Link to="/track" className="text-[10px] uppercase tracking-[0.18em] font-bold border border-[#1A1A1A]/12 px-4 py-2 hover:bg-[#1A1A1A] hover:text-[#F9F7F2] transition-colors">Track Order</Link>
+          <Link to="/faq" className="text-[10px] uppercase tracking-[0.18em] font-bold border border-[#1A1A1A]/12 px-4 py-2 hover:bg-[#1A1A1A] hover:text-[#F9F7F2] transition-colors">FAQs</Link>
+          <Link to="/contact" className="text-[10px] uppercase tracking-[0.18em] font-bold border border-[#1A1A1A]/12 px-4 py-2 hover:bg-[#1A1A1A] hover:text-[#F9F7F2] transition-colors">Contact</Link>
+        </div>
+      </nav>
     </div>
   );
 }

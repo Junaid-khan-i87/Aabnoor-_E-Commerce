@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Package, MapPin, Truck, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useOrders } from '../OrderContext';
 import { Order } from '../types';
 import { SEO } from '../components/SEO';
@@ -195,6 +196,23 @@ export function TrackPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <section className="mt-16 border-t border-[#1A1A1A]/10 pt-10">
+        <h2 className="font-serif italic text-3xl text-[#1A1A1A] mb-5">How Aabnoor Order Tracking Works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans text-sm leading-7 text-[#1A1A1A]/68">
+          <p>
+            Every Aabnoor checkout creates a secure order record with a unique tracking number. Use the tracking code from your confirmation email to review the latest status, including pending, processing, shipped and delivered updates.
+          </p>
+          <p>
+            If your tracking number is not found, check that the full code was copied from your email. For delivery questions, product support or address help, contact our support team and include your order number so we can respond quickly.
+          </p>
+        </div>
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Link to="/shipping" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Shipping Details</Link>
+          <Link to="/contact" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Contact Support</Link>
+          <Link to="/faq" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Order FAQs</Link>
+        </div>
+      </section>
     </div>
   );
 }

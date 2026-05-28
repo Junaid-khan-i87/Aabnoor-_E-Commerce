@@ -5,3 +5,4 @@ Disallow: /profile
 Disallow: /checkout
 
 Sitemap: https://aabnoor.shop/sitemap.xml
+LLMs: https://aabnoor.shop/llms.txt

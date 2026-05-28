@@ -1,0 +1,28 @@
+# Aabnoor Beaute
+
+> Aabnoor Beaute is an ecommerce storefront for skincare, makeup, hair care, fragrance, live sale offers, secure checkout, order tracking, customer support, and product education.
+
+## Primary Pages
+
+- [Home and product catalog](https://aabnoor.shop/)
+- [Live sale offers](https://aabnoor.shop/live-sale)
+- [Track an order](https://aabnoor.shop/track)
+- [Shipping and returns](https://aabnoor.shop/shipping)
+- [Customer support](https://aabnoor.shop/contact)
+- [Frequently asked questions](https://aabnoor.shop/faq)
+- [Our story](https://aabnoor.shop/our-story)
+- [Ingredients guide](https://aabnoor.shop/ingredients)
+- [Sustainability](https://aabnoor.shop/sustainability)
+
+## Product Discovery
+
+Product pages include product name, category, price, availability, images, descriptions, ingredient guidance, usage notes, customer reviews, and structured Product schema where available.
+
+## Order Support
+
+Customers receive an order number and tracking number by email after checkout. Order tracking is available at https://aabnoor.shop/track.
+
+## Contact
+
+Customer support email: contact@flenogarei.resend.app
+

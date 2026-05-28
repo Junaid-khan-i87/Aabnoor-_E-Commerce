@@ -25,10 +25,12 @@ export const ShippingContent = (
   <>
     <h3 className="text-xl font-bold mt-8 mb-4">Domestic Shipping</h3>
     <p>We offer complimentary standard shipping on all domestic orders over Rs. 5000. Standard shipping typically takes 3-5 business days. Expedited shipping options are available at checkout for an additional fee.</p>
+    <p>Shipping fees are shown before an order is completed so customers can review the final amount before confirming checkout. After purchase, the order confirmation email includes the order number and tracking number used on the Track Order page.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">International Shipping</h3>
     <p>We currently ship to select international destinations. Shipping rates and delivery times are calculated at checkout based on the destination. Customers are responsible for any applicable duties and taxes.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Returns</h3>
     <p>We accept returns of unopened and gently used items within 30 days of purchase. Please contact our concierge team to initiate a return.</p>
+    <p>For faster return support, include your order number, tracking number, product name and a short description of the concern. Our support team will confirm the next step by email.</p>
   </>
 );
 
@@ -38,8 +40,10 @@ export const ContactContent = (
     <h3 className="text-xl font-bold mt-8 mb-4">Customer Support</h3>
     <p>Email: <a className="underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a></p>
     <p>Phone: +92 (21) 111 287 233</p>
+    <p>Use this support email for product questions, shipping concerns, delivery status, account help and order follow-up. If your message is about an order, include the order number and tracking number from your confirmation email.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Order Help</h3>
     <p>For order status, use the Track Order page with the tracking number sent in your confirmation email.</p>
+    <p>Tracking information is updated when an order moves from pending to processing, shipped and delivered. If a tracking page result looks incorrect, contact support so the order can be checked against the backend record.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Response Time</h3>
     <p>We usually respond within 1 business day. Please include your order number or tracking number when contacting support.</p>
   </>
@@ -51,10 +55,14 @@ export const FAQContent = (
     <p>Standard delivery usually takes 3-5 business days. Express delivery usually takes 1-2 business days.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Where can I track my order?</h3>
     <p>Visit the Track Order page and enter the tracking number from your confirmation email.</p>
+    <p>Tracking numbers are stored with the order and can be used at any time to confirm whether the order is pending, processing, shipped, delivered or cancelled.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Can I pay cash on delivery?</h3>
     <p>Yes. Cash on Delivery is available at checkout along with card payment simulation.</p>
+    <h3 className="text-xl font-bold mt-8 mb-4">How do shipping costs work?</h3>
+    <p>The checkout page displays delivery costs before the order is placed. Orders above the free shipping threshold qualify for complimentary standard delivery.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">How do reviews work?</h3>
     <p>Customers can rate products and leave notes on product pages. Reviews help other shoppers compare real experiences.</p>
+    <p>Reviews are saved through the backend for signed-in customers and can contribute to product ratings shown on product pages.</p>
   </>
 );
 
@@ -93,6 +101,10 @@ export const IngredientsContent = (
 export const JournalContent = (
   <>
     <p>Welcome to our Journal—a space for deep dives into formulation science, interviews with industry experts, and guides to optimizing your beauty protocols.</p>
+    <h3 className="text-xl font-bold mt-8 mb-4">Coming Beauty Guides</h3>
+    <p>Upcoming articles will cover ingredient routines, seasonal skincare planning, makeup preparation, hair care maintenance and fragrance layering. These guides are intended to help customers compare products and build simple routines before checkout.</p>
+    <h3 className="text-xl font-bold mt-8 mb-4">What To Read Now</h3>
+    <p>Until the editorial archive is expanded, use the Ingredients guide for active ingredient education, the FAQ page for delivery and account answers, and product pages for usage notes, reviews, availability and pricing.</p>
     <p className="mt-8 italic text-[#1A1A1A]/50">Check back soon for our first editorial features.</p>
   </>
 );
