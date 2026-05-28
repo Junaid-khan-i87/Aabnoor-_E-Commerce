@@ -1,20 +1,21 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/product/:id", "destination": "/index.html" },
-    { "source": "/admin", "destination": "/index.html" },
-    { "source": "/profile", "destination": "/index.html" },
-    { "source": "/checkout", "destination": "/index.html" },
-    { "source": "/track", "destination": "/index.html" },
-    { "source": "/live-sale", "destination": "/index.html" },
-    { "source": "/privacy", "destination": "/index.html" },
-    { "source": "/terms", "destination": "/index.html" },
-    { "source": "/shipping", "destination": "/index.html" },
-    { "source": "/contact", "destination": "/index.html" },
-    { "source": "/faq", "destination": "/index.html" },
-    { "source": "/our-story", "destination": "/index.html" },
-    { "source": "/sustainability", "destination": "/index.html" },
-    { "source": "/ingredients", "destination": "/index.html" },
-    { "source": "/journal", "destination": "/index.html" }
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/product/[^/]+", "dest": "/index.html" },
+    { "src": "/admin", "dest": "/index.html" },
+    { "src": "/profile", "dest": "/index.html" },
+    { "src": "/checkout", "dest": "/index.html" },
+    { "src": "/track", "dest": "/index.html" },
+    { "src": "/live-sale", "dest": "/index.html" },
+    { "src": "/privacy", "dest": "/index.html" },
+    { "src": "/terms", "dest": "/index.html" },
+    { "src": "/shipping", "dest": "/index.html" },
+    { "src": "/contact", "dest": "/index.html" },
+    { "src": "/faq", "dest": "/index.html" },
+    { "src": "/our-story", "dest": "/index.html" },
+    { "src": "/sustainability", "dest": "/index.html" },
+    { "src": "/ingredients", "dest": "/index.html" },
+    { "src": "/journal", "dest": "/index.html" },
+    { "src": "/.*", "status": 404, "dest": "/404.html" }
   ]
 }
