@@ -1,5 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
+import { ArrowRight, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useCategory } from '../CategoryContext';
 import { useSite } from '../SiteContext';
 
@@ -17,7 +19,7 @@ export function Hero() {
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   return (
-    <section ref={ref} className="relative h-[85vh] lg:h-screen min-h-[600px] w-full bg-[#F9F7F2] overflow-hidden flex items-center justify-center">
+    <section ref={ref} className="relative min-h-[620px] h-[88vh] lg:h-screen w-full bg-[#F9F7F2] overflow-hidden flex items-center justify-center">
       {/* Background Image - Absolute positioned */}
       <motion.div 
         initial={{ scale: 1.05, filter: 'blur(10px)' }}
@@ -35,7 +37,8 @@ export function Hero() {
           fetchPriority="high"
         />
         {/* Robust high-contrast gradient overlay to ensure optimal readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#F9F7F2] via-[#F9F7F2]/50 to-[#F9F7F2]/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#F9F7F2] via-[#F9F7F2]/60 to-[#F9F7F2]/10" />
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-[#F9F7F2]" />
       </motion.div>
 
       <motion.div style={{ y: textY, opacity }} className="relative z-10 w-full max-w-7xl mx-auto px-6 pt-20 flex flex-col items-center justify-center text-center">
@@ -46,10 +49,11 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="space-y-6"
         >
-          <p className="font-sans text-[10px] uppercase tracking-[0.4em] text-[#1A1A1A]/50">
+          <p className="inline-flex items-center gap-2 rounded-full border border-[#1A1A1A]/10 bg-[#F9F7F2]/80 px-4 py-2 font-sans text-[10px] uppercase tracking-[0.26em] text-[#1A1A1A]/60 shadow-sm">
+            <Sparkles className="h-3.5 w-3.5 text-[#CDA185]" />
             {settings.heroEyebrow || 'The Future of Beauty'}
           </p>
-          <h1 className="font-serif italic font-light text-5xl md:text-7xl lg:text-[90px] tracking-tighter text-[#1A1A1A] max-w-5xl leading-[0.9]">
+          <h1 className="font-serif italic font-light text-5xl md:text-7xl lg:text-[92px] tracking-normal text-[#1A1A1A] max-w-5xl leading-[0.92]">
             {settings.heroTitle || 'Redefine Your Beauty Routine'}
           </h1>
           <p className="font-sans text-sm lg:text-base text-[#1A1A1A]/70 max-w-lg mx-auto leading-relaxed pt-4">
@@ -61,17 +65,40 @@ export function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-12"
+          className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-3"
         >
           <a
             href="#shop"
             onClick={(e) => { e.preventDefault(); scrollToShopAndFilter('All'); }}
-            className="inline-block"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1A1A1A] px-9 py-4 text-[12px] uppercase tracking-[0.18em] font-bold text-white hover:bg-[#1A1A1A]/90 transition-colors"
           >
-            <div className="px-12 py-4 bg-[#1A1A1A] text-white rounded-full text-[12px] uppercase tracking-[0.2em] font-medium hover:bg-[#1A1A1A]/90 transition-colors">
-              Shop Collection
-            </div>
+            Shop Collection
+            <ArrowRight className="h-4 w-4" />
           </a>
+          <Link
+            to="/live-sale"
+            className="inline-flex items-center justify-center rounded-full border border-[#1A1A1A]/15 bg-[#F9F7F2]/70 px-9 py-4 text-[12px] uppercase tracking-[0.18em] font-bold text-[#1A1A1A] hover:border-[#CDA185] hover:text-[#CDA185] transition-colors"
+          >
+            Live Sale
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.9 }}
+          className="mt-12 grid w-full max-w-3xl grid-cols-3 border-y border-[#1A1A1A]/10 bg-[#F9F7F2]/55 backdrop-blur-sm"
+        >
+          {[
+            ['Secure', 'Checkout'],
+            ['Tracked', 'Orders'],
+            ['Curated', 'Routines'],
+          ].map(([top, bottom]) => (
+            <div key={top} className="px-3 py-4 text-center border-r border-[#1A1A1A]/10 last:border-r-0">
+              <p className="font-serif italic text-xl text-[#1A1A1A]">{top}</p>
+              <p className="mt-1 font-sans text-[9px] uppercase tracking-[0.18em] text-[#1A1A1A]/45">{bottom}</p>
+            </div>
+          ))}
         </motion.div>
       </motion.div>
 

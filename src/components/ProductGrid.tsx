@@ -124,7 +124,7 @@ function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: 
             }}
             className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-4 rounded-full text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-[#1A1A1A]/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto cursor-pointer"
           >
-            {product.stock === 0 ? 'Out of Stock' : `Quick Add — Rs. ${Number(currentPrice).toFixed(2)}`}
+            {product.stock === 0 ? 'Out of Stock' : `Quick Add - Rs. ${Number(currentPrice).toFixed(2)}`}
           </button>
         </div>
       </motion.div>
@@ -243,7 +243,7 @@ export function ProductGrid() {
               Curated Edit
             </h2>
             <p className="font-sans text-xs uppercase tracking-widest font-bold text-[#1A1A1A]/60 max-w-sm">
-              Discover our essentials for transformative beauty. — Showing {filteredProducts.length} item{filteredProducts.length === 1 ? '' : 's'}
+              Discover our essentials for transformative beauty. Showing {filteredProducts.length} item{filteredProducts.length === 1 ? '' : 's'}
             </p>
           </div>
 
@@ -331,13 +331,13 @@ export function ProductGrid() {
             {activeCategory !== 'All' && (
               <span className="flex items-center gap-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 px-3 py-1.5 rounded-full text-[#1A1A1A]/80">
                 Category: {activeCategory}
-                <button onClick={() => setActiveCategory('All')} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">✕</button>
+                <button onClick={() => setActiveCategory('All')} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
               </span>
             )}
             {sortBy !== 'popular' && (
               <span className="flex items-center gap-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 px-3 py-1.5 rounded-full text-[#1A1A1A]/80">
                 Sort: {sortBy}
-                <button onClick={() => setSortBy('popular')} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">✕</button>
+                <button onClick={() => setSortBy('popular')} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
               </span>
             )}
             {saleOnly && (

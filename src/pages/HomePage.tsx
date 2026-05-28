@@ -6,17 +6,33 @@ import { SocialGallery } from '../components/SocialGallery';
 import { useProducts } from '../ProductContext';
 import { useSite } from '../SiteContext';
 import { Link } from 'react-router-dom';
-import { Clock, PackageCheck, Search, ShieldCheck, Sparkles, Star, Truck } from 'lucide-react';
+import { ArrowRight, Clock, Droplets, PackageCheck, Search, ShieldCheck, Sparkles, Star, Truck, WandSparkles } from 'lucide-react';
 import { SEO, SEO_SITE_URL } from '../components/SEO';
 
 export function HomePage() {
   const { productsList } = useProducts();
   const { settings } = useSite();
   const [smartQuery, setSmartQuery] = useState('');
+  const [routineConcern, setRoutineConcern] = useState('glow');
   const bestSellers = [...productsList]
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 3);
   const liveSaleProducts = productsList.filter(product => product.isFlashSale && product.flashSalePrice);
+  const routineOptions = [
+    { id: 'glow', label: 'Glow', terms: ['glow', 'bright', 'vitamin', 'radiance', 'makeup'] },
+    { id: 'hydrate', label: 'Hydrate', terms: ['hydrate', 'hyaluronic', 'moisture', 'serum', 'cream'] },
+    { id: 'calm', label: 'Calm', terms: ['calm', 'sensitive', 'soothing', 'botanical', 'repair'] },
+    { id: 'hair', label: 'Hair Care', terms: ['hair', 'shampoo', 'conditioner', 'scalp'] },
+  ];
+  const selectedRoutine = routineOptions.find(option => option.id === routineConcern) || routineOptions[0];
+  const routineMatches = productsList
+    .filter((product) => {
+      const haystack = [product.name, product.category, product.subCategory, product.description, product.fullDetails].join(' ').toLowerCase();
+      return selectedRoutine.terms.some(term => haystack.includes(term));
+    })
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 3);
+  const routineProducts = routineMatches.length > 0 ? routineMatches : bestSellers;
   const smartResults = productsList
     .filter((product) => {
       const query = smartQuery.trim().toLowerCase();
@@ -57,8 +73,8 @@ export function HomePage() {
       />
       <Hero />
       <Marquee />
-      <section className="bg-[#F9F7F2] pt-10 pb-4">
-        <div className="max-w-4xl mx-auto px-6">
+      <section className="bg-[#F9F7F2] pt-10 pb-8">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-5 items-stretch">
           <div className="bg-white border border-[#1A1A1A]/10 shadow-sm p-4 sm:p-5">
             <label className="font-sans text-[10px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A]/55 mb-3 block">
               Smart Product Search
@@ -94,6 +110,42 @@ export function HomePage() {
                 )}
               </div>
             )}
+          </div>
+          <div className="border border-[#1A1A1A]/10 bg-[#1A1A1A] p-5 text-[#F9F7F2] shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-sans text-[10px] uppercase tracking-[0.22em] font-bold text-[#CDA185] mb-2">New Feature</p>
+                <h2 className="font-serif italic text-3xl leading-tight">Find your beauty routine</h2>
+              </div>
+              <WandSparkles className="h-7 w-7 text-[#CDA185] shrink-0" />
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {routineOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setRoutineConcern(option.id)}
+                  className={`rounded-full border px-4 py-2 font-sans text-[10px] uppercase tracking-[0.16em] font-bold transition-colors ${
+                    routineConcern === option.id
+                      ? 'border-[#CDA185] bg-[#CDA185] text-[#1A1A1A]'
+                      : 'border-white/15 text-white/70 hover:border-white/45 hover:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {routineProducts.map((product) => (
+                <Link key={product.id} to={`/product/${product.id}`} className="group border border-white/10 bg-white/[0.06] p-3 hover:border-[#CDA185] transition-colors">
+                  <div className="aspect-square overflow-hidden bg-white/10">
+                    <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" referrerPolicy="no-referrer" loading="lazy" />
+                  </div>
+                  <p className="mt-3 font-sans text-[9px] uppercase tracking-widest text-[#CDA185] font-bold">{product.category}</p>
+                  <h3 className="mt-1 font-serif text-base leading-snug line-clamp-2">{product.name}</h3>
+                  <p className="mt-2 font-sans text-[11px] text-white/60">Rs. {Number(product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price).toFixed(2)}</p>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -155,6 +207,27 @@ export function HomePage() {
           </div>
         </section>
       )}
+      <section className="bg-white py-20 border-y border-[#1A1A1A]/10">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 items-start">
+          <div>
+            <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#CDA185] font-bold mb-3">Why shoppers stay</p>
+            <h2 className="font-serif italic text-4xl text-[#1A1A1A] leading-tight">A calmer beauty store with the details people need before checkout.</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { icon: Droplets, title: 'Routine Matching', text: 'Shop by glow, hydration, calm support or hair care goals.' },
+              { icon: PackageCheck, title: 'Backend Tracking', text: 'Orders save tracking numbers and live status history.' },
+              { icon: ShieldCheck, title: 'Verified Reviews', text: 'Signed-in customers can leave product feedback.' },
+            ].map((item) => (
+              <div key={item.title} className="border border-[#1A1A1A]/10 p-5 bg-[#F9F7F2]">
+                <item.icon className="h-5 w-5 text-[#CDA185] mb-4" />
+                <h3 className="font-sans text-[10px] uppercase tracking-[0.18em] font-bold text-[#1A1A1A]">{item.title}</h3>
+                <p className="mt-3 font-sans text-xs leading-relaxed text-[#1A1A1A]/60">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
       <section className="bg-[#F9F7F2] border-y border-[#1A1A1A]/10 py-14">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[0.85fr_1.15fr] gap-8 md:gap-12 items-start">
           <div>
@@ -172,6 +245,9 @@ export function HomePage() {
               <Link to="/shipping" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Shipping Details</Link>
               <Link to="/faq" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Beauty FAQs</Link>
               <Link to="/track" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Track Order</Link>
+              <a href="#shop" className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">
+                Shop Now <ArrowRight className="h-3 w-3" />
+              </a>
             </div>
           </div>
         </div>
