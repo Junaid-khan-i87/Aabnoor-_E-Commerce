@@ -449,80 +449,80 @@ export function AdminPage() {
 
   if (!isAuthenticated || isAuthLoading) {
     return (
-      <div className="min-h-[85vh] flex items-center justify-center bg-[#F9F7F2] p-4 font-sans">
+      <div className="min-h-[85vh] flex items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(201,132,122,0.18),transparent_32%),#faf6f1] p-4 pt-28 font-sans">
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white p-8 md:p-12 max-w-md w-full shadow-lg border border-[#1A1A1A]/10 text-center rounded-2xl"
+          className="w-full max-w-md rounded-[8px] border border-[#2c2826]/10 bg-[#fffaf7] p-7 text-center shadow-[0_24px_70px_rgba(44,40,38,0.12)] md:p-10"
         >
-          <div className="w-16 h-16 bg-[#1A1A1A]/5 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Shield className="w-8 h-8 text-[#CDA185]" />
+          <div className="w-14 h-14 bg-[#f0d5d0] rounded-full flex items-center justify-center mx-auto mb-6">
+            <Shield className="w-7 h-7 text-[#8a4f48]" />
           </div>
-          <h1 className="font-serif italic text-3xl mb-1 text-[#1A1A1A]">Admin Console</h1>
-          <p className="font-sans text-xs uppercase tracking-widest text-[#CDA185] font-bold mb-6">Aabnoor Management Studio</p>
-          <p className="font-sans text-xs text-[#1A1A1A]/60 leading-relaxed mb-6">
+          <h1 className="font-serif text-4xl mb-1 text-[#2c2826]">Admin Console</h1>
+          <p className="font-sans text-xs uppercase tracking-widest text-[#c9847a] font-bold mb-6">Aabnoor Management Studio</p>
+          <p className="font-sans text-xs text-[#7a706a] leading-relaxed mb-6">
             Sign in as junaidmushtaq988@gmail.com, then verify the code from your authenticator app.
           </p>
 
           {loginError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-md mb-6 font-bold text-center">
-              ⚠️ {loginError}
+            <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-[4px] mb-6 font-bold text-center">
+              {loginError}
             </div>
           )}
           
           <form onSubmit={adminStep === 'password' ? handleLogin : handleMfaVerify} className="space-y-6 text-left">
             {adminStep === 'enroll' && mfaQrCode && (
-              <div className="rounded-md border border-[#1A1A1A]/10 bg-[#1A1A1A]/5 p-4 text-center">
-                <p className="font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/60 mb-3">
+              <div className="rounded-[6px] border border-[#2c2826]/10 bg-[#2c2826]/5 p-4 text-center">
+                <p className="font-sans text-[10px] uppercase font-bold tracking-widest text-[#7a706a] mb-3">
                   Scan in Google Authenticator or Microsoft Authenticator
                 </p>
                 <img src={mfaQrCode} alt="Authenticator QR code" className="mx-auto h-44 w-44 bg-white p-2" />
-                <p className="mt-3 break-all font-mono text-[10px] text-[#1A1A1A]/70">{mfaSecret}</p>
+                <p className="mt-3 break-all font-mono text-[10px] text-[#7a706a]">{mfaSecret}</p>
               </div>
             )}
             {adminStep === 'password' && (
             <>
             <div>
-              <label className="block text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/50 mb-2">
+              <label className="block text-[10px] uppercase font-bold tracking-widest text-[#7a706a] mb-2">
                 Admin Email
               </label>
-              <div className="relative border-b border-[#1A1A1A]/20 focus-within:border-[#1A1A1A] transition-colors pb-1">
-                <Mail className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
+              <div className="relative border-b border-[#2c2826]/20 focus-within:border-[#2c2826] transition-colors pb-1">
+                <Mail className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a706a]" />
                 <input
                   type="email"
                   placeholder="admin@example.com"
                   value={adminEmail}
                   onChange={(e) => setAdminEmail(e.target.value)}
-                  className="w-full bg-transparent py-2 pl-8 pr-10 font-sans text-sm outline-none"
+                  className="w-full bg-transparent py-2 pl-8 pr-10 font-sans text-sm outline-none text-[#2c2826]"
                   required
                 />
               </div>
             </div>
             <div>
-              <label className="block text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/50 mb-2">
+              <label className="block text-[10px] uppercase font-bold tracking-widest text-[#7a706a] mb-2">
                 Password
               </label>
-              <div className="relative border-b border-[#1A1A1A]/20 focus-within:border-[#1A1A1A] transition-colors pb-1">
-                <Key className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
+              <div className="relative border-b border-[#2c2826]/20 focus-within:border-[#2c2826] transition-colors pb-1">
+                <Key className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a706a]" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Supabase account password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent py-2 pl-8 pr-10 font-sans text-sm outline-none"
+                  className="w-full bg-transparent py-2 pl-8 pr-10 font-sans text-sm outline-none text-[#2c2826]"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 hover:bg-[#1A1A1A]/5 rounded-sm transition-colors cursor-pointer"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 hover:bg-[#2c2826]/5 rounded-[4px] transition-colors cursor-pointer"
                   tabIndex={-1}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
-                    <EyeOff className="w-4 h-4 text-[#1A1A1A]/50" />
+                    <EyeOff className="w-4 h-4 text-[#7a706a]" />
                   ) : (
-                    <Eye className="w-4 h-4 text-[#1A1A1A]/50" />
+                    <Eye className="w-4 h-4 text-[#7a706a]" />
                   )}
                 </button>
               </div>
@@ -530,11 +530,11 @@ export function AdminPage() {
             </>
             )}
             <div>
-              <label className="block text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/50 mb-2">
+              <label className="block text-[10px] uppercase font-bold tracking-widest text-[#7a706a] mb-2">
                 Authenticator Code
               </label>
-              <div className="relative border-b border-[#1A1A1A]/20 focus-within:border-[#1A1A1A] transition-colors pb-1">
-                <Shield className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
+              <div className="relative border-b border-[#2c2826]/20 focus-within:border-[#2c2826] transition-colors pb-1">
+                <Shield className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7a706a]" />
                 <input
                   type="text"
                   inputMode="numeric"
@@ -542,7 +542,7 @@ export function AdminPage() {
                   placeholder={adminStep === 'password' ? 'Required after password sign in' : '6-digit code'}
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full bg-transparent py-2 pl-8 pr-10 font-sans text-sm outline-none"
+                  className="w-full bg-transparent py-2 pl-8 pr-10 font-sans text-sm outline-none text-[#2c2826]"
                   disabled={adminStep === 'password'}
                   required={adminStep !== 'password'}
                 />
@@ -551,7 +551,7 @@ export function AdminPage() {
             
             <button 
               type="submit"
-              className="w-full h-12 bg-[#1A1A1A] text-[#F9F7F2] font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#CDA185] transition-all rounded-full shadow-sm cursor-pointer mt-4"
+              className="w-full h-12 bg-[#2c2826] text-[#faf6f1] font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#8a4f48] transition-all rounded-[4px] shadow-sm cursor-pointer mt-4"
             >
               {adminStep === 'password' ? 'Continue' : 'Verify Authenticator'}
             </button>
@@ -886,40 +886,58 @@ export function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F7F2] pt-24 pb-12 px-4 md:px-8">
+    <div className="admin-redesign min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(201,132,122,0.18),transparent_30%),#faf6f1] pt-24 pb-12 px-4 md:px-8 text-[#2c2826]">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <h1 className="font-serif italic text-4xl mb-2 text-[#1A1A1A]">Admin Console</h1>
-            <p className="font-sans text-sm text-[#1A1A1A]/60">Manage orders, users, and loyalty ledger.</p>
-          </div>
-          
-          <div className="flex gap-2 bg-white border border-[#1A1A1A]/10 p-1 rounded-sm overflow-x-auto relative z-0">
-            {['dashboard', 'orders', 'products', 'customers', 'discounts', 'settings'].map((tab) => (
+        <header className="mb-8 rounded-[8px] border border-[#2c2826]/10 bg-[#2c2826] p-5 text-[#faf6f1] shadow-[0_24px_70px_rgba(44,40,38,0.18)] sm:p-7">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <p className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.32em] text-[#c9847a]">Aabnoor Control Room</p>
+              <h1 className="font-serif text-4xl md:text-5xl text-white">Admin Console</h1>
+              <p className="mt-3 max-w-2xl font-sans text-sm leading-6 text-[#9a9088]">Manage orders, products, customers, discounts and storefront settings from live backend data.</p>
+            </div>
+
+            <div className="relative z-0 flex max-w-full gap-2 overflow-x-auto rounded-[6px] border border-white/10 bg-white/[0.06] p-1">
+              {['dashboard', 'orders', 'products', 'customers', 'discounts', 'settings'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab as typeof activeTab)}
+                  className={`relative px-5 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-colors ${activeTab === tab ? 'text-[#2c2826]' : 'text-white/58 hover:text-white'}`}
+                >
+                  {activeTab === tab && (
+                    <motion.div
+                      layoutId="adminTab"
+                      className="absolute inset-0 rounded-[4px] bg-[#faf6f1]"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                      style={{ zIndex: -1 }}
+                    />
+                  )}
+                  <span className="relative z-10 capitalize">{tab}</span>
+                </button>
+              ))}
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab as typeof activeTab)}
-                className={`relative px-6 py-2.5 font-sans text-[11px] font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-colors ${activeTab === tab ? 'text-[#F9F7F2]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}
+                onClick={() => {
+                  setIsAuthenticated(false);
+                }}
+                className="relative ml-2 border-l border-white/10 px-5 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#ffb3ae] whitespace-nowrap transition-colors hover:text-white"
               >
-                {activeTab === tab && (
-                  <motion.div
-                    layoutId="adminTab"
-                    className="absolute inset-0 bg-[#1A1A1A] rounded-sm"
-                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-                    style={{ zIndex: -1 }}
-                  />
-                )}
-                <span className="relative z-10 capitalize">{tab}</span>
+                Logout
               </button>
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {[
+              { label: 'Revenue', value: `Rs. ${totalRevenue.toFixed(0)}`, note: 'backend orders' },
+              { label: 'Orders', value: totalOrders, note: `${orders.filter(o => o.status === 'Pending').length} pending` },
+              { label: 'Products', value: productsList.length, note: `${productsList.filter(p => (p.stock || 0) < 5).length} low stock` },
+              { label: 'Customers', value: users.length, note: 'saved profiles' },
+            ].map((metric) => (
+              <div key={metric.label} className="rounded-[6px] border border-white/10 bg-white/[0.06] px-4 py-3">
+                <p className="font-sans text-[9px] uppercase tracking-[0.2em] text-[#9a9088]">{metric.label}</p>
+                <p className="mt-1 font-serif text-2xl text-white">{metric.value}</p>
+                <p className="mt-1 font-sans text-[10px] uppercase tracking-[0.12em] text-[#c9847a]">{metric.note}</p>
+              </div>
             ))}
-            <button
-              onClick={() => {
-                setIsAuthenticated(false);
-              }}
-              className="relative px-6 py-2.5 font-sans text-[11px] font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-colors text-red-500/80 hover:text-red-500 border-l border-[#1A1A1A]/10 ml-2"
-            >
-              Logout
-            </button>
           </div>
         </header>
 

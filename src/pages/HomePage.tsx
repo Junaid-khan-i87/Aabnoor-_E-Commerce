@@ -5,13 +5,15 @@ import { ProductGrid } from '../components/ProductGrid';
 import { SocialGallery } from '../components/SocialGallery';
 import { useProducts } from '../ProductContext';
 import { useSite } from '../SiteContext';
+import { useCategory } from '../CategoryContext';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Clock, Droplets, PackageCheck, Search, ShieldCheck, Sparkles, Star, Truck, WandSparkles } from 'lucide-react';
+import { ArrowRight, Clock, Droplets, Heart, PackageCheck, Quote, Search, ShieldCheck, Sparkles, Star, Truck, WandSparkles } from 'lucide-react';
 import { SEO, SEO_SITE_URL } from '../components/SEO';
 
 export function HomePage() {
   const { productsList } = useProducts();
   const { settings } = useSite();
+  const { scrollToShopAndFilter } = useCategory();
   const [smartQuery, setSmartQuery] = useState('');
   const [routineConcern, setRoutineConcern] = useState('glow');
   const bestSellers = [...productsList]
@@ -46,6 +48,31 @@ export function HomePage() {
       ].filter(Boolean).some((value) => String(value).toLowerCase().includes(query));
     })
     .slice(0, 5);
+  const categoryStyles = [
+    'from-[#ead8ca] to-[#c9847a]',
+    'from-[#e3d5ea] to-[#9b7aa0]',
+    'from-[#d8eadc] to-[#7a9b7e]',
+    'from-[#ede0c8] to-[#9b9470]',
+  ];
+  const categoryCards = Array.from(new Set(productsList.map(product => product.category).filter(Boolean)))
+    .slice(0, 4)
+    .map((category, index) => ({
+      category,
+      count: productsList.filter(product => product.category === category).length,
+      style: categoryStyles[index % categoryStyles.length],
+    }));
+  const reviewCards = productsList
+    .flatMap(product => (product.reviews || []).map(review => ({ ...review, productName: product.name })))
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, 3);
+  const liveSaleEndLabel = settings.liveSaleEndTime
+    ? new Date(settings.liveSaleEndTime).toLocaleString('en-PK', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : 'Tonight';
 
   return (
     <>
@@ -168,16 +195,46 @@ export function HomePage() {
         </div>
       </section>
 
+      {categoryCards.length > 0 && (
+        <section className="bg-[#faf6f1] py-16">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-10">
+              <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#c9847a] font-bold mb-2">Browse by Category</p>
+              <h2 className="font-serif text-4xl md:text-5xl text-[#2c2826]">Your beauty, every need</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {categoryCards.map((card) => (
+                <button
+                  key={card.category}
+                  type="button"
+                  onClick={() => scrollToShopAndFilter(card.category)}
+                  className={`group relative aspect-[3/4] overflow-hidden rounded-[8px] bg-gradient-to-br ${card.style} text-left shadow-sm transition-transform duration-300 hover:-translate-y-1`}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/5 to-white/10" />
+                  <div className="absolute left-1/2 top-10 h-24 w-16 -translate-x-1/2 rounded-t-full rounded-b-[22px] bg-white/28 shadow-inner transition-transform duration-500 group-hover:scale-110" />
+                  <div className="absolute inset-x-0 bottom-0 p-5">
+                    <p className="font-serif text-3xl font-light text-white">{card.category}</p>
+                    <p className="mt-1 font-sans text-[10px] uppercase tracking-[0.18em] text-white/75">
+                      {card.count} product{card.count === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {bestSellers.length > 0 && (
-        <section className="bg-[#F9F7F2] py-20">
+        <section className="bg-[#faf6f1] py-20">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
               <div>
-                <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#CDA185] font-bold mb-2">Backend Product Highlights</p>
-                <h2 className="font-serif italic text-4xl text-[#1A1A1A]">Most Loved Right Now</h2>
+                <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#c9847a] font-bold mb-2">Backend Product Highlights</p>
+                <h2 className="font-serif text-4xl text-[#2c2826]">Most Loved Right Now</h2>
               </div>
               {settings.liveSaleActive && (
-                <Link to="/live-sale" className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] font-bold text-[#1A1A1A] border border-[#1A1A1A]/15 px-4 py-2 hover:bg-[#1A1A1A] hover:text-[#F9F7F2] transition-colors">
+                <Link to="/live-sale" className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] font-bold text-[#2c2826] border border-[#2c2826]/15 px-4 py-2 hover:bg-[#2c2826] hover:text-[#faf6f1] transition-colors">
                   <Clock className="w-3.5 h-3.5" />
                   Live Sale
                 </Link>
@@ -185,24 +242,51 @@ export function HomePage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {bestSellers.map((product) => (
-                <Link key={product.id} to={`/product/${product.id}`} className="group bg-white border border-[#1A1A1A]/10 overflow-hidden hover:border-[#CDA185] transition-colors">
-                  <div className="aspect-[4/3] overflow-hidden bg-[#1A1A1A]/5">
+                <Link key={product.id} to={`/product/${product.id}`} className="group overflow-hidden rounded-[8px] bg-white border border-[#2c2826]/10 hover:border-[#c9847a] transition-colors">
+                  <div className="aspect-[4/3] overflow-hidden bg-[#2c2826]/5">
                     <img src={product.imageUrl} alt={product.name} title={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" loading="lazy" />
                   </div>
                   <div className="p-5">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="font-sans text-[9px] uppercase tracking-widest font-bold text-[#CDA185]">{product.category}</span>
-                      <span className="flex items-center gap-1 font-sans text-[10px] font-bold text-[#1A1A1A]/70">
-                        <Star className="w-3 h-3 fill-[#CDA185] stroke-[#CDA185]" />
+                      <span className="font-sans text-[9px] uppercase tracking-widest font-bold text-[#c9847a]">{product.category}</span>
+                      <span className="flex items-center gap-1 font-sans text-[10px] font-bold text-[#2c2826]/70">
+                        <Star className="w-3 h-3 fill-[#b8975a] stroke-[#b8975a]" />
                         {(product.rating || 0).toFixed(1)}
                       </span>
                     </div>
-                    <h3 className="font-serif text-xl text-[#1A1A1A] group-hover:text-[#CDA185] transition-colors line-clamp-1">{product.name}</h3>
-                    <p className="font-sans text-xs text-[#1A1A1A]/55 line-clamp-2 mt-2">{product.description}</p>
-                    <p className="font-serif italic text-lg text-[#1A1A1A] mt-4">Rs. {Number(product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price).toFixed(2)}</p>
+                    <h3 className="font-serif text-xl text-[#2c2826] group-hover:text-[#8a4f48] transition-colors line-clamp-1">{product.name}</h3>
+                    <p className="font-sans text-xs text-[#7a706a] line-clamp-2 mt-2">{product.description}</p>
+                    <p className="font-serif text-lg text-[#2c2826] mt-4">Rs. {Number(product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price).toFixed(2)}</p>
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {settings.liveSaleActive && (
+        <section className="bg-[#2c2826] py-10">
+          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 gap-6 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <p className="mb-2 flex items-center gap-2 font-sans text-[10px] uppercase tracking-[0.28em] text-[#c9847a]">
+                <span className="h-2 w-2 rounded-full bg-[#e05050]" />
+                Live Sale Active Now
+              </p>
+              <h2 className="font-serif text-3xl text-white">{settings.liveSaleTitle || 'Flash Sale - Up to 40% Off'}</h2>
+              <p className="mt-2 max-w-2xl font-sans text-sm leading-6 text-[#9a9088]">
+                {settings.liveSaleSubtitle} {settings.liveSaleDiscountText ? `Save ${settings.liveSaleDiscountText}.` : ''}
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="border border-white/12 bg-white/[0.04] px-5 py-3">
+                <p className="font-sans text-[9px] uppercase tracking-[0.18em] text-[#9a9088]">Ends</p>
+                <p className="mt-1 font-serif text-2xl text-[#ede0c8]">{liveSaleEndLabel}</p>
+              </div>
+              <Link to="/live-sale" className="inline-flex items-center justify-center gap-2 bg-[#faf6f1] px-6 py-3.5 font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#2c2826] transition-colors hover:bg-[#ede0c8]">
+                {liveSaleProducts.length || 0} Deals
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </section>
@@ -253,6 +337,41 @@ export function HomePage() {
         </div>
       </section>
       <ProductGrid />
+      {reviewCards.length > 0 && (
+        <section className="bg-white py-16 border-y border-[#2c2826]/10">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="mb-10 flex flex-col gap-3 text-center">
+              <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#c9847a] font-bold">Customer Love</p>
+              <h2 className="font-serif text-4xl md:text-5xl text-[#2c2826]">Real reviews from product pages</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {reviewCards.map((review) => (
+                <article key={review.id} className="rounded-[8px] border border-[#2c2826]/10 bg-[#faf6f1] p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex gap-1 text-[#b8975a]">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <Star key={index} className={`h-3.5 w-3.5 ${index < review.rating ? 'fill-[#b8975a] stroke-[#b8975a]' : 'stroke-[#d9c9a8]'}`} />
+                      ))}
+                    </div>
+                    <Quote className="h-5 w-5 text-[#c9847a]" />
+                  </div>
+                  <p className="font-serif text-xl italic leading-7 text-[#2c2826]">"{review.comment}"</p>
+                  <div className="mt-6 flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f0d5d0] font-sans text-xs font-bold uppercase text-[#8a4f48]">
+                      {review.user.slice(0, 1)}
+                    </div>
+                    <div>
+                      <p className="font-sans text-xs font-bold text-[#2c2826]">{review.user}</p>
+                      <p className="font-sans text-[10px] uppercase tracking-[0.16em] text-[#7a706a]">{review.productName}</p>
+                    </div>
+                    <Heart className="ml-auto h-4 w-4 text-[#c9847a]" />
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
       <SocialGallery />
     </>
   );

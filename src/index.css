@@ -1,10 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
+}
+
+:root {
+  --aab-cream: #faf6f1;
+  --aab-paper: #fffaf7;
+  --aab-charcoal: #2c2826;
+  --aab-rose: #c9847a;
+  --aab-rose-dark: #8a4f48;
+  --aab-gold: #b8975a;
+  --aab-gold-light: #ede0c8;
+  --aab-warm-gray: #7a706a;
 }
 
 html {
@@ -14,7 +25,14 @@ html {
 
 body {
   overflow-x: hidden;
-  background-color: #F9F7F2;
+  background-color: var(--aab-cream);
+  color: var(--aab-charcoal);
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--aab-rose);
+  color: #fff;
 }
 
 @keyframes slideInRight {
@@ -30,4 +48,18 @@ body {
 
 .animate-slide-in-right {
   animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.admin-redesign .bg-white {
+  background-color: #fffaf7;
+}
+
+.admin-redesign .border-\[\#1A1A1A\]\/10 {
+  border-color: rgba(44, 40, 38, 0.1);
+}
+
+.admin-redesign input,
+.admin-redesign textarea,
+.admin-redesign select {
+  background-color: rgba(255, 250, 247, 0.86);
 }
