@@ -4,7 +4,6 @@ import { Coupon } from './types';
 import { deleteEntity, getStoreValue, listEntities, setStoreValue, upsertEntity } from './lib/storeApi';
 import { supabase } from './lib/supabase';
 
-const ADMIN_EMAIL = (((import.meta as any).env?.VITE_ADMIN_EMAIL as string | undefined) || '').toLowerCase().trim();
 export const SUPPORT_EMAIL = 'contact@flenogarei.resend.app';
 
 export interface UserAccount {
@@ -170,25 +169,28 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     }
 
     const { data: sessionResult } = await supabase.auth.getSession();
-    const user = sessionResult.session?.user;
-    if (!user || user.email?.toLowerCase() !== ADMIN_EMAIL) {
+    const token = sessionResult.session?.access_token;
+    if (!token) {
       setIsAdmin(false);
       return false;
     }
 
-    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (assurance.error || assurance.data.currentLevel !== 'aal2') {
+    const response = await fetch('/api/admin-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({}),
+    });
+
+    if (!response.ok) {
       setIsAdmin(false);
       return false;
     }
 
-    const { data, error } = await supabase
-      .from('admin_users')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    const nextIsAdmin = Boolean(data && !error);
+    const result = await response.json().catch(() => null);
+    const nextIsAdmin = Boolean(result?.isAdmin);
     setIsAdmin(nextIsAdmin);
     return nextIsAdmin;
   }, []);

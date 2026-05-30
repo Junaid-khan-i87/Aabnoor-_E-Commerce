@@ -1,11 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY;
 const resendApiKey = process.env.RESEND_API_KEY;
-const fromEmail = process.env.ORDER_EMAIL_FROM || 'Aabnoor <noreply@aabnoor.shop>';
+const fromEmail = process.env.ORDER_EMAIL_FROM;
 const trackingUrl = process.env.ORDER_TRACKING_URL || 'https://aabnoor.shop/track';
+const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'https://aabnoor.shop,https://www.aabnoor.shop')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
 
 const escapeHtml = (value: unknown) =>
   String(value ?? '')
@@ -15,15 +19,21 @@ const escapeHtml = (value: unknown) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 
-const setCorsHeaders = (res: any) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://aabnoor.shop');
+const setCorsHeaders = (req: any, res: any) => {
+  const origin = String(req.headers.origin || '');
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0]);
+  }
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Max-Age', '86400');
 };
 
 export default async function handler(req: any, res: any) {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   if (req.method !== 'POST') {
@@ -35,7 +45,7 @@ export default async function handler(req: any, res: any) {
     return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
-  if (!supabaseUrl || !supabaseKey || !resendApiKey) {
+  if (!supabaseUrl || !supabaseKey || !resendApiKey || !fromEmail) {
     return res.status(500).json({ error: 'Email service is not configured.' });
   }
 

@@ -1,10 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { createHmac } from 'crypto';
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-const reviewHashSecret = process.env.REVIEW_HASH_SECRET || supabaseSecretKey || 'review-hash-fallback';
+const reviewHashSecret = process.env.REVIEW_HASH_SECRET || supabaseSecretKey;
+const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'https://aabnoor.shop,https://www.aabnoor.shop')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
 
 const cleanText = (value: unknown, maxLength: number) =>
   String(value ?? '')
@@ -13,8 +17,14 @@ const cleanText = (value: unknown, maxLength: number) =>
     .trim()
     .slice(0, maxLength);
 
-const setCorsHeaders = (res: any) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://aabnoor.shop');
+const setCorsHeaders = (req: any, res: any) => {
+  const origin = String(req.headers.origin || '');
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0]);
+  }
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Max-Age', '86400');
@@ -39,7 +49,7 @@ const isAllowedPhotoUrl = (url: string) => {
 };
 
 export default async function handler(req: any, res: any) {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   if (req.method !== 'POST') {
@@ -51,7 +61,7 @@ export default async function handler(req: any, res: any) {
     return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
-  if (!supabaseUrl || !supabasePublishableKey || !supabaseSecretKey) {
+  if (!supabaseUrl || !supabasePublishableKey || !supabaseSecretKey || !reviewHashSecret) {
     return res.status(500).json({ error: 'Review service is not configured.' });
   }
 

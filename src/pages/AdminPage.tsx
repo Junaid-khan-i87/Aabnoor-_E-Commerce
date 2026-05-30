@@ -11,7 +11,6 @@ import { SafeImage } from '../components/SafeImage';
 import { useUI } from '../UIContext';
 import { supabase } from '../lib/supabase';
 
-const ADMIN_EMAIL = (((import.meta as any).env?.VITE_ADMIN_EMAIL as string | undefined) || '').toLowerCase().trim();
 type AdminTab = 'dashboard' | 'orders' | 'customers' | 'products' | 'discounts' | 'settings';
 
 const ADMIN_TABS: { id: AdminTab; label: string }[] = [
@@ -362,35 +361,34 @@ export function AdminPage() {
     }
   }, [isAdmin]);
 
-  const claimAdminAccess = async () => {
+  const checkAdminSession = async () => {
     if (!supabase) return false;
 
     const { data: sessionResult } = await supabase.auth.getSession();
-    const user = sessionResult.session?.user;
-    if (!user || !ADMIN_EMAIL || user.email?.toLowerCase() !== ADMIN_EMAIL) return false;
+    const token = sessionResult.session?.access_token;
+    if (!token) return false;
 
-    const existing = await refreshAdminStatus();
-    if (existing) {
-      setIsAuthenticated(true);
-      return true;
-    }
-
-    const { error } = await supabase.from('admin_users').insert({
-      user_id: user.id,
-      email: ADMIN_EMAIL,
-      role: 'admin',
+    const response = await fetch('/api/admin-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({}),
     });
 
-    if (error) {
-      setLoginError(error.message);
+    const result = await response.json().catch(() => null);
+    if (response.status === 428 && result?.needsMfa) {
+      return false;
+    }
+
+    if (!response.ok || !result?.isAdmin) {
+      setLoginError(result?.error || 'Admin access is restricted.');
       return false;
     }
 
     const ok = await refreshAdminStatus();
     setIsAuthenticated(ok);
-    if (ok) {
-      setTimeout(() => window.location.reload(), 250);
-    }
     return ok;
   };
 
@@ -404,7 +402,7 @@ export function AdminPage() {
     }
 
     if (assurance.data.currentLevel === 'aal2') {
-      await claimAdminAccess();
+      await checkAdminSession();
       return;
     }
 
@@ -456,14 +454,8 @@ export function AdminPage() {
       return;
     }
 
-    const cleanEmail = adminEmail.trim().toLowerCase();
-    if (!ADMIN_EMAIL || cleanEmail !== ADMIN_EMAIL) {
-      setLoginError('Admin access is restricted.');
-      return;
-    }
-
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
+      email: adminEmail.trim().toLowerCase(),
       password,
     });
 
@@ -472,13 +464,17 @@ export function AdminPage() {
       return;
     }
 
-    if (!ADMIN_EMAIL || authData.user.email?.toLowerCase() !== ADMIN_EMAIL) {
-      await supabase.auth.signOut();
-      setLoginError('Admin access is restricted.');
+    const initialAdminCheck = await checkAdminSession();
+    if (initialAdminCheck) {
       return;
     }
 
-    await beginMfaFlow();
+    if (!loginError) {
+      await beginMfaFlow();
+    } else {
+      await supabase.auth.signOut();
+    }
+    void authData;
   };
 
   const handleMfaVerify = async (e: React.FormEvent) => {
@@ -501,7 +497,7 @@ export function AdminPage() {
     }
 
     setMfaCode('');
-    await claimAdminAccess();
+    await checkAdminSession();
   };
 
   if (!isAuthenticated || isAuthLoading) {

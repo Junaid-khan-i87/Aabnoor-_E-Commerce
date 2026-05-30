@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useOrders } from '../OrderContext';
 import { Order } from '../types';
 import { SEO } from '../components/SEO';
+import { supabase } from '../lib/supabase';
 
 export function TrackPage() {
   const { trackOrder } = useOrders();
@@ -36,9 +37,20 @@ export function TrackPage() {
 
     setIsTracking(true);
     try {
+      const { data: sessionResult } = await supabase?.auth.getSession() || { data: { session: null } };
+      const token = sessionResult.session?.access_token;
+      if (!token) {
+        setOrderDetails(undefined);
+        setError('Sign in to track your order.');
+        return;
+      }
+
       const response = await fetch('/api/track-order', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ trackingNumber: cleanTrackingNumber }),
       });
       const result = await response.json();
