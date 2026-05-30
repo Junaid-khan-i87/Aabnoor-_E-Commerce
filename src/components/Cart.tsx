@@ -35,6 +35,11 @@ export function Cart() {
     navigate('/checkout');
   };
 
+  const handleViewCart = () => {
+    setIsCartOpen(false);
+    navigate('/cart');
+  };
+
   const hasDiscount = items.some(item => item.quantity >= 5);
 
   return (
@@ -164,6 +169,14 @@ export function Cart() {
                   <span className="font-serif italic font-normal text-lg tracking-normal">Rs. {cartTotal.toFixed(2)}</span>
                 </div>
                 
+                <button
+                  type="button"
+                  onClick={handleViewCart}
+                  className="mb-3 w-full border border-[#1A1A1A] text-[#1A1A1A] py-3 rounded-full font-sans text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/5 transition-all cursor-pointer"
+                >
+                  View Full Cart
+                </button>
+
                 <button 
                   type="button"
                   onClick={handleProceedToCheckout}

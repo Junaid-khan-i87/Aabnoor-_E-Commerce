@@ -12,6 +12,18 @@ import { useUI } from '../UIContext';
 import { supabase } from '../lib/supabase';
 
 const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
+type AdminTab = 'dashboard' | 'orders' | 'customers' | 'products' | 'discounts' | 'settings';
+
+const ADMIN_TABS: { id: AdminTab; label: string }[] = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'orders', label: 'Orders' },
+  { id: 'products', label: 'Products' },
+  { id: 'customers', label: 'Customers' },
+  { id: 'discounts', label: 'Promotions' },
+  { id: 'settings', label: 'Settings' },
+];
+
+const ORDER_STATUS_VALUES: OrderStatus[] = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded'];
 
 const toDateTimeLocalValue = (isoValue?: string) => {
   if (!isoValue) return '';
@@ -37,7 +49,7 @@ export function AdminPage() {
   const [adminStep, setAdminStep] = useState<'password' | 'mfa' | 'enroll'>('password');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'customers' | 'products' | 'discounts' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -225,10 +237,10 @@ export function AdminPage() {
   };
 
   const toggleAllOrders = () => {
-    if (selectedOrders.length === orders.length) {
+    if (selectedOrders.length === filteredOrders.length) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(orders.map(o => o.id));
+      setSelectedOrders(filteredOrders.map(o => o.id));
     }
   };
 
@@ -298,6 +310,51 @@ export function AdminPage() {
   })).sort((a, b) => b.sales - a.sales).slice(0, 5);
 
   const COLORS = ['#1A1A1A', '#404040', '#737373', '#A3A3A3', '#D4D4D4'];
+  const averageOrderValue = totalOrders ? totalRevenue / totalOrders : 0;
+  const pendingOrdersCount = orders.filter(o => o.status === 'Pending').length;
+  const deliveredOrdersCount = orders.filter(o => o.status === 'Delivered').length;
+  const lowStockCount = productsList.filter(p => (p.stock || 0) < 5).length;
+  const activeCouponCount = coupons.filter(coupon => coupon.isActive).length;
+  const couponRedemptions = coupons.reduce((sum, coupon) => sum + (coupon.usageCount || 0), 0);
+  const todayOrdersCount = orders.filter(order => new Date(order.date).toDateString() === new Date().toDateString()).length;
+  const activeLiveSaleCount = productsList.filter(product => product.isFlashSale).length;
+  const recentOrders = [...orders]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+  type ProductRevenueRow = { id: string; name: string; imageUrl: string; revenue: number; units: number };
+  const topProductsByRevenue = (Object.values(orders.reduce((acc, order) => {
+    order.items.forEach(item => {
+      const product = productsList.find(p => p.id === item.productId || item.productId.startsWith(p.id));
+      const key = product?.id || item.name;
+      const current = acc[key] || {
+        id: key,
+        name: product?.name || item.name,
+        imageUrl: product?.imageUrl || '',
+        revenue: 0,
+        units: 0,
+      };
+      current.revenue += item.price * item.quantity;
+      current.units += item.quantity;
+      acc[key] = current;
+    });
+    return acc;
+  }, {} as Record<string, ProductRevenueRow>)) as ProductRevenueRow[])
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+
+  const getOrderCity = (address?: string) => {
+    if (!address) return 'Unlisted city';
+    const parts = address.split(/\n|,/).map(part => part.trim()).filter(Boolean);
+    return parts[1] || parts[0] || 'Unlisted city';
+  };
+
+  const getStatusBadgeClass = (status: OrderStatus) => {
+    if (status === 'Delivered') return 'bg-green-500/10 text-green-700';
+    if (status === 'Shipped') return 'bg-blue-500/10 text-blue-700';
+    if (status === 'Processing') return 'bg-yellow-500/10 text-yellow-700';
+    if (status === 'Cancelled' || status === 'Refunded') return 'bg-red-500/10 text-red-700';
+    return 'bg-[#1A1A1A]/10 text-[#1A1A1A]';
+  };
 
   useEffect(() => {
     if (isAdmin) {
@@ -897,13 +954,13 @@ export function AdminPage() {
             </div>
 
             <div className="relative z-0 flex max-w-full gap-2 overflow-x-auto rounded-[6px] border border-white/10 bg-white/[0.06] p-1">
-              {['dashboard', 'orders', 'products', 'customers', 'discounts', 'settings'].map((tab) => (
+              {ADMIN_TABS.map((tab) => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab as typeof activeTab)}
-                  className={`relative px-5 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-colors ${activeTab === tab ? 'text-[#2c2826]' : 'text-white/58 hover:text-white'}`}
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative px-5 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap transition-colors ${activeTab === tab.id ? 'text-[#2c2826]' : 'text-white/58 hover:text-white'}`}
                 >
-                  {activeTab === tab && (
+                  {activeTab === tab.id && (
                     <motion.div
                       layoutId="adminTab"
                       className="absolute inset-0 rounded-[4px] bg-[#faf6f1]"
@@ -911,7 +968,7 @@ export function AdminPage() {
                       style={{ zIndex: -1 }}
                     />
                   )}
-                  <span className="relative z-10 capitalize">{tab}</span>
+                  <span className="relative z-10">{tab.label}</span>
                 </button>
               ))}
               <button
@@ -928,9 +985,9 @@ export function AdminPage() {
           <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
               { label: 'Revenue', value: `Rs. ${totalRevenue.toFixed(0)}`, note: 'backend orders' },
-              { label: 'Orders', value: totalOrders, note: `${orders.filter(o => o.status === 'Pending').length} pending` },
-              { label: 'Products', value: productsList.length, note: `${productsList.filter(p => (p.stock || 0) < 5).length} low stock` },
-              { label: 'Customers', value: users.length, note: 'saved profiles' },
+              { label: 'Orders Today', value: todayOrdersCount, note: `${pendingOrdersCount} pending` },
+              { label: 'AOV', value: `Rs. ${averageOrderValue.toFixed(0)}`, note: `${totalOrders} total orders` },
+              { label: 'Low Stock', value: lowStockCount, note: 'inventory alerts' },
             ].map((metric) => (
               <div key={metric.label} className="rounded-[6px] border border-white/10 bg-white/[0.06] px-4 py-3">
                 <p className="font-sans text-[9px] uppercase tracking-[0.2em] text-[#9a9088]">{metric.label}</p>
@@ -976,7 +1033,7 @@ export function AdminPage() {
                   </div>
                 </div>
                 <p className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/60 mb-1">Pending Orders</p>
-                <h3 className="font-serif italic text-3xl text-yellow-600">{orders.filter(o => o.status === 'Pending').length}</h3>
+                <h3 className="font-serif italic text-3xl text-yellow-600">{pendingOrdersCount}</h3>
               </div>
 
               <div className="bg-white p-6 border border-[#1A1A1A]/10">
@@ -985,8 +1042,8 @@ export function AdminPage() {
                     <ShoppingBag className="w-5 h-5 text-green-600" />
                   </div>
                 </div>
-                <p className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/60 mb-1">Delivered Orders</p>
-                <h3 className="font-serif italic text-3xl text-green-600">{orders.filter(o => o.status === 'Delivered').length}</h3>
+                <p className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/60 mb-1">Average Order Value</p>
+                <h3 className="font-serif italic text-3xl text-green-600">Rs. {averageOrderValue.toFixed(2)}</h3>
               </div>
               
               <div className="bg-white p-6 border border-[#1A1A1A]/10">
@@ -1006,7 +1063,7 @@ export function AdminPage() {
                   </div>
                 </div>
                 <p className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/60 mb-1">Low Stock Items</p>
-                <h3 className="font-serif italic text-3xl text-red-500">{productsList.filter(p => (p.stock || 0) < 5).length}</h3>
+                <h3 className="font-serif italic text-3xl text-red-500">{lowStockCount}</h3>
               </div>
 
               <div className="bg-white p-6 border border-[#1A1A1A]/10">
@@ -1071,6 +1128,71 @@ export function AdminPage() {
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+              <div className="bg-white border border-[#1A1A1A]/10 overflow-hidden">
+                <div className="px-6 py-5 border-b border-[#1A1A1A]/10">
+                  <h3 className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]">Recent Orders</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left font-sans text-sm">
+                    <thead className="bg-[#1A1A1A]/5">
+                      <tr>
+                        <th className="px-5 py-3 text-[10px] uppercase tracking-[0.1em] text-[#1A1A1A]/60">Order</th>
+                        <th className="px-5 py-3 text-[10px] uppercase tracking-[0.1em] text-[#1A1A1A]/60">Customer</th>
+                        <th className="px-5 py-3 text-[10px] uppercase tracking-[0.1em] text-[#1A1A1A]/60">Total</th>
+                        <th className="px-5 py-3 text-[10px] uppercase tracking-[0.1em] text-[#1A1A1A]/60">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1A1A1A]/10">
+                      {recentOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-5 py-8 text-center text-xs text-[#1A1A1A]/50">No backend orders yet.</td>
+                        </tr>
+                      ) : recentOrders.map(order => (
+                        <tr key={order.id}>
+                          <td className="px-5 py-4 font-bold">{order.id}</td>
+                          <td className="px-5 py-4">
+                            <span className="block font-medium">{order.userName || order.userEmail.split('@')[0]}</span>
+                            <span className="block text-xs text-[#1A1A1A]/50">{getOrderCity(order.shippingAddress)}</span>
+                          </td>
+                          <td className="px-5 py-4 font-serif italic">Rs. {order.total.toFixed(2)}</td>
+                          <td className="px-5 py-4">
+                            <span className={`px-2 py-1 text-[9px] uppercase font-bold tracking-widest rounded-sm ${getStatusBadgeClass(order.status)}`}>
+                              {order.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="bg-white border border-[#1A1A1A]/10 overflow-hidden">
+                <div className="px-6 py-5 border-b border-[#1A1A1A]/10">
+                  <h3 className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]">Top Products by Revenue</h3>
+                </div>
+                <div className="divide-y divide-[#1A1A1A]/10">
+                  {topProductsByRevenue.length === 0 ? (
+                    <div className="px-5 py-8 text-center text-xs text-[#1A1A1A]/50">No product revenue yet.</div>
+                  ) : topProductsByRevenue.map(product => (
+                    <div key={product.id} className="flex items-center justify-between gap-4 px-5 py-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="h-12 w-10 shrink-0 overflow-hidden bg-[#1A1A1A]/5">
+                          {product.imageUrl ? <SafeImage src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" /> : null}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="line-clamp-1 font-serif text-sm text-[#1A1A1A]">{product.name}</p>
+                          <p className="font-sans text-[10px] uppercase tracking-[0.12em] text-[#1A1A1A]/50">{product.units} units</p>
+                        </div>
+                      </div>
+                      <p className="shrink-0 font-serif italic text-[#1A1A1A]">Rs. {product.revenue.toFixed(2)}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1231,7 +1353,9 @@ export function AdminPage() {
               </div>
               <div className="p-6">
                 <div className="space-y-6 flex flex-col">
-                  {[...orders].slice(0,3).map(order => (
+                  {recentOrders.length === 0 ? (
+                    <p className="font-sans text-sm text-[#1A1A1A]/50">No live backend activity yet.</p>
+                  ) : recentOrders.slice(0, 3).map(order => (
                     <div key={order.id} className="flex gap-4 items-start">
                       <div className="w-2 h-2 rounded-full bg-[#1A1A1A] mt-2"></div>
                       <div>
@@ -1240,13 +1364,6 @@ export function AdminPage() {
                       </div>
                     </div>
                   ))}
-                  <div className="flex gap-4 items-start">
-                    <div className="w-2 h-2 rounded-full bg-[#1A1A1A]/40 mt-2"></div>
-                    <div>
-                      <p className="font-sans text-sm text-[#1A1A1A]"><span className="font-bold">alice.w@example.com</span> redeemed 85 Aabnoor Coins</p>
-                      <p className="font-sans text-xs text-[#1A1A1A]/60 mt-1">For Product: The Cleanser • 2026-05-19</p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1259,6 +1376,28 @@ export function AdminPage() {
             animate={{ opacity: 1 }}
             className="space-y-6"
           >
+            <div className="bg-white p-3 border border-[#1A1A1A]/10 shadow-sm overflow-x-auto">
+              <div className="flex min-w-fit gap-2">
+                {(['all', ...ORDER_STATUS_VALUES] as Array<'all' | OrderStatus>).map(status => {
+                  const count = status === 'all' ? orders.length : orders.filter(order => order.status === status).length;
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => setOrderStatusFilter(status)}
+                      className={`px-4 py-2 font-sans text-[10px] font-bold uppercase tracking-[0.16em] rounded-sm transition-colors ${
+                        orderStatusFilter === status
+                          ? 'bg-[#1A1A1A] text-[#F9F7F2]'
+                          : 'bg-[#1A1A1A]/5 text-[#1A1A1A]/65 hover:text-[#1A1A1A]'
+                      }`}
+                    >
+                      {status === 'all' ? 'All' : status} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="bg-white p-6 border border-[#1A1A1A]/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex-1 max-w-md">
                  <input 
@@ -1280,6 +1419,7 @@ export function AdminPage() {
                     <option value="Shipped">Shipped</option>
                     <option value="Delivered">Delivered</option>
                     <option value="Cancelled">Cancelled</option>
+                    <option value="Refunded">Refunded</option>
                  </select>
                  <select 
                    value={orderSort}
@@ -1301,7 +1441,7 @@ export function AdminPage() {
                 </span>
                 <div className="flex gap-2 items-center">
                   <span className="font-sans text-[9px] uppercase tracking-[0.1em] text-[#1A1A1A]/60 mr-2">Change Status:</span>
-                  {(['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'] as OrderStatus[]).map(status => (
+                  {ORDER_STATUS_VALUES.map(status => (
                     <button
                       key={status}
                       onClick={() => handleBulkStatusChange(status)}
@@ -1321,15 +1461,15 @@ export function AdminPage() {
                        <input 
                          type="checkbox" 
                          className="accent-[#1A1A1A] cursor-pointer"
-                         checked={selectedOrders.length === orders.length && orders.length > 0}
+                         checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
                          onChange={toggleAllOrders}
                        />
                      </th>
                      <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Order ID</th>
-                     <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Customer</th>
+                     <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Customer / City</th>
                      <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Date</th>
                      <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Total</th>
-                     <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Coins Earned</th>
+                     <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Payment</th>
                      <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Status</th>
                    </tr>
                  </thead>
@@ -1368,23 +1508,26 @@ export function AdminPage() {
                            <div className="flex flex-col gap-0.5">
                              <span className="font-bold">{order.userName || order.userEmail.split('@')[0]}</span>
                              <span className="text-xs text-[#1A1A1A]/60">{order.userEmail}</span>
+                             <span className="text-[10px] uppercase tracking-[0.12em] text-[#CDA185]">{getOrderCity(order.shippingAddress)}</span>
                            </div>
                          </td>
                          <td className="px-6 py-4 text-[#1A1A1A]/60">{new Date(order.date).toLocaleDateString()}</td>
                          <td className="px-6 py-4 font-serif italic">Rs. {order.total.toFixed(2)}</td>
-                         <td className="px-6 py-4 flex items-center gap-1.5"><Coins className="w-3.5 h-3.5 text-[#1A1A1A]/60"/> {order.coinsEarned}</td>
+                         <td className="px-6 py-4">
+                           <span className="rounded-sm bg-[#1A1A1A]/5 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#1A1A1A]/70">
+                             {order.paymentMethod || 'Not Set'}
+                           </span>
+                         </td>
                          <td className="px-6 py-4">
                            <select
                              value={order.status}
                              onClick={(e) => e.stopPropagation()}
                              onChange={(e) => handleStatusChange(order.id, order.status, e.target.value as OrderStatus, order.coinsEarned, order.coinsAdded)}
-                             className="bg-transparent border border-[#1A1A1A]/20 px-2 py-1 text-[10px] uppercase font-bold tracking-[0.1em] text-[#1A1A1A] rounded outline-none cursor-pointer focus:border-[#1A1A1A]"
+                             className={`border px-2 py-1 text-[10px] uppercase font-bold tracking-[0.1em] rounded outline-none cursor-pointer focus:border-[#1A1A1A] ${getStatusBadgeClass(order.status)}`}
                            >
-                             <option value="Pending">Pending</option>
-                             <option value="Processing">Processing</option>
-                             <option value="Shipped">Shipped</option>
-                             <option value="Delivered">Delivered</option>
-                             <option value="Cancelled">Cancelled</option>
+                             {ORDER_STATUS_VALUES.map(status => (
+                               <option key={status} value={status}>{status}</option>
+                             ))}
                            </select>
                          </td>
                        </motion.tr>
@@ -2120,28 +2263,27 @@ export function AdminPage() {
                <table className="w-full text-left font-sans text-sm">
                  <thead className="bg-[#1A1A1A]/5">
                    <tr>
-                     {bulkTargetType === 'manual' && isBulkFlashOpen && (
-                       <th className="px-4 py-4 w-12 text-center">
-                         <input 
-                           type="checkbox"
-                           checked={filteredProducts.length > 0 && filteredProducts.every(p => selectedProductIds.includes(p.id))}
-                           onChange={(e) => {
-                             if (e.target.checked) {
-                               const allIds = filteredProducts.map(p => p.id);
-                               setSelectedProductIds(prev => Array.from(new Set([...prev, ...allIds])));
-                             } else {
-                               const allIds = filteredProducts.map(p => p.id);
-                               setSelectedProductIds(prev => prev.filter(id => !allIds.includes(id)));
-                             }
-                           }}
-                           className="cursor-pointer"
-                         />
-                       </th>
-                     )}
+                     <th className="px-4 py-4 w-12 text-center">
+                       <input
+                         type="checkbox"
+                         checked={filteredProducts.length > 0 && filteredProducts.every(p => selectedProductIds.includes(p.id))}
+                         onChange={(e) => {
+                           if (e.target.checked) {
+                             const allIds = filteredProducts.map(p => p.id);
+                             setSelectedProductIds(prev => Array.from(new Set([...prev, ...allIds])));
+                           } else {
+                             const allIds = filteredProducts.map(p => p.id);
+                             setSelectedProductIds(prev => prev.filter(id => !allIds.includes(id)));
+                           }
+                         }}
+                         className="cursor-pointer accent-[#1A1A1A]"
+                       />
+                     </th>
                      <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Product</th>
                      <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Category</th>
                      <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Price</th>
                      <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Stock</th>
+                     <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Status</th>
                      <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60 text-right">Actions</th>
                    </tr>
                  </thead>
@@ -2154,26 +2296,27 @@ export function AdminPage() {
                        transition={{ duration: 0.4, delay: index * 0.05 }}
                        className="group hover:bg-[#1A1A1A]/5 transition-colors"
                      >
-                       {bulkTargetType === 'manual' && isBulkFlashOpen && (
-                         <td className="px-4 py-4 text-center">
-                           <input 
-                             type="checkbox"
-                             checked={selectedProductIds.includes(product.id)}
-                             onChange={(e) => {
-                               if (e.target.checked) {
-                                 setSelectedProductIds(prev => [...prev, product.id]);
-                               } else {
-                                 setSelectedProductIds(prev => prev.filter(id => id !== product.id));
-                               }
-                             }}
-                             className="cursor-pointer"
-                           />
-                         </td>
-                       )}
+                       <td className="px-4 py-4 text-center">
+                         <input
+                           type="checkbox"
+                           checked={selectedProductIds.includes(product.id)}
+                           onChange={(e) => {
+                             if (e.target.checked) {
+                               setSelectedProductIds(prev => [...prev, product.id]);
+                             } else {
+                               setSelectedProductIds(prev => prev.filter(id => id !== product.id));
+                             }
+                           }}
+                           className="cursor-pointer accent-[#1A1A1A]"
+                         />
+                       </td>
                        <td className="px-6 py-4">
                          <div className="flex items-center gap-3">
-                           <img src={product.imageUrl} alt={product.name} className="w-10 h-10 object-cover" />
-                           <span className="font-medium group-hover:text-[#1A1A1A]/70 transition-colors">{product.name}</span>
+                           <SafeImage src={product.imageUrl} alt={product.name} className="w-10 h-10 object-cover" />
+                           <div>
+                             <span className="font-medium group-hover:text-[#1A1A1A]/70 transition-colors">{product.name}</span>
+                             <span className="block text-[10px] uppercase tracking-[0.12em] text-[#1A1A1A]/45">SKU {product.id}</span>
+                           </div>
                          </div>
                        </td>
                        <td className="px-6 py-4 text-[#1A1A1A]/60">{product.category}</td>
@@ -2197,7 +2340,20 @@ export function AdminPage() {
                          </div>
                        </td>
                        <td className="px-6 py-4">
+                         <span className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold rounded-sm ${(product.stock || 0) === 0 ? 'bg-red-500/10 text-red-600' : 'bg-green-500/10 text-green-700'}`}>
+                           {(product.stock || 0) === 0 ? 'Draft' : 'Published'}
+                         </span>
+                       </td>
+                       <td className="px-6 py-4">
                          <div className="flex items-center justify-end gap-2">
+                           <button
+                             type="button"
+                             onClick={() => window.open(`/product/${product.id}`, '_blank', 'noopener,noreferrer')}
+                             className="p-1.5 hover:bg-[#1A1A1A]/10 rounded-sm text-[#1A1A1A]/60 hover:text-[#1A1A1A] transition-colors"
+                             aria-label={`View ${product.name}`}
+                           >
+                             <Eye className="w-4 h-4" />
+                           </button>
                            <button 
                              onClick={() => { setEditingProduct(product); setIsCreating(false); setUploadedImage(product.imageUrl); setUploadedAdditionalImages(product.images || []); }}
                              className="p-1.5 hover:bg-[#1A1A1A]/10 rounded-sm text-[#1A1A1A]/60 hover:text-[#1A1A1A] transition-colors"
@@ -2224,6 +2380,9 @@ export function AdminPage() {
                    ))}
                  </tbody>
                </table>
+               <div className="border-t border-[#1A1A1A]/10 px-6 py-3 font-sans text-[10px] uppercase tracking-[0.14em] text-[#1A1A1A]/50">
+                 Showing {filteredProducts.length} of {productsList.length} backend products
+               </div>
             </div>
           </motion.div>
         )}
@@ -2360,7 +2519,7 @@ export function AdminPage() {
             className="space-y-6"
           >
             <div className="bg-white p-6 border border-[#1A1A1A]/10 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-              <h2 className="font-serif italic text-2xl text-[#1A1A1A]">Discounts & Coupons</h2>
+              <h2 className="font-serif italic text-2xl text-[#1A1A1A]">Promotions & Coupons</h2>
               <button 
                 onClick={() => {
                   setEditingCoupon(null);
@@ -2370,6 +2529,21 @@ export function AdminPage() {
                 >
                 <Plus className="w-4 h-4" /> New Coupon
               </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: 'Active Coupons', value: activeCouponCount, note: `${coupons.length} total backend codes` },
+                { label: 'Live Sale Items', value: activeLiveSaleCount, note: settings.liveSaleActive ? 'session enabled' : 'session paused' },
+                { label: 'Coupon Uses', value: couponRedemptions, note: 'saved redemption count' },
+                { label: 'Discount Liability', value: `Rs. ${coupons.reduce((sum, coupon) => sum + ((coupon.usageCount || 0) * (coupon.discountPercentage || 0)), 0).toFixed(0)}`, note: 'percent-weighted estimate' },
+              ].map(metric => (
+                <div key={metric.label} className="border border-[#1A1A1A]/10 bg-white p-5">
+                  <p className="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/55">{metric.label}</p>
+                  <p className="mt-2 font-serif text-3xl text-[#1A1A1A]">{metric.value}</p>
+                  <p className="mt-1 font-sans text-[10px] uppercase tracking-[0.12em] text-[#CDA185]">{metric.note}</p>
+                </div>
+              ))}
             </div>
             
             {(isCreatingCoupon || editingCoupon) && (
@@ -2458,28 +2632,37 @@ export function AdminPage() {
                    <thead className="bg-[#1A1A1A]/5">
                      <tr>
                        <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Code</th>
-                       <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Discount</th>
-                       <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Dates</th>
+                       <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Type</th>
+                       <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Value</th>
+                       <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Min Order</th>
+                       <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Expires</th>
                        <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Usage</th>
-                       <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Status</th>
+                       <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60">Active</th>
                        <th className="px-6 py-4 font-bold uppercase tracking-[0.1em] text-[10px] text-[#1A1A1A]/60 text-right">Actions</th>
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-[#1A1A1A]/10">
                      {coupons.length === 0 ? (
                        <tr>
-                         <td colSpan={6} className="px-6 py-8 text-center text-[#1A1A1A]/50">No coupons created yet.</td>
+                         <td colSpan={8} className="px-6 py-8 text-center text-[#1A1A1A]/50">No coupons created yet.</td>
                        </tr>
                      ) : coupons.map((c) => (
                        <tr key={c.id}>
                          <td className="px-6 py-4 font-bold">{c.code}</td>
+                         <td className="px-6 py-4">Percentage</td>
                          <td className="px-6 py-4">{c.discountPercentage}%</td>
-                         <td className="px-6 py-4">{c.startDate} to {c.endDate}</td>
+                         <td className="px-6 py-4">{c.minOrderAmount ? `Rs. ${c.minOrderAmount}` : 'No minimum'}</td>
+                         <td className="px-6 py-4">{c.endDate}</td>
                          <td className="px-6 py-4">{c.usageCount} {c.usageLimit ? `/ ${c.usageLimit}` : ''}</td>
                          <td className="px-6 py-4">
-                           <span className={`px-2 py-1 text-[10px] uppercase font-bold tracking-widest ${c.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                             {c.isActive ? 'Active' : 'Inactive'}
-                           </span>
+                           <button
+                             type="button"
+                             onClick={() => updateCoupon(c.id, { isActive: !c.isActive })}
+                             className={`relative h-6 w-11 rounded-full transition-colors ${c.isActive ? 'bg-green-600' : 'bg-[#1A1A1A]/20'}`}
+                             aria-label={`${c.isActive ? 'Deactivate' : 'Activate'} ${c.code}`}
+                           >
+                             <span className={`absolute left-0 top-1 h-4 w-4 rounded-full bg-white transition-transform ${c.isActive ? 'translate-x-5' : 'translate-x-1'}`} />
+                           </button>
                          </td>
                          <td className="px-6 py-4 text-right">
                            <button onClick={() => setEditingCoupon(c)} className="text-[#1A1A1A]/60 hover:text-[#1A1A1A] mr-4 uppercase text-[10px] font-bold tracking-widest">Edit</button>

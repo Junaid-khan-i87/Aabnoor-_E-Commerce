@@ -3,7 +3,7 @@ export interface ProductVariant {
   price: number;
 }
 
-export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Refunded';
 
 export interface OrderItem {
   productId: string;

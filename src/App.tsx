@@ -52,6 +52,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({
 const LiveSaleHubPage = lazy(() => import('./pages/LiveSaleHubPage').then((module) => ({ default: module.LiveSaleHubPage })));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })));
 const TrackPage = lazy(() => import('./pages/TrackPage').then((module) => ({ default: module.TrackPage })));
+const CartPage = lazy(() => import('./pages/CartPage').then((module) => ({ default: module.CartPage })));
 
 function PageFallback() {
   return (
@@ -83,6 +84,7 @@ export default function App() {
                               <Route path="/product/:id" element={<ProductPage />} />
                               <Route path="/admin" element={<AdminPage />} />
                               <Route path="/profile" element={<ProfilePage />} />
+                              <Route path="/cart" element={<CartPage />} />
                               <Route path="/checkout" element={<CheckoutPage />} />
                               <Route path="/track" element={<TrackPage />} />
                               <Route path="/live-sale" element={<LiveSaleHubPage />} />

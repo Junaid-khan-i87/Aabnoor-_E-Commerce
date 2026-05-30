@@ -284,7 +284,7 @@ export function ProductPage() {
   };
 
   const toggleAccordion = (section: string) => {
-    setOpenAccordion(prev => prev === section ? null : section);
+    setOpenAccordion(section);
   };
 
   const isWished = isInWishlist(product.id);
@@ -296,7 +296,14 @@ export function ProductPage() {
     }
   };
 
-  const currentPrice = selectedVariant ? selectedVariant.price : product.price;
+  const basePrice = selectedVariant ? selectedVariant.price : product.price;
+  const currentPrice = product.isFlashSale && product.flashSalePrice && !selectedVariant ? product.flashSalePrice : basePrice;
+  const comparePrice = product.compareAtPrice && product.compareAtPrice > currentPrice
+    ? product.compareAtPrice
+    : product.price > currentPrice
+      ? product.price
+      : undefined;
+  const savingsPercent = comparePrice ? Math.round(((comparePrice - currentPrice) / comparePrice) * 100) : 0;
   const seoDescription = `${product.name} from Aabnoor Beaute. ${product.description} Shop ${product.category.toLowerCase()} with secure checkout, delivery tracking and customer reviews.`;
   const productJsonLd = {
     '@context': 'https://schema.org',
@@ -371,6 +378,17 @@ export function ProductPage() {
             onClick={() => setZoomedImage(galleryImages[activeImageIndex])}
           >
             <SafeImage src={galleryImages[activeImageIndex]} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <div className="absolute left-4 top-4 flex flex-col gap-2">
+              <span className="inline-flex items-center gap-1.5 bg-white/90 px-3 py-1.5 font-sans text-[9px] font-bold uppercase tracking-[0.18em] text-[#1A1A1A] shadow-sm">
+                <ShieldCheck className="h-3.5 w-3.5 text-[#CDA185]" />
+                100% Authentic
+              </span>
+              {savingsPercent > 0 && (
+                <span className="w-fit bg-[#CDA185] px-3 py-1.5 font-sans text-[9px] font-bold uppercase tracking-[0.18em] text-white shadow-sm">
+                  Save {savingsPercent}%
+                </span>
+              )}
+            </div>
             <div className="absolute inset-0 bg-[#F9F7F2]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                <div className="bg-white/80 p-3 rounded-full backdrop-blur-sm shadow-sm transition-transform duration-300 scale-90 group-hover:scale-100">
                  <ZoomIn className="w-6 h-6 text-[#1A1A1A]" />
@@ -420,6 +438,9 @@ export function ProductPage() {
                }}
              >
                <SafeImage src={img} alt={`${product.name} view ${idx + 1}`} className="w-full h-full object-cover" />
+               <div className="absolute left-3 top-3 bg-white/90 px-2.5 py-1.5 font-sans text-[8px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A] shadow-sm">
+                 Authentic
+               </div>
                <div className="absolute bottom-4 right-4 bg-white/80 p-2 rounded-full backdrop-blur-sm shadow-sm">
                  <ZoomIn className="w-4 h-4 text-[#1A1A1A]" />
                </div>
@@ -474,12 +495,17 @@ export function ProductPage() {
                 <p className="font-serif text-2xl text-[#1A1A1A]">
                   Rs. {(currentPrice * quantity).toFixed(2)}
                 </p>
-                {product.compareAtPrice && (product.compareAtPrice > currentPrice) && (
+                {comparePrice && (
                   <p className="font-sans text-sm text-[#1A1A1A]/40 line-through mb-1">
-                    Rs. {(product.compareAtPrice * quantity).toFixed(2)}
+                    Rs. {(comparePrice * quantity).toFixed(2)}
                   </p>
                 )}
               </div>
+              {savingsPercent > 0 && (
+                <span className="px-2.5 py-1 text-[9px] uppercase tracking-[0.2em] font-bold rounded-sm border border-[#CDA185] bg-[#CDA185]/10 text-[#8b5f3d]">
+                  Save {savingsPercent}%
+                </span>
+              )}
               <div className="flex items-center gap-2">
                 <span className={`px-2.5 py-1 text-[9px] uppercase tracking-[0.2em] font-bold rounded-sm border ${product.isLimitedEdition ? 'border-[#1A1A1A] text-[#1A1A1A]' : 'border-[#1A1A1A]/20 text-[#1A1A1A]/60'}`}>
                   {product.stock === 0 ? 'Out of Stock' : (product.isLimitedEdition ? 'Limited Edition' : `${product.stock !== undefined ? product.stock : 12} In Stock`)}
@@ -595,9 +621,18 @@ export function ProductPage() {
                   onClick={handleAddToCart}
                   className="flex-1 h-14 bg-[#1A1A1A] text-[#F9F7F2] rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {product.stock === 0 ? 'Out of Stock' : `Add to Bag`}
+                  {product.stock === 0 ? 'Out of Stock' : `Add to Cart - Rs. ${(currentPrice * quantity).toFixed(2)}`}
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={toggleWishlist}
+                className="w-full h-12 border border-[#1A1A1A]/20 text-[#1A1A1A] rounded-full font-sans text-[10px] font-bold uppercase tracking-[0.18em] hover:border-[#CDA185] hover:text-[#8b5f3d] transition-colors flex items-center justify-center gap-2"
+              >
+                <Heart className={`w-4 h-4 ${isWished ? 'fill-red-500 stroke-red-500' : ''}`} />
+                {isWished ? 'Saved to Wishlist' : 'Save to Wishlist'}
+              </button>
               
               <button
                 disabled={product.stock === 0}
@@ -613,8 +648,85 @@ export function ProductPage() {
               )}
             </div>
 
+            {/* Product Tabs */}
+            <div className="mt-8 mb-12 border border-[#1A1A1A]/10 bg-white">
+              <div className="flex overflow-x-auto border-b border-[#1A1A1A]/10">
+                {[
+                  ['description', 'Description'],
+                  ['ingredients', 'Ingredients'],
+                  ['usage', 'How to Use'],
+                  ['reviews', `Reviews (${product.reviews?.length || 0})`],
+                  ...(product.advantages?.length ? [['advantages', 'Benefits']] : []),
+                  ...(product.warnings ? [['warnings', 'Warnings']] : []),
+                ].map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => toggleAccordion(key)}
+                    className={`min-w-fit px-5 py-4 font-sans text-[10px] font-bold uppercase tracking-[0.18em] transition-colors ${
+                      openAccordion === key
+                        ? 'bg-[#1A1A1A] text-[#F9F7F2]'
+                        : 'text-[#1A1A1A]/55 hover:text-[#1A1A1A]'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-6 font-sans text-sm leading-7 text-[#1A1A1A]/75">
+                {openAccordion === 'description' && (
+                  <p>{product.fullDetails || product.description}</p>
+                )}
+
+                {openAccordion === 'ingredients' && (
+                  <div className="text-xs leading-relaxed text-[#1A1A1A]/80">
+                    <p className="mb-3 text-[10px] text-[#CDA185] uppercase tracking-wider font-extrabold">Click any underlined ingredient to learn why it is included.</p>
+                    <div className="flex flex-wrap gap-x-2 gap-y-1.5 pt-1">
+                      {(product.ingredients || 'Aqua (Water), Glycerin, Niacinamide, Squalane, Hyaluronic Acid, Peptides Complex, Botanical Extract Blend').split(',').map((ing, i) => {
+                        const trimmed = ing.trim();
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => handleIngredientClick(trimmed)}
+                            className="text-left border-b border-dashed border-[#CDA185] hover:text-[#CDA185] font-semibold transition-colors cursor-pointer outline-none pb-0.5"
+                          >
+                            {trimmed}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-4 border-t border-[#1A1A1A]/5 pt-3 text-[10px] italic text-[#1A1A1A]/50">Formulated without parabens, silicones, fragrances, or phthalates where applicable.</p>
+                  </div>
+                )}
+
+                {openAccordion === 'usage' && (
+                  <p>{product.howToUse || 'Apply to clean, dry skin morning and evening. Gently press into face and neck until fully absorbed.'}</p>
+                )}
+
+                {openAccordion === 'advantages' && product.advantages && (
+                  <ul className="list-disc pl-4 space-y-1">
+                    {product.advantages.map((adv, i) => (
+                      <li key={i}>{adv}</li>
+                    ))}
+                  </ul>
+                )}
+
+                {openAccordion === 'warnings' && (
+                  <p className="text-red-600/90 font-sans text-xs leading-relaxed font-semibold">
+                    {product.warnings || 'Patch test before first use and avoid contact with eyes.'}
+                  </p>
+                )}
+
+                {openAccordion === 'reviews' && (
+                  <p className="font-sans text-xs uppercase tracking-[0.18em] text-[#1A1A1A]/45">Review history and submission form are shown below.</p>
+                )}
+              </div>
+            </div>
+
             {/* Accordions */}
-            <div className="border-t border-[#1A1A1A]/10 mt-8 mb-12">
+            <div className="hidden">
               <AccordionItem 
                 title="Description" 
                 isOpen={openAccordion === 'description'} 
@@ -694,7 +806,7 @@ export function ProductPage() {
             </div>
             
             {/* Reviews Section */}
-            <div className="pt-8 border-t border-[#1A1A1A]/10 mt-12 text-left">
+            <div className={`pt-8 border-t border-[#1A1A1A]/10 mt-12 text-left ${openAccordion === 'reviews' ? '' : 'hidden'}`}>
               <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 mb-8">
                 <div>
                   <h3 className="font-serif italic text-2xl text-[#1A1A1A]">Customer Experiences</h3>
