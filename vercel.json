@@ -4,6 +4,7 @@
     { "src": "/product/[^/]+", "dest": "/index.html" },
     { "src": "/admin", "dest": "/index.html" },
     { "src": "/profile", "dest": "/index.html" },
+    { "src": "/cart", "dest": "/index.html" },
     { "src": "/checkout", "dest": "/index.html" },
     { "src": "/track", "dest": "/index.html" },
     { "src": "/live-sale", "dest": "/index.html" },
