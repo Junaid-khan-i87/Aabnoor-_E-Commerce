@@ -106,17 +106,14 @@ export function CheckoutPage() {
     
     const formData = new FormData(e.currentTarget);
     const formName = (formData.get('name') as string) || '';
-    const formEmail = currentUser;
     const formPhone = (formData.get('phone') as string) || '';
     const formHome = (formData.get('home') as string) || '';
     const formState = (formData.get('state') as string) || '';
     const formCountry = (formData.get('country') as string) || '';
     
-    const formattedAddress = `${formHome}\n${formState}, ${formCountry}\nPhone: ${formPhone}${formEmail ? `\nEmail: ${formEmail}` : ''}`;
-    
     localStorage.setItem('aura_checkout_details', JSON.stringify({
       name: formName, 
-      email: formEmail, 
+      email: currentUser,
       phone: formPhone, 
       home: formHome, 
       state: formState, 
@@ -129,13 +126,15 @@ export function CheckoutPage() {
     let newOrder;
     try {
       newOrder = await placeOrder({
-        userEmail: formEmail,
-        userName: formName || formEmail.split('@')[0],
-        items: items.map(i => ({ productId: i.id, name: i.name, price: i.price, quantity: i.quantity })),
-        total: finalTotal,
-        coinsEarned: coinsToEarn,
-        shippingAddress: formattedAddress,
+        userName: formName || currentUser.split('@')[0],
+        items: items.map(i => ({ productId: i.id, quantity: i.quantity })),
+        phone: formPhone,
+        home: formHome,
+        state: formState,
+        country: formCountry,
         paymentMethod: paymentMethod === 'credit_card' ? 'Credit Card' : 'Cash on Delivery',
+        deliveryMethod,
+        couponCode: appliedCoupon?.code || '',
       });
     } catch {
       addToast('Order could not be saved. Please try again.', 'error');
@@ -167,7 +166,7 @@ export function CheckoutPage() {
       setLoginDiscountUsed(true);
     }
 
-    setEarnedCoins(coinsToEarn);
+    setEarnedCoins(newOrder.coinsEarned || coinsToEarn);
     clearCart();
     setCheckoutStep('complete');
     window.scrollTo(0, 0);

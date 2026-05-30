@@ -1,11 +1,23 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Order, OrderItem, OrderStatus } from './types';
+import { Order, OrderStatus } from './types';
 import { deleteEntity, listEntities, upsertEntity } from './lib/storeApi';
 import { supabase } from './lib/supabase';
 
+type PlaceOrderInput = {
+  userName: string;
+  items: { productId: string; quantity: number }[];
+  phone: string;
+  home: string;
+  state: string;
+  country: string;
+  paymentMethod: 'Credit Card' | 'Cash on Delivery';
+  deliveryMethod: 'standard' | 'express';
+  couponCode?: string;
+};
+
 interface OrderContextType {
   orders: Order[];
-  placeOrder: (order: Omit<Order, 'id' | 'date' | 'status' | 'trackingUpdates' | 'trackingNumber'>) => Promise<Order>;
+  placeOrder: (order: PlaceOrderInput) => Promise<Order>;
   updateOrderStatus: (id: string, status: OrderStatus, note?: string, coinsAdded?: boolean) => Promise<{ ok: boolean; error?: string }>;
   deleteOrder: (id: string) => void;
   updateOrder: (id: string, updatedOrder: Partial<Order>) => void;
@@ -14,13 +26,6 @@ interface OrderContextType {
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
-
-const generateTrackingNumber = () => {
-  const countryCode = 'PK';
-  const year = new Date().getFullYear().toString().slice(-2);
-  const sequence = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
-  return `${countryCode}-${year}-${sequence}`;
-};
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -73,31 +78,32 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const placeOrder = async (orderData: Omit<Order, 'id' | 'date' | 'status' | 'trackingUpdates' | 'trackingNumber'>) => {
-    const generatedTracking = generateTrackingNumber();
+  const placeOrder = async (orderData: PlaceOrderInput) => {
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) {
+      throw new Error('Sign in before placing an order.');
+    }
 
-    const newOrder: Order = {
-      ...orderData,
-      id: `ORD-${Math.floor(Math.random() * 100000).toString().padStart(5, '0')}`,
-      trackingNumber: generatedTracking,
-      date: new Date().toISOString(),
-      status: 'Pending',
-      trackingUpdates: [{
-        status: 'Pending',
-        date: new Date().toISOString(),
-        note: 'Order placed, awaiting admin approval'
-      }]
-    };
+    const response = await fetch('/api/place-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(orderData),
+    });
+
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result?.order) {
+      throw new Error(result?.error || 'Order could not be saved to the backend.');
+    }
+
+    const newOrder = result.order as Order;
     setOrders(prev => {
       const next = [newOrder, ...prev];
       updateOrdersStorage(next);
       return next;
     });
-
-    const saved = await upsertEntity('orders', newOrder);
-    if (!saved) {
-      throw new Error('Order could not be saved to the backend.');
-    }
 
     return newOrder;
   };

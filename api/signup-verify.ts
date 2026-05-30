@@ -1,10 +1,10 @@
 import { createHmac } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
+import { cleanText } from './_security';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-const resendApiKey = process.env.RESEND_API_KEY;
-const otpSecret = process.env.SIGNUP_OTP_SECRET || resendApiKey;
+const otpSecret = process.env.SIGNUP_OTP_SECRET;
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -23,8 +23,8 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Signup verification is not configured.' });
   }
 
-  const email = String(req.body?.email || '').trim().toLowerCase();
-  const name = String(req.body?.name || '').trim();
+  const email = cleanText(req.body?.email, 254).toLowerCase();
+  const name = cleanText(req.body?.name, 120);
   const password = String(req.body?.password || '');
   const otp = String(req.body?.otp || '').replace(/\D/g, '');
 
@@ -36,8 +36,8 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'A valid email address is required.' });
   }
 
-  if (password.length < 6 || password.length > 128) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  if (password.length < 8 || password.length > 128) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
   }
 
   if (!/^\d{6}$/.test(otp)) {
@@ -61,7 +61,7 @@ export default async function handler(req: any, res: any) {
     .limit(1);
 
   if (otpError) {
-    return res.status(500).json({ error: otpError.message });
+    return res.status(500).json({ error: 'OTP could not be verified.' });
   }
 
   const otpRow = otpRows?.[0];
@@ -91,7 +91,7 @@ export default async function handler(req: any, res: any) {
   });
 
   if (createdUser.error) {
-    return res.status(400).json({ error: createdUser.error.message });
+    return res.status(400).json({ error: 'Account could not be created.' });
   }
 
   const user = createdUser.data.user;
@@ -110,7 +110,7 @@ export default async function handler(req: any, res: any) {
     .upsert({ id: customer.id, data: customer });
 
   if (customerError) {
-    return res.status(500).json({ error: customerError.message });
+    return res.status(500).json({ error: 'Customer profile could not be saved.' });
   }
 
   await supabaseAdmin

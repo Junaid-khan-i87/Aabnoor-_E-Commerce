@@ -34,7 +34,7 @@ export default async function handler(req: any, res: any) {
     .maybeSingle();
 
   if (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'Tracking lookup could not be completed.' });
   }
 
   if (!data?.data) {

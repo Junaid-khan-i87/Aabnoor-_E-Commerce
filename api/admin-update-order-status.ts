@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { cleanText } from './_security';
 
 const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -33,9 +34,9 @@ export default async function handler(req: any, res: any) {
     return res.status(401).json({ error: 'Missing admin session.' });
   }
 
-  const orderId = String(req.body?.orderId || '').trim();
-  const status = String(req.body?.status || '').trim();
-  const note = String(req.body?.note || `Order marked as ${status}`).trim();
+  const orderId = cleanText(req.body?.orderId, 80);
+  const status = cleanText(req.body?.status, 40);
+  const note = cleanText(req.body?.note || `Order marked as ${status}`, 300);
   const coinsAdded = typeof req.body?.coinsAdded === 'boolean' ? req.body.coinsAdded : undefined;
 
   if (!orderId || orderId.length > 80 || !allowedStatuses.has(status)) {
@@ -89,7 +90,7 @@ export default async function handler(req: any, res: any) {
     .maybeSingle();
 
   if (orderError) {
-    return res.status(500).json({ error: orderError.message });
+    return res.status(500).json({ error: 'Order could not be loaded.' });
   }
 
   if (!orderRow?.data) {
@@ -114,7 +115,7 @@ export default async function handler(req: any, res: any) {
     .eq('id', orderId);
 
   if (updateError) {
-    return res.status(500).json({ error: updateError.message });
+    return res.status(500).json({ error: 'Order status could not be saved.' });
   }
 
   return res.status(200).json({ order: nextOrder });

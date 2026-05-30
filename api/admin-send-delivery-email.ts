@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { cleanText } from './_security';
 
 const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -43,7 +44,7 @@ export default async function handler(req: any, res: any) {
     return res.status(401).json({ error: 'Missing admin session.' });
   }
 
-  const orderId = String(req.body?.orderId || '').trim();
+  const orderId = cleanText(req.body?.orderId, 80);
   if (!orderId || orderId.length > 80) {
     return res.status(400).json({ error: 'A valid order id is required.' });
   }
@@ -95,7 +96,7 @@ export default async function handler(req: any, res: any) {
     .maybeSingle();
 
   if (orderError) {
-    return res.status(500).json({ error: orderError.message });
+    return res.status(500).json({ error: 'Order could not be loaded.' });
   }
 
   const order = orderRow?.data;
@@ -122,7 +123,7 @@ export default async function handler(req: any, res: any) {
       <div style="background:#f7f3ee;border:1px solid #eadfd6;padding:16px 18px;margin:20px 0;">
         <p style="margin:0 0 8px;"><strong>Order:</strong> ${escapeHtml(order.id || orderRow.id)}</p>
         <p style="margin:0 0 14px;"><strong>Tracking:</strong> ${escapeHtml(order.trackingNumber || 'Pending')}</p>
-        <a href="${trackingUrl}" style="display:inline-block;background:#1A1A1A;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">View tracking page</a>
+        <a href="${escapeHtml(trackingUrl)}" style="display:inline-block;background:#1A1A1A;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">View tracking page</a>
       </div>
       <table style="width:100%;border-collapse:collapse;margin:24px 0;">
         <thead>
@@ -149,8 +150,7 @@ export default async function handler(req: any, res: any) {
   });
 
   if (error) {
-    const message = typeof error === 'string' ? error : error.message || JSON.stringify(error);
-    return res.status(400).json({ error: message });
+    return res.status(400).json({ error: 'Delivery email could not be sent.' });
   }
 
   return res.status(200).json({ id: data?.id, to: order.userEmail });

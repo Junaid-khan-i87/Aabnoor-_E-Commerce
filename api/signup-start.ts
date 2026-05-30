@@ -1,11 +1,12 @@
 import { createHmac, randomInt } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { cleanText, escapeHtml } from './_security';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const resendApiKey = process.env.RESEND_API_KEY;
-const otpSecret = process.env.SIGNUP_OTP_SECRET || resendApiKey;
+const otpSecret = process.env.SIGNUP_OTP_SECRET;
 const fromEmail = process.env.AUTH_EMAIL_FROM || process.env.ORDER_EMAIL_FROM || 'Aabnoor <noreply@aabnoor.shop>';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -14,6 +15,11 @@ const hashOtp = (email: string, otp: string) =>
   createHmac('sha256', otpSecret || '')
     .update(`${email.toLowerCase()}:${otp}`)
     .digest('hex');
+
+const hashIp = (ip: string) =>
+  ip
+    ? createHmac('sha256', otpSecret || '').update(ip).digest('hex')
+    : null;
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -25,9 +31,13 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Signup email service is not configured.' });
   }
 
-  const email = String(req.body?.email || '').trim().toLowerCase();
-  const name = String(req.body?.name || '').trim();
+  const email = cleanText(req.body?.email, 254).toLowerCase();
+  const name = cleanText(req.body?.name, 120);
   const password = String(req.body?.password || '');
+  const requestIp = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '')
+    .split(',')[0]
+    .trim();
+  const requestIpHash = hashIp(requestIp);
 
   if (!name || name.length > 120) {
     return res.status(400).json({ error: 'Full name is required.' });
@@ -37,8 +47,8 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'A valid email address is required.' });
   }
 
-  if (password.length < 6 || password.length > 128) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  if (password.length < 8 || password.length > 128) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
   }
 
   const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
@@ -50,7 +60,7 @@ export default async function handler(req: any, res: any) {
 
   const existingUser = await supabaseAdmin.auth.admin.listUsers();
   if (existingUser.error) {
-    return res.status(500).json({ error: existingUser.error.message });
+    return res.status(500).json({ error: 'Signup check could not be completed.' });
   }
 
   const users = existingUser.data.users as Array<{ email?: string | null }>;
@@ -68,11 +78,27 @@ export default async function handler(req: any, res: any) {
     .limit(1);
 
   if (recentError) {
-    return res.status(500).json({ error: recentError.message });
+    return res.status(500).json({ error: 'OTP request could not be checked.' });
   }
 
   if (recentOtp && recentOtp.length > 0) {
     return res.status(429).json({ error: 'Please wait one minute before requesting another OTP.' });
+  }
+
+  if (requestIpHash) {
+    const { count, error: ipError } = await supabaseAdmin
+      .from('signup_otps')
+      .select('id', { count: 'exact', head: true })
+      .eq('request_ip_hash', requestIpHash)
+      .gte('created_at', new Date(Date.now() - 10 * 60_000).toISOString());
+
+    if (ipError) {
+      return res.status(500).json({ error: 'OTP request could not be checked.' });
+    }
+
+    if ((count || 0) >= 5) {
+      return res.status(429).json({ error: 'Too many OTP requests. Please try again later.' });
+    }
   }
 
   const otp = String(randomInt(100000, 1000000));
@@ -85,10 +111,11 @@ export default async function handler(req: any, res: any) {
       name,
       otp_hash: hashOtp(email, otp),
       expires_at: expiresAt,
+      request_ip_hash: requestIpHash,
     });
 
   if (insertError) {
-    return res.status(500).json({ error: insertError.message });
+    return res.status(500).json({ error: 'OTP could not be saved.' });
   }
 
   const resend = new Resend(resendApiKey);
@@ -106,7 +133,7 @@ export default async function handler(req: any, res: any) {
 
           <div style="padding:34px 32px;text-align:center;">
             <h1 style="margin:0 0 12px;font-family:Georgia,serif;font-size:28px;font-weight:400;color:#1a1a1a;">Your verification code is this</h1>
-            <p style="margin:0 auto 26px;max-width:390px;font-size:14px;line-height:1.7;color:#5f5a55;">Enter this one-time code to verify your email address and finish creating your Aabnoor account.</p>
+            <p style="margin:0 auto 26px;max-width:390px;font-size:14px;line-height:1.7;color:#5f5a55;">Enter this one-time code to verify ${escapeHtml(email)} and finish creating your Aabnoor account.</p>
 
             <div style="display:inline-block;background:#f7f3ee;border:1px solid #e6d6ca;border-radius:14px;padding:18px 24px;margin-bottom:24px;">
               <div style="font-size:36px;line-height:1;font-weight:700;letter-spacing:12px;color:#1a1a1a;font-family:Arial,sans-serif;">${otp}</div>
@@ -124,7 +151,7 @@ export default async function handler(req: any, res: any) {
   });
 
   if (emailError) {
-    return res.status(400).json({ error: emailError.message || emailError });
+    return res.status(400).json({ error: 'Verification email could not be sent.' });
   }
 
   return res.status(200).json({ ok: true });

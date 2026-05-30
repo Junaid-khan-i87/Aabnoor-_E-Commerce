@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
+import { cleanText } from './_security';
+import { createHmac } from 'crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const cleanString = (value: unknown, maxLength: number) =>
-  String(value ?? '').trim().slice(0, maxLength);
+const reviewHashSecret = process.env.REVIEW_HASH_SECRET || supabaseSecretKey || 'review-hash-fallback';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -36,16 +36,16 @@ export default async function handler(req: any, res: any) {
     return res.status(401).json({ error: 'Invalid user session.' });
   }
 
-  const productId = cleanString(req.body?.productId, 80);
+  const productId = cleanText(req.body?.productId, 80);
   const rating = Number(req.body?.rating);
-  const comment = cleanString(req.body?.comment, 1200);
-  const displayName = cleanString(req.body?.name, 80) || user.email.split('@')[0];
+  const comment = cleanText(req.body?.comment, 1200);
+  const displayName = cleanText(req.body?.name, 80) || user.email.split('@')[0];
   const tags = Array.isArray(req.body?.tags)
-    ? req.body.tags.map((tag: unknown) => cleanString(tag, 32)).filter(Boolean).slice(0, 8)
+    ? req.body.tags.map((tag: unknown) => cleanText(tag, 32)).filter(Boolean).slice(0, 8)
     : [];
   const photos = Array.isArray(req.body?.photos)
     ? req.body.photos
-        .map((photo: unknown) => cleanString(photo, 500))
+        .map((photo: unknown) => cleanText(photo, 500))
         .filter((photo: string) => /^https?:\/\//i.test(photo))
         .slice(0, 3)
     : [];
@@ -76,7 +76,7 @@ export default async function handler(req: any, res: any) {
     .maybeSingle();
 
   if (productError) {
-    return res.status(500).json({ error: productError.message });
+    return res.status(500).json({ error: 'Product could not be loaded.' });
   }
 
   if (!productRow?.data) {
@@ -85,7 +85,8 @@ export default async function handler(req: any, res: any) {
 
   const product = productRow.data;
   const currentReviews = Array.isArray(product.reviews) ? product.reviews : [];
-  const alreadyReviewed = currentReviews.some((review: any) => review.userEmail === user.email);
+  const reviewerHash = createHmac('sha256', reviewHashSecret).update(user.id).digest('hex');
+  const alreadyReviewed = currentReviews.some((review: any) => review.reviewerHash === reviewerHash || review.userId === user.id || review.userEmail === user.email);
 
   if (alreadyReviewed) {
     return res.status(409).json({ error: 'You have already reviewed this product.' });
@@ -94,7 +95,7 @@ export default async function handler(req: any, res: any) {
   const newReview = {
     id: `rev-${Date.now()}`,
     user: displayName,
-    userEmail: user.email,
+    reviewerHash,
     rating,
     comment,
     date: new Date().toISOString(),
@@ -117,8 +118,9 @@ export default async function handler(req: any, res: any) {
     .upsert({ id: productRow.id, data: nextProduct });
 
   if (updateError) {
-    return res.status(500).json({ error: updateError.message });
+    return res.status(500).json({ error: 'Review could not be saved.' });
   }
 
-  return res.status(200).json({ product: nextProduct, review: newReview });
+  const publicReview = { ...newReview };
+  return res.status(200).json({ product: nextProduct, review: publicReview });
 }
