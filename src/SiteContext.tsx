@@ -4,7 +4,7 @@ import { Coupon } from './types';
 import { deleteEntity, getStoreValue, listEntities, setStoreValue, upsertEntity } from './lib/storeApi';
 import { supabase } from './lib/supabase';
 
-const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
+const ADMIN_EMAIL = (((import.meta as any).env?.VITE_ADMIN_EMAIL as string | undefined) || '').toLowerCase().trim();
 export const SUPPORT_EMAIL = 'contact@flenogarei.resend.app';
 
 export interface UserAccount {

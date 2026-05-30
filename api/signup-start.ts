@@ -35,10 +35,24 @@ const hashIp = (ip: string) =>
     ? createHmac('sha256', otpSecret || '').update(ip).digest('hex')
     : null;
 
+const setCorsHeaders = (res: any) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://aabnoor.shop');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+};
+
 export default async function handler(req: any, res: any) {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!String(req.headers['content-type'] || '').includes('application/json')) {
+    return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
   if (!supabaseUrl || !supabaseSecretKey || !resendApiKey || !otpSecret) {
@@ -47,7 +61,6 @@ export default async function handler(req: any, res: any) {
 
   const email = cleanText(req.body?.email, 254).toLowerCase();
   const name = cleanText(req.body?.name, 120);
-  const password = String(req.body?.password || '');
   const requestIp = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '')
     .split(',')[0]
     .trim();
@@ -61,10 +74,6 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'A valid email address is required.' });
   }
 
-  if (password.length < 8 || password.length > 128) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
-  }
-
   const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
     auth: {
       autoRefreshToken: false,
@@ -72,14 +81,14 @@ export default async function handler(req: any, res: any) {
     },
   });
 
-  const existingUser = await supabaseAdmin.auth.admin.listUsers();
-  if (existingUser.error) {
-    return res.status(500).json({ error: 'Signup check could not be completed.' });
-  }
+  const { data: existingCustomer } = await supabaseAdmin
+    .from('customers')
+    .select('id')
+    .eq('data->>email', email)
+    .maybeSingle();
 
-  const users = existingUser.data.users as Array<{ email?: string | null }>;
-  if (users.some(user => user.email?.toLowerCase() === email)) {
-    return res.status(409).json({ error: 'This email is already registered. Please sign in.' });
+  if (existingCustomer) {
+    return res.status(200).json({ ok: true });
   }
 
   const recentWindow = new Date(Date.now() - 60_000).toISOString();

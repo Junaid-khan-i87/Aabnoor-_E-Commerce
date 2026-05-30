@@ -37,16 +37,12 @@ export function CheckoutPage() {
   const deliveryWindow = deliveryMethod === 'express' ? '1-2 business days' : '3-5 business days';
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [home, setHome] = useState('');
   const [state, setState] = useState('');
   const [country, setCountry] = useState('');
   
-  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'cod'>('credit_card');
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
+  const paymentMethod = 'cod';
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
 
@@ -67,12 +63,15 @@ export function CheckoutPage() {
       try {
         const parsed = JSON.parse(savedDetails);
         if (parsed.name) setName(parsed.name);
-        if (parsed.email) setEmail(parsed.email);
-        if (parsed.phone) setPhone(parsed.phone);
-        if (parsed.home) setHome(parsed.home);
         if (parsed.state) setState(parsed.state);
         if (parsed.country) setCountry(parsed.country);
-        if (parsed.paymentMethod) setPaymentMethod(parsed.paymentMethod);
+        if (parsed.email || parsed.phone || parsed.home || parsed.paymentMethod) {
+          localStorage.setItem('aura_checkout_details', JSON.stringify({
+            name: parsed.name || '',
+            state: parsed.state || '',
+            country: parsed.country || '',
+          }));
+        }
       } catch (e) {
         // failed to parse
       }
@@ -112,13 +111,9 @@ export function CheckoutPage() {
     const formCountry = (formData.get('country') as string) || '';
     
     localStorage.setItem('aura_checkout_details', JSON.stringify({
-      name: formName, 
-      email: currentUser,
-      phone: formPhone, 
-      home: formHome, 
-      state: formState, 
-      country: formCountry, 
-      paymentMethod
+      name: formName,
+      state: formState,
+      country: formCountry,
     }));
     
     await new Promise(resolve => setTimeout(resolve, 800));
@@ -132,7 +127,7 @@ export function CheckoutPage() {
         home: formHome,
         state: formState,
         country: formCountry,
-        paymentMethod: paymentMethod === 'credit_card' ? 'Credit Card' : 'Cash on Delivery',
+        paymentMethod: 'Cash on Delivery',
         deliveryMethod,
         couponCode: appliedCoupon?.code || '',
       });
@@ -240,7 +235,8 @@ export function CheckoutPage() {
                 <input 
                   type="email"
                   name="email"
-                  defaultValue={email}
+                  value={currentUser || ''}
+                  readOnly
                   className="w-full border border-[#1A1A1A]/20 p-3 font-sans text-sm focus:border-[#1A1A1A] outline-none bg-transparent" 
                 />
               </div>
@@ -323,7 +319,7 @@ export function CheckoutPage() {
                 </div>
                 <div className="border border-[#1A1A1A]/10 bg-white p-3 flex items-start gap-2">
                   <CreditCard className="w-4 h-4 text-[#CDA185] mt-0.5 shrink-0" />
-                  <span className="font-sans text-[10px] uppercase tracking-wider font-bold text-[#1A1A1A]/70">Card and COD options</span>
+                  <span className="font-sans text-[10px] uppercase tracking-wider font-bold text-[#1A1A1A]/70">Cash on delivery</span>
                 </div>
                 <div className="border border-[#1A1A1A]/10 bg-white p-3 flex items-start gap-2">
                   <Truck className="w-4 h-4 text-[#CDA185] mt-0.5 shrink-0" />
@@ -331,65 +327,13 @@ export function CheckoutPage() {
                 </div>
               </div>
               <div className="space-y-4">
-                <div className={`p-6 border transition-colors ${paymentMethod === 'credit_card' ? 'border-[#1A1A1A] bg-[#1A1A1A]/5' : 'border-[#1A1A1A]/20 hover:border-[#1A1A1A]/50'}`}>
-                  <label className="flex items-center gap-4 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="credit_card" 
-                      checked={paymentMethod === 'credit_card'}
-                      onChange={() => setPaymentMethod('credit_card')}
-                      className="accent-[#1A1A1A] w-4 h-4"
-                    />
-                    <span className="font-sans text-base">Credit Card</span>
-                  </label>
-                  {paymentMethod === 'credit_card' && (
-                    <div className="mt-6 space-y-6 pt-6 border-t border-[#1A1A1A]/10">
-                      <div>
-                        <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-2">Card Number <span className="lowercase font-normal text-red-500 tracking-normal">*</span></label>
-                        <input 
-                          type="text"
-                          required
-                          placeholder="0000 0000 0000 0000"
-                          value={cardNumber}
-                          onChange={(e) => setCardNumber(e.target.value)}
-                          className="w-full border border-[#1A1A1A]/20 p-3 font-sans text-sm focus:border-[#1A1A1A] outline-none bg-white rounded-none" 
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-6">
-                        <div>
-                          <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-2">Expiry Date <span className="lowercase font-normal text-red-500 tracking-normal">*</span></label>
-                          <input 
-                            type="text"
-                            required
-                            placeholder="MM/YY"
-                            value={expiryDate}
-                            onChange={(e) => setExpiryDate(e.target.value)}
-                            className="w-full border border-[#1A1A1A]/20 p-3 font-sans text-sm focus:border-[#1A1A1A] outline-none bg-white rounded-none" 
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-2">CVV <span className="lowercase font-normal text-red-500 tracking-normal">*</span></label>
-                          <input 
-                            type="text"
-                            required
-                            placeholder="123"
-                            value={cvv}
-                            onChange={(e) => setCvv(e.target.value)}
-                            className="w-full border border-[#1A1A1A]/20 p-3 font-sans text-sm focus:border-[#1A1A1A] outline-none bg-white rounded-none" 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <label className={`flex items-center gap-4 p-6 border cursor-pointer transition-colors ${paymentMethod === 'cod' ? 'border-[#1A1A1A] bg-[#1A1A1A]/5' : 'border-[#1A1A1A]/20 hover:border-[#1A1A1A]/50'}`}>
+                <label className="flex items-center gap-4 p-6 border cursor-pointer transition-colors border-[#1A1A1A] bg-[#1A1A1A]/5">
                   <input 
                     type="radio" 
                     name="payment" 
                     value="cod" 
-                    checked={paymentMethod === 'cod'}
-                    onChange={() => setPaymentMethod('cod')}
+                    checked
+                    readOnly
                     className="accent-[#1A1A1A] w-4 h-4"
                   />
                   <span className="font-sans text-base">Cash on Delivery</span>
@@ -541,7 +485,7 @@ export function CheckoutPage() {
                 disabled={isProcessing}
                 className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-4 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#CDA185] transition-all flex flex-col items-center justify-center gap-1 leading-none disabled:opacity-50 cursor-pointer shadow-md"
               >
-                <span>{isProcessing ? 'Processing Securely...' : 'Confirm Order & Pay'}</span>
+                <span>{isProcessing ? 'Processing Securely...' : 'Confirm COD Order'}</span>
                 <span className="text-[9px] text-[#F9F7F2]/60 tracking-wider normal-case font-normal flex items-center gap-1.5 mt-1 font-semibold">
                   <Coins className="w-3.5 h-3.5 text-[#CDA185]" /> Earn {coinsToEarn} Aabnoor Coins
                 </span>

@@ -11,7 +11,7 @@ import { SafeImage } from '../components/SafeImage';
 import { useUI } from '../UIContext';
 import { supabase } from '../lib/supabase';
 
-const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
+const ADMIN_EMAIL = (((import.meta as any).env?.VITE_ADMIN_EMAIL as string | undefined) || '').toLowerCase().trim();
 type AdminTab = 'dashboard' | 'orders' | 'customers' | 'products' | 'discounts' | 'settings';
 
 const ADMIN_TABS: { id: AdminTab; label: string }[] = [
@@ -367,7 +367,7 @@ export function AdminPage() {
 
     const { data: sessionResult } = await supabase.auth.getSession();
     const user = sessionResult.session?.user;
-    if (!user || user.email?.toLowerCase() !== ADMIN_EMAIL) return false;
+    if (!user || !ADMIN_EMAIL || user.email?.toLowerCase() !== ADMIN_EMAIL) return false;
 
     const existing = await refreshAdminStatus();
     if (existing) {
@@ -457,8 +457,8 @@ export function AdminPage() {
     }
 
     const cleanEmail = adminEmail.trim().toLowerCase();
-    if (cleanEmail !== ADMIN_EMAIL) {
-      setLoginError(`Admin access is restricted to ${ADMIN_EMAIL}.`);
+    if (!ADMIN_EMAIL || cleanEmail !== ADMIN_EMAIL) {
+      setLoginError('Admin access is restricted.');
       return;
     }
 
@@ -472,9 +472,9 @@ export function AdminPage() {
       return;
     }
 
-    if (authData.user.email?.toLowerCase() !== ADMIN_EMAIL) {
+    if (!ADMIN_EMAIL || authData.user.email?.toLowerCase() !== ADMIN_EMAIL) {
       await supabase.auth.signOut();
-      setLoginError(`Admin access is restricted to ${ADMIN_EMAIL}.`);
+      setLoginError('Admin access is restricted.');
       return;
     }
 
@@ -518,7 +518,7 @@ export function AdminPage() {
           <h1 className="font-serif text-4xl mb-1 text-[#2c2826]">Admin Console</h1>
           <p className="font-sans text-xs uppercase tracking-widest text-[#c9847a] font-bold mb-6">Aabnoor Management Studio</p>
           <p className="font-sans text-xs text-[#7a706a] leading-relaxed mb-6">
-            Sign in as junaidmushtaq988@gmail.com, then verify the code from your authenticator app.
+            Sign in with the configured admin email, then verify the code from your authenticator app.
           </p>
 
           {loginError && (

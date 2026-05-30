@@ -13,10 +13,42 @@ const cleanText = (value: unknown, maxLength: number) =>
     .trim()
     .slice(0, maxLength);
 
+const setCorsHeaders = (res: any) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://aabnoor.shop');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+};
+
+const ALLOWED_PHOTO_HOSTS = new Set([
+  'images.unsplash.com',
+  'res.cloudinary.com',
+  'storage.googleapis.com',
+  'firebasestorage.googleapis.com',
+  'i.imgur.com',
+  'cdn.shopify.com',
+]);
+
+const isAllowedPhotoUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' && ALLOWED_PHOTO_HOSTS.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
 export default async function handler(req: any, res: any) {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!String(req.headers['content-type'] || '').includes('application/json')) {
+    return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
   if (!supabaseUrl || !supabasePublishableKey || !supabaseSecretKey) {
@@ -52,7 +84,7 @@ export default async function handler(req: any, res: any) {
   const photos = Array.isArray(req.body?.photos)
     ? req.body.photos
         .map((photo: unknown) => cleanText(photo, 500))
-        .filter((photo: string) => /^https?:\/\//i.test(photo))
+        .filter(isAllowedPhotoUrl)
         .slice(0, 3)
     : [];
 
@@ -112,10 +144,11 @@ export default async function handler(req: any, res: any) {
 
   const nextReviews = [newReview, ...currentReviews].slice(0, 100);
   const averageRating = Math.round((nextReviews.reduce((sum: number, review: any) => sum + Number(review.rating || 0), 0) / nextReviews.length) * 10) / 10;
+  const safeReviews = nextReviews.map(({ reviewerHash: _hidden, userId: _legacyUserId, userEmail: _legacyUserEmail, ...review }: any) => review);
   const nextProduct = {
     ...product,
     id: product.id || productRow.id,
-    reviews: nextReviews,
+    reviews: safeReviews,
     rating: averageRating,
   };
 
@@ -127,6 +160,6 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Review could not be saved.' });
   }
 
-  const publicReview = { ...newReview };
+  const { reviewerHash: _hidden, ...publicReview } = newReview;
   return res.status(200).json({ product: nextProduct, review: publicReview });
 }

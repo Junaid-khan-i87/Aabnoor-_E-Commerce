@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -25,10 +25,24 @@ const decodeJwtPayload = (token: string) => {
   }
 };
 
+const setCorsHeaders = (res: any) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://aabnoor.shop');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+};
+
 export default async function handler(req: any, res: any) {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!String(req.headers['content-type'] || '').includes('application/json')) {
+    return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
   if (!supabaseUrl || !supabaseSecretKey || !supabasePublishableKey) {
@@ -63,7 +77,7 @@ export default async function handler(req: any, res: any) {
 
   const { data: userResult, error: userError } = await userClient.auth.getUser(token);
   const user = userResult?.user;
-  if (userError || !user?.id || user.email?.toLowerCase() !== ADMIN_EMAIL) {
+  if (userError || !user?.id || !ADMIN_EMAIL || user.email?.toLowerCase() !== ADMIN_EMAIL) {
     return res.status(403).json({ error: 'Only the configured admin can update orders.' });
   }
 

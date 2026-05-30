@@ -8,7 +8,9 @@ interface StoredEntity<T extends { id: string }> {
 }
 
 const warnSupabaseError = (action: string, error: unknown) => {
-  console.warn(`Supabase ${action} failed. Falling back to local state.`, error);
+  if ((import.meta as any).env?.DEV) {
+    console.warn(`Supabase ${action} failed. Falling back to local state.`, error);
+  }
 };
 
 const canUseSupabase = () => isSupabaseConfigured && supabase;
@@ -63,28 +65,7 @@ export async function upsertEntities<T extends { id: string }>(table: EntityTabl
 export async function replaceEntities<T extends { id: string }>(table: EntityTable, entities: T[]) {
   if (!canUseSupabase()) return false;
 
-  const existing = await listEntities<T>(table);
-  const upserted = await upsertEntities(table, entities);
-  if (!upserted) return false;
-
-  const nextIds = new Set(entities.map(entity => entity.id));
-  const idsToDelete = (existing || [])
-    .map(entity => entity.id)
-    .filter(id => !nextIds.has(id));
-
-  if (idsToDelete.length === 0) return true;
-
-  const { error } = await supabase!
-    .from(table)
-    .delete()
-    .in('id', idsToDelete);
-
-  if (error) {
-    warnSupabaseError(`delete stale ${table}`, error);
-    return false;
-  }
-
-  return true;
+  return upsertEntities(table, entities);
 }
 
 export async function deleteEntity(table: EntityTable, id: string) {

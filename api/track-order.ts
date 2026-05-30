@@ -5,10 +5,24 @@ const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABAS
 
 const trackingRegex = /^[A-Z]{2}-\d{2}-\d{7}$/i;
 
+const setCorsHeaders = (res: any) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://aabnoor.shop');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+};
+
 export default async function handler(req: any, res: any) {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!String(req.headers['content-type'] || '').includes('application/json')) {
+    return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
   if (!supabaseUrl || !supabaseSecretKey) {
@@ -48,7 +62,12 @@ export default async function handler(req: any, res: any) {
       date: order.date,
       status: order.status,
       trackingNumber: order.trackingNumber,
-      trackingUpdates: Array.isArray(order.trackingUpdates) ? order.trackingUpdates : [],
+      trackingUpdates: (Array.isArray(order.trackingUpdates) ? order.trackingUpdates : [])
+        .map(({ status, date, note }: any) => ({
+          status: String(status || ''),
+          date: String(date || ''),
+          note: String(note || '').slice(0, 180),
+        })),
     },
   });
 }

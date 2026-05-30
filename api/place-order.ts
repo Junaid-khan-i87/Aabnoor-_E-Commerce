@@ -24,7 +24,7 @@ const cleanMultilineText = (value: unknown, maxLength: number) =>
     .trim()
     .slice(0, maxLength);
 
-const orderId = () => `ORD-${randomBytes(4).toString('hex').toUpperCase()}`;
+const orderId = () => `ORD-${randomBytes(8).toString('hex').toUpperCase()}`;
 
 const trackingNumber = () => {
   const year = new Date().getFullYear().toString().slice(-2);
@@ -92,10 +92,24 @@ const getServerPrice = (product: any, cartProductId: string) => {
     : basePrice;
 };
 
+const setCorsHeaders = (res: any) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://aabnoor.shop');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+};
+
 export default async function handler(req: any, res: any) {
+  setCorsHeaders(res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!String(req.headers['content-type'] || '').includes('application/json')) {
+    return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
   if (!env.supabaseUrl || !env.supabaseSecretKey || !env.supabasePublishableKey) {
@@ -118,6 +132,17 @@ export default async function handler(req: any, res: any) {
   const userEmail = user?.email?.toLowerCase();
   if (userError || !user?.id || !userEmail || !emailRegex.test(userEmail)) {
     return res.status(401).json({ error: 'Invalid user session.' });
+  }
+
+  const rateLimitWindow = new Date(Date.now() - 10 * 60_000).toISOString();
+  const { count: recentOrderCount } = await supabaseAdmin
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('data->>authUserId', user.id)
+    .gte('data->>date', rateLimitWindow);
+
+  if ((recentOrderCount || 0) >= 5) {
+    return res.status(429).json({ error: 'Too many orders placed recently. Please wait a few minutes before trying again.' });
   }
 
   const userName = cleanText(req.body?.userName || userEmail.split('@')[0], 120);
@@ -205,15 +230,25 @@ export default async function handler(req: any, res: any) {
     const now = Date.now();
     const starts = coupon?.startDate ? Date.parse(coupon.startDate) : 0;
     const ends = coupon?.endDate ? Date.parse(coupon.endDate) : Number.MAX_SAFE_INTEGER;
-    if (coupon?.isActive && now >= starts && now <= ends && subtotal >= Number(coupon.minOrderAmount || 0)) {
+    if (
+      coupon?.isActive &&
+      now >= starts &&
+      now <= ends &&
+      subtotal >= Number(coupon.minOrderAmount || 0) &&
+      (coupon.usageLimit == null || (Number(coupon.usageCount) || 0) < Number(coupon.usageLimit))
+    ) {
       discountPercentage = Math.min(80, Math.max(0, Number(coupon.discountPercentage || 0)));
     }
   } else {
     const { count } = await supabaseAdmin
       .from('orders')
       .select('id', { count: 'exact', head: true })
+      .eq('data->>authUserId', user.id);
+    const { count: legacyEmailCount } = await supabaseAdmin
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
       .eq('data->>userEmail', userEmail);
-    if ((count || 0) === 0) {
+    if ((count || 0) === 0 && (legacyEmailCount || 0) === 0) {
       discountPercentage = 10;
     }
   }
@@ -232,6 +267,7 @@ export default async function handler(req: any, res: any) {
 
   const order = {
     id,
+    authUserId: user.id,
     userEmail,
     userName,
     date: nowIso,
@@ -259,6 +295,26 @@ export default async function handler(req: any, res: any) {
 
   if (insertError) {
     return res.status(500).json({ error: 'Order could not be saved.' });
+  }
+
+  if (couponCode && discountPercentage > 0) {
+    const { data: couponRow } = await supabaseAdmin
+      .from('coupons')
+      .select('id,data')
+      .eq('id', couponCode)
+      .maybeSingle();
+
+    if (couponRow?.data) {
+      await supabaseAdmin
+        .from('coupons')
+        .update({
+          data: {
+            ...couponRow.data,
+            usageCount: (Number(couponRow.data.usageCount) || 0) + 1,
+          },
+        })
+        .eq('id', couponCode);
+    }
   }
 
   return res.status(200).json({ order });

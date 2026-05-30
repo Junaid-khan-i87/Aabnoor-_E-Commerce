@@ -110,9 +110,9 @@ export function LoginOverlay() {
     const cleanName = name.trim();
 
     if (isRegister && !otpSent) {
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters.');
-        addToast('Password must be at least 6 characters', 'error');
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters.');
+        addToast('Password must be at least 8 characters', 'error');
         return;
       }
 
@@ -122,7 +122,6 @@ export function LoginOverlay() {
         body: JSON.stringify({
           name: cleanName,
           email: cleanEmail,
-          password,
         }),
       });
 
