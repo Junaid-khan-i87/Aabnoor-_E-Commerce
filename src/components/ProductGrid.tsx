@@ -9,6 +9,7 @@ import { useUI } from '../UIContext';
 import { useNavigate } from 'react-router-dom';
 import { useSite } from '../SiteContext';
 import { Heart, Star } from 'lucide-react';
+import { getActivePrice, isFlashSaleActive } from '../lib/pricing';
 
 function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: Product) => void; key?: string | number }) {
   const x = useMotionValue(0.5);
@@ -80,7 +81,7 @@ function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: 
                 New
               </div>
             )}
-            {product.isFlashSale && (
+            {isFlashSaleActive(product) && (
               <div className="bg-[#FF4C4C] text-[#F9F7F2] rounded-full text-[9px] uppercase font-sans tracking-[0.2em] px-3 py-1 font-bold shadow-sm pointer-events-auto w-fit font-bold">
                 Flash Sale
               </div>
@@ -122,9 +123,9 @@ function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: 
                 addToCart(itemToAdd); 
                 addToast(`Added ${itemToAdd.name} to your bag`, 'success');
             }}
-            className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-4 rounded-full text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-[#1A1A1A]/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto cursor-pointer"
+            className="w-full bg-[#1c1a19] text-[#fffaf7] py-4 rounded-full text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-[#c9847a] transition-all disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto cursor-pointer"
           >
-            {product.stock === 0 ? 'Out of Stock' : `Quick Add - Rs. ${Number(currentPrice).toFixed(2)}`}
+            {product.stock === 0 ? 'Out of Stock' : `Quick Add - Rs. ${getActivePrice(product).toFixed(2)}`}
           </button>
         </div>
       </motion.div>
@@ -151,9 +152,9 @@ function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: 
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-serif italic text-lg text-[#1A1A1A]">
-                Rs. {Number(currentPrice).toFixed(2)}
+                Rs. {getActivePrice(product).toFixed(2)}
               </p>
-              {product.compareAtPrice && product.compareAtPrice > currentPrice && (
+              {product.compareAtPrice && product.compareAtPrice > getActivePrice(product) && (
                 <p className="font-sans text-xs text-[#1A1A1A]/40 line-through">
                   Rs. {Number(product.compareAtPrice).toFixed(2)}
                 </p>
@@ -214,7 +215,7 @@ export function ProductGrid() {
   }
 
   if (saleOnly) {
-    filteredProducts = filteredProducts.filter(p => p.isFlashSale || Boolean(p.compareAtPrice && p.compareAtPrice > p.price));
+    filteredProducts = filteredProducts.filter(p => isFlashSaleActive(p) || Boolean(p.compareAtPrice && p.compareAtPrice > p.price));
   }
 
   if (inStockOnly) {
@@ -222,9 +223,9 @@ export function ProductGrid() {
   }
 
   if (sortBy === 'low-to-high') {
-    filteredProducts.sort((a, b) => a.price - b.price);
+    filteredProducts.sort((a, b) => getActivePrice(a) - getActivePrice(b));
   } else if (sortBy === 'high-to-low') {
-    filteredProducts.sort((a, b) => b.price - a.price);
+    filteredProducts.sort((a, b) => getActivePrice(b) - getActivePrice(a));
   } else if (sortBy === 'newest') {
     filteredProducts.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
   } else {

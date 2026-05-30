@@ -9,6 +9,7 @@ import { useCategory } from '../CategoryContext';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Clock, Droplets, Heart, PackageCheck, Quote, Search, ShieldCheck, Sparkles, Star, Truck, WandSparkles } from 'lucide-react';
 import { SEO, SEO_SITE_URL } from '../components/SEO';
+import { getActivePrice, isFlashSaleActive } from '../lib/pricing';
 
 export function HomePage() {
   const { productsList } = useProducts();
@@ -19,7 +20,7 @@ export function HomePage() {
   const bestSellers = [...productsList]
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 3);
-  const liveSaleProducts = productsList.filter(product => product.isFlashSale && product.flashSalePrice);
+  const liveSaleProducts = productsList.filter(product => isFlashSaleActive(product));
   const routineOptions = [
     { id: 'glow', label: 'Glow', terms: ['glow', 'bright', 'vitamin', 'radiance', 'makeup'] },
     { id: 'hydrate', label: 'Hydrate', terms: ['hydrate', 'hyaluronic', 'moisture', 'serum', 'cream'] },
@@ -127,7 +128,7 @@ export function HomePage() {
                     <div className="min-w-0">
                       <p className="font-sans text-[9px] uppercase tracking-widest text-[#CDA185] font-bold">{product.category}</p>
                       <h3 className="font-serif text-sm text-[#1A1A1A] line-clamp-1">{product.name}</h3>
-                      <p className="font-sans text-xs text-[#1A1A1A]/65">Rs. {Number(product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price).toFixed(2)}</p>
+                      <p className="font-sans text-xs text-[#1A1A1A]/65">Rs. {getActivePrice(product).toFixed(2)}</p>
                     </div>
                   </Link>
                 )) : (
@@ -169,7 +170,7 @@ export function HomePage() {
                   </div>
                   <p className="mt-3 font-sans text-[9px] uppercase tracking-widest text-[#CDA185] font-bold">{product.category}</p>
                   <h3 className="mt-1 font-serif text-base leading-snug line-clamp-2">{product.name}</h3>
-                  <p className="mt-2 font-sans text-[11px] text-white/60">Rs. {Number(product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price).toFixed(2)}</p>
+                  <p className="mt-2 font-sans text-[11px] text-white/60">Rs. {getActivePrice(product).toFixed(2)}</p>
                 </Link>
               ))}
             </div>
@@ -256,7 +257,7 @@ export function HomePage() {
                     </div>
                     <h3 className="font-serif text-xl text-[#2c2826] group-hover:text-[#8a4f48] transition-colors line-clamp-1">{product.name}</h3>
                     <p className="font-sans text-xs text-[#7a706a] line-clamp-2 mt-2">{product.description}</p>
-                    <p className="font-serif text-lg text-[#2c2826] mt-4">Rs. {Number(product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price).toFixed(2)}</p>
+                    <p className="font-serif text-lg text-[#2c2826] mt-4">Rs. {getActivePrice(product).toFixed(2)}</p>
                   </div>
                 </Link>
               ))}

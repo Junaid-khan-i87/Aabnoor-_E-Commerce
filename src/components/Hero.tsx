@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useCategory } from '../CategoryContext';
 import { useSite } from '../SiteContext';
 import { useProducts } from '../ProductContext';
+import { getActivePrice } from '../lib/pricing';
 
 export function Hero() {
   const { scrollToShopAndFilter } = useCategory();
@@ -34,21 +35,23 @@ export function Hero() {
             <p className="mt-6 max-w-md font-sans text-sm leading-7 text-white/65 sm:text-base">
               {settings.heroSubtitle || 'Curated premium skincare, makeup, hair care and fragrance delivered with secure checkout and trackable orders.'}
             </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-9 flex flex-col gap-4 sm:flex-row">
               <a
                 href="#shop"
                 onClick={(e) => {
                   e.preventDefault();
                   scrollToShopAndFilter('All');
                 }}
-                className="inline-flex items-center justify-center gap-2 bg-[#c8847a] px-7 py-3.5 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-colors hover:bg-[#8b4a44]"
+                className="group relative inline-flex items-center justify-center gap-2 overflow-hidden bg-white/10 px-8 py-4 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:bg-white hover:text-[#2c2420] glass-panel"
               >
-                Shop Now
-                <ArrowRight className="h-4 w-4" />
+                <span className="relative z-10 flex items-center gap-2">
+                  Shop Now
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </span>
               </a>
               <Link
                 to="/live-sale"
-                className="inline-flex items-center justify-center border border-white/35 px-7 py-3.5 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-colors hover:border-[#c8847a] hover:text-[#f0d5d0]"
+                className="inline-flex items-center justify-center border border-white/20 px-8 py-4 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:border-white hover:bg-white/5"
               >
                 Live Sale
               </Link>
@@ -66,14 +69,14 @@ export function Hero() {
                 <Link
                   key={product.id}
                   to={`/product/${product.id}`}
-                  className={`group w-36 border border-white/15 bg-white/10 p-3 text-center shadow-2xl backdrop-blur-sm transition-transform duration-300 hover:-translate-y-2 ${index === 1 ? '-translate-y-8 scale-110 bg-white/15' : ''}`}
+                  className={`group w-40 glass-panel p-3 text-center shadow-2xl transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:bg-white/20 ${index === 1 ? '-translate-y-8 scale-110 z-10' : ''}`}
                 >
-                  <div className="mx-auto mb-3 aspect-[4/5] overflow-hidden bg-[#c8847a]/25">
-                    <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" referrerPolicy="no-referrer" />
+                  <div className="mx-auto mb-4 aspect-[4/5] overflow-hidden rounded-sm bg-[#c8847a]/20">
+                    <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
                   </div>
-                  <p className="font-sans text-[9px] uppercase tracking-[0.16em] text-[#f0d5d0]">{product.category}</p>
-                  <p className="mt-1 line-clamp-2 font-serif text-base leading-tight text-white">{product.name}</p>
-                  <p className="mt-2 font-sans text-[11px] font-bold text-white/80">PKR {Number(product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price).toFixed(0)}</p>
+                  <p className="font-sans text-[9px] uppercase tracking-[0.16em] text-white/80">{product.category}</p>
+                  <p className="mt-1 line-clamp-2 font-serif text-[17px] leading-tight text-white">{product.name}</p>
+                  <p className="mt-2 font-sans text-[11px] font-bold text-[#f0d5d0]">PKR {getActivePrice(product).toFixed(0)}</p>
                 </Link>
               ))}
             </div>

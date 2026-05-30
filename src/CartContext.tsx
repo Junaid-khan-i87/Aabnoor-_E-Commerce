@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Product } from './types';
+import { getActivePrice } from './lib/pricing';
 
 interface CartItem extends Product {
   quantity: number;
@@ -68,7 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const cartCount = items.reduce((total, item) => total + item.quantity, 0);
   
   const cartTotal = items.reduce((total, item) => {
-    const activePrice = item.isFlashSale && item.flashSalePrice ? item.flashSalePrice : item.price;
+    const activePrice = getActivePrice(item);
     const itemTotal = activePrice * item.quantity;
     if (item.quantity >= 5) {
       return total + (itemTotal * 0.95); // 5% discount
