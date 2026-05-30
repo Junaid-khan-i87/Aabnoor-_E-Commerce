@@ -1,4 +1,62 @@
-import { createUserSupabaseClient, bearerToken, cleanMultilineText, cleanText, createAdminSupabaseClient, env, orderId, trackingNumber } from './_security';
+import { createClient } from '@supabase/supabase-js';
+import { randomBytes, randomInt } from 'crypto';
+
+const env = {
+  supabaseUrl: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  supabaseSecretKey: process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
+  supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+};
+
+const bearerToken = (req: any) =>
+  String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+
+const cleanText = (value: unknown, maxLength: number) =>
+  String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
+
+const cleanMultilineText = (value: unknown, maxLength: number) =>
+  String(value ?? '')
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
+
+const orderId = () => `ORD-${randomBytes(4).toString('hex').toUpperCase()}`;
+
+const trackingNumber = () => {
+  const year = new Date().getFullYear().toString().slice(-2);
+  return `PK-${year}-${String(randomInt(0, 10_000_000)).padStart(7, '0')}`;
+};
+
+const createUserSupabaseClient = (token: string) => {
+  if (!env.supabaseUrl || !env.supabasePublishableKey) return null;
+
+  return createClient(env.supabaseUrl, env.supabasePublishableKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+};
+
+const createAdminSupabaseClient = () => {
+  if (!env.supabaseUrl || !env.supabaseSecretKey) return null;
+
+  return createClient(env.supabaseUrl, env.supabaseSecretKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+};
 
 const DEFAULT_SETTINGS = {
   deliveryFee: 150,

@@ -1,12 +1,18 @@
 import { createHmac } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
-import { cleanText } from './_security';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const otpSecret = process.env.SIGNUP_OTP_SECRET;
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const cleanText = (value: unknown, maxLength: number) =>
+  String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
 
 const hashOtp = (email: string, otp: string) =>
   createHmac('sha256', otpSecret || '')

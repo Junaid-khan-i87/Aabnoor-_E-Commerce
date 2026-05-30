@@ -1,7 +1,6 @@
 import { createHmac, randomInt } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import { cleanText, escapeHtml } from './_security';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -10,6 +9,21 @@ const otpSecret = process.env.SIGNUP_OTP_SECRET;
 const fromEmail = process.env.AUTH_EMAIL_FROM || process.env.ORDER_EMAIL_FROM || 'Aabnoor <noreply@aabnoor.shop>';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const cleanText = (value: unknown, maxLength: number) =>
+  String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
+
+const escapeHtml = (value: unknown) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 
 const hashOtp = (email: string, otp: string) =>
   createHmac('sha256', otpSecret || '')

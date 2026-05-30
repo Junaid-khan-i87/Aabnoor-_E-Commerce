@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { cleanText } from './_security';
 
 const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -7,6 +6,13 @@ const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABAS
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const allowedStatuses = new Set(['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded']);
+
+const cleanText = (value: unknown, maxLength: number) =>
+  String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
 
 const decodeJwtPayload = (token: string) => {
   const payload = token.split('.')[1];

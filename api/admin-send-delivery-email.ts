@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import { cleanText } from './_security';
 
 const ADMIN_EMAIL = 'junaidmushtaq988@gmail.com';
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -9,6 +8,13 @@ const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.e
 const resendApiKey = process.env.RESEND_API_KEY;
 const fromEmail = process.env.ORDER_EMAIL_FROM || 'Aabnoor <noreply@aabnoor.shop>';
 const trackingUrl = process.env.ORDER_TRACKING_URL || 'https://aabnoor.shop/track';
+
+const cleanText = (value: unknown, maxLength: number) =>
+  String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
 
 const escapeHtml = (value: unknown) =>
   String(value ?? '')

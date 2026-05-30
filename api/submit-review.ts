@@ -1,11 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
-import { cleanText } from './_security';
 import { createHmac } from 'crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const reviewHashSecret = process.env.REVIEW_HASH_SECRET || supabaseSecretKey || 'review-hash-fallback';
+
+const cleanText = (value: unknown, maxLength: number) =>
+  String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {

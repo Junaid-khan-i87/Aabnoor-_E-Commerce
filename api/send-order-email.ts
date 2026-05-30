@@ -1,12 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import { escapeHtml } from './_security';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const resendApiKey = process.env.RESEND_API_KEY;
 const fromEmail = process.env.ORDER_EMAIL_FROM || 'Aabnoor <noreply@aabnoor.shop>';
 const trackingUrl = process.env.ORDER_TRACKING_URL || 'https://aabnoor.shop/track';
+
+const escapeHtml = (value: unknown) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
