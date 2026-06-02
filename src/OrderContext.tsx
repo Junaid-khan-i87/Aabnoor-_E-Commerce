@@ -13,6 +13,7 @@ type PlaceOrderInput = {
   paymentMethod: 'Credit Card' | 'Cash on Delivery';
   deliveryMethod: 'standard' | 'express';
   couponCode?: string;
+  coinsToRedeem?: number;
 };
 
 interface OrderContextType {
@@ -22,16 +23,24 @@ interface OrderContextType {
   deleteOrder: (id: string) => void;
   updateOrder: (id: string, updatedOrder: Partial<Order>) => void;
   getUserOrders: (email: string) => Order[];
+  fetchUserOrders: () => Promise<Order[]>;
   trackOrder: (trackingNumber: string) => Order | undefined;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-export function OrderProvider({ children }: { children: ReactNode }) {
+export function OrderProvider({ children, isAdmin = false }: { children: ReactNode; isAdmin?: boolean }) {
   const [orders, setOrders] = useState<Order[]>([]);
 
   React.useEffect(() => {
     let isMounted = true;
+
+    if (!isAdmin) {
+      setOrders([]);
+      return () => {
+        isMounted = false;
+      };
+    }
 
     listEntities<Order>('orders').then(remoteOrders => {
       if (isMounted && remoteOrders) {
@@ -40,6 +49,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     });
 
     const { data: listener } = supabase?.auth.onAuthStateChange(() => {
+      if (!isAdmin) {
+        setOrders([]);
+        return;
+      }
+
       listEntities<Order>('orders').then(remoteOrders => {
         if (remoteOrders) {
           setOrders(remoteOrders);
@@ -51,7 +65,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       isMounted = false;
       listener?.subscription.unsubscribe();
     };
-  }, []);
+  }, [isAdmin]);
 
   const updateOrdersStorage = (newOrders: Order[]) => {
     void newOrders;
@@ -98,7 +112,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       throw new Error(result?.error || 'Order could not be saved to the backend.');
     }
 
-    const newOrder = result.order as Order;
+    const newOrder = {
+      ...result.order,
+      ...(typeof result.coinsEarned === 'number' ? { coinsEarned: result.coinsEarned } : {}),
+      ...(typeof result.coinBalance === 'number' ? { coinBalance: result.coinBalance } : {}),
+    } as Order;
     setOrders(prev => {
       const next = [newOrder, ...prev];
       updateOrdersStorage(next);
@@ -109,11 +127,44 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshOrders = async () => {
+    if (!isAdmin) return;
+
     const remoteOrders = await listEntities<Order>('orders');
     if (remoteOrders) {
       setOrders(remoteOrders);
     }
   };
+
+  const fetchUserOrders = React.useCallback(async () => {
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) {
+      setOrders([]);
+      return [];
+    }
+
+    const response = await fetch('/api/my-orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({}),
+    });
+
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !Array.isArray(result?.orders)) {
+      throw new Error(result?.error || 'Orders could not be loaded.');
+    }
+
+    const userOrders = result.orders as Order[];
+    setOrders(prev => {
+      const merged = new Map<string, Order>();
+      userOrders.forEach(order => merged.set(order.id, order));
+      prev.forEach(order => merged.set(order.id, order));
+      return Array.from(merged.values()).sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+    });
+    return userOrders;
+  }, []);
 
   const updateOrderStatus = async (id: string, status: OrderStatus, note?: string, coinsAdded?: boolean) => {
     let orderToSave: Order | undefined;
@@ -181,7 +232,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <OrderContext.Provider value={{ orders, placeOrder, updateOrderStatus, deleteOrder, updateOrder, getUserOrders, trackOrder }}>
+    <OrderContext.Provider value={{ orders, placeOrder, updateOrderStatus, deleteOrder, updateOrder, getUserOrders, fetchUserOrders, trackOrder }}>
       {children}
     </OrderContext.Provider>
   );

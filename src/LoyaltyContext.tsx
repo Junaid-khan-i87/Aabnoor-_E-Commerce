@@ -1,42 +1,83 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
+import { supabase } from './lib/supabase';
 
 interface LoyaltyContextType {
   coins: number;
   addCoins: (amount: number) => void;
   redeemCoins: (amount: number) => boolean;
+  refreshCoins: () => Promise<void>;
+  syncCoinBalance: (amount: number) => void;
 }
 
 const LoyaltyContext = createContext<LoyaltyContextType | undefined>(undefined);
 
 export function LoyaltyProvider({ children }: { children: ReactNode }) {
-  const [coins, setCoins] = useState(() => {
-    const saved = localStorage.getItem('aura_coins');
-    return saved ? parseInt(saved, 10) : 0;
-  });
+  const [coins, setCoins] = useState(0);
 
-  const addCoins = (amount: number) => {
-    setCoins(prev => {
-      const newAmount = prev + amount;
-      localStorage.setItem('aura_coins', newAmount.toString());
-      return newAmount;
-    });
+  const loadCoinsForSession = useCallback(async () => {
+    if (!supabase) {
+      setCoins(0);
+      return;
+    }
+
+    const { data: sessionResult } = await supabase.auth.getSession();
+    const user = sessionResult.session?.user;
+    const email = user?.email?.toLowerCase();
+
+    if (!user?.id || !email) {
+      setCoins(0);
+      return;
+    }
+
+    const customerId = `USR-${user.id}`;
+    let { data: customerRow } = await supabase
+      .from('customers')
+      .select('data')
+      .eq('id', customerId)
+      .maybeSingle();
+
+    if (!customerRow) {
+      const fallbackResult = await supabase
+        .from('customers')
+        .select('data')
+        .eq('data->>email', email)
+        .maybeSingle();
+      customerRow = fallbackResult.data;
+    }
+
+    const nextCoins = Math.max(0, Math.floor(Number(customerRow?.data?.coins) || 0));
+    setCoins(nextCoins);
+  }, []);
+
+  useEffect(() => {
+    loadCoinsForSession();
+
+    const { data: listener } = supabase?.auth.onAuthStateChange(() => {
+      loadCoinsForSession();
+    }) || { data: null };
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, [loadCoinsForSession]);
+
+  const addCoins = (_amount: number) => {
+    void loadCoinsForSession();
   };
 
   const redeemCoins = (amount: number) => {
-    const saved = localStorage.getItem('aura_coins');
-    const currentCoins = saved ? parseInt(saved, 10) : coins;
-    
-    if (currentCoins >= amount) {
-      const newAmount = currentCoins - amount;
-      localStorage.setItem('aura_coins', newAmount.toString());
-      setCoins(newAmount);
-      return true;
+    void loadCoinsForSession();
+    return Number.isInteger(amount) && amount >= 0 && coins >= amount;
+  };
+
+  const syncCoinBalance = (amount: number) => {
+    if (Number.isFinite(amount)) {
+      setCoins(Math.max(0, Math.floor(amount)));
     }
-    return false;
   };
 
   return (
-    <LoyaltyContext.Provider value={{ coins, addCoins, redeemCoins }}>
+    <LoyaltyContext.Provider value={{ coins, addCoins, redeemCoins, refreshCoins: loadCoinsForSession, syncCoinBalance }}>
       {children}
     </LoyaltyContext.Provider>
   );

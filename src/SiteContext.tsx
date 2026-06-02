@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-import { Coupon } from './types';
 import { deleteEntity, getStoreValue, listEntities, setStoreValue, upsertEntity } from './lib/storeApi';
 import { supabase } from './lib/supabase';
 
-export const SUPPORT_EMAIL = 'contact@flenogarei.resend.app';
+export const SUPPORT_EMAIL = 'support@aabnoor.shop';
 
 export interface UserAccount {
   id: string;
@@ -41,7 +40,7 @@ const getDefaultLiveSaleEndTime = () => new Date(Date.now() + 18 * 60 * 60 * 100
 const DEFAULT_SETTINGS: SiteSettings = {
   deliveryFee: 150,
   freeShippingThreshold: 5000,
-  storeEmail: SUPPORT_EMAIL,
+  storeEmail: 'support@aabnoor.shop',
   storePhone: '+92 (21) 111 287 233',
   storeAddress: 'Aabnoor Flagship Store, Ground Floor, Dolmen Mall Clifton, Karachi, Pakistan',
   heroEyebrow: 'The Future of Beauty',
@@ -69,10 +68,6 @@ interface SiteContextType {
   setCouponCode: (code: string) => void;
   couponDiscount: number;
   setCouponDiscount: (discount: number) => void;
-  coupons: Coupon[];
-  addCoupon: (coupon: Coupon) => void;
-  updateCoupon: (id: string, coupon: Partial<Coupon>) => void;
-  deleteCoupon: (id: string) => void;
   settings: SiteSettings;
   updateSettings: (settings: Partial<SiteSettings>) => void;
   currentUser: string | null;
@@ -158,8 +153,6 @@ export function SiteProvider({ children }: { children: ReactNode }) {
 
   const [loginDiscountUsed, setLoginDiscountUsedState] = useState(false);
 
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
-
   const [settings, setSettingsState] = useState<SiteSettings>(DEFAULT_SETTINGS);
 
   const refreshAdminStatus = React.useCallback(async () => {
@@ -244,7 +237,6 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     const loadStore = async () => {
       const [
         remoteUsers,
-        remoteCoupons,
         remoteSiteName,
         remoteSettings,
         remoteCategories,
@@ -255,7 +247,6 @@ export function SiteProvider({ children }: { children: ReactNode }) {
         remoteCouponDiscount,
       ] = await Promise.all([
         listEntities<UserAccount>('customers'),
-        listEntities<Coupon>('coupons'),
         getStoreValue<string>('site_name'),
         getStoreValue<SiteSettings>('settings'),
         getStoreValue<string[]>('categories'),
@@ -270,10 +261,6 @@ export function SiteProvider({ children }: { children: ReactNode }) {
 
       if (remoteUsers) {
         setUsersState(remoteUsers);
-      }
-
-      if (remoteCoupons) {
-        setCoupons(remoteCoupons);
       }
 
       if (remoteSiteName) {
@@ -374,31 +361,6 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addCoupon = (coupon: Coupon) => {
-    setCoupons(prev => {
-      const next = [...prev, coupon];
-      upsertEntity('coupons', coupon);
-      return next;
-    });
-  };
-
-  const updateCoupon = (id: string, updates: Partial<Coupon>) => {
-    setCoupons(prev => {
-      const next = prev.map(c => c.id === id ? { ...c, ...updates } : c);
-      const updated = next.find(coupon => coupon.id === id);
-      if (updated) upsertEntity('coupons', updated);
-      return next;
-    });
-  };
-
-  const deleteCoupon = (id: string) => {
-    setCoupons(prev => {
-      const next = prev.filter(c => c.id !== id);
-      deleteEntity('coupons', id);
-      return next;
-    });
-  };
-
   const updateSettings = (updates: Partial<SiteSettings>) => {
     setSettingsState(prev => {
       const next = { ...prev, ...updates };
@@ -493,7 +455,6 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     <SiteContext.Provider value={{ 
       siteName, setSiteName, bannerText, setBannerText, isBannerActive, setIsBannerActive, 
       couponCode, setCouponCode, couponDiscount, setCouponDiscount, 
-      coupons, addCoupon, updateCoupon, deleteCoupon,
       settings, updateSettings,
       currentUser, setCurrentUser, authUserId, isAuthLoading, isAdmin, refreshAdminStatus, loginDiscountUsed, setLoginDiscountUsed, 
       categories, addCategory, removeCategory,

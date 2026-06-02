@@ -6,38 +6,83 @@ import { useProducts } from '../ProductContext';
 import { useSite } from '../SiteContext';
 import { SafeImage } from '../components/SafeImage';
 import { SEO } from '../components/SEO';
+import { supabase } from '../lib/supabase';
 
 const paymentBadges = ['COD', 'JazzCash', 'Easypaisa', 'Visa', 'Mastercard'];
 
 export function CartPage() {
   const { items, addToCart, updateQuantity, removeFromCart, cartTotal } = useCart();
   const { productsList } = useProducts();
-  const { coupons, settings } = useSite();
+  const { currentUser, settings } = useSite();
   const navigate = useNavigate();
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<typeof coupons[number] | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercentage: number } | null>(null);
+  const [isCouponChecking, setIsCouponChecking] = useState(false);
 
   const discountAmount = appliedCoupon ? cartTotal * (appliedCoupon.discountPercentage / 100) : 0;
   const shipping = cartTotal - discountAmount >= settings.freeShippingThreshold ? 0 : settings.deliveryFee;
   const total = Math.max(0, cartTotal - discountAmount + shipping);
   const upsell = productsList.filter(product => !items.some(item => item.id === product.id)).slice(0, 3);
 
-  const applyCoupon = () => {
+  const applyCoupon = async () => {
     const code = couponInput.trim().toUpperCase();
-    const found = coupons.find(coupon => coupon.code.toUpperCase() === code && coupon.isActive);
-    if (!found) {
-      setCouponError('Invalid or inactive promo code.');
+    if (!code) return;
+
+    if (!currentUser || !supabase) {
+      setCouponError('Sign in before applying a promo code.');
       setAppliedCoupon(null);
       return;
     }
-    if (found.minOrderAmount && cartTotal < found.minOrderAmount) {
-      setCouponError(`Minimum order is PKR ${Number(found.minOrderAmount).toFixed(0)}.`);
-      setAppliedCoupon(null);
-      return;
-    }
-    setAppliedCoupon(found);
+
+    setIsCouponChecking(true);
     setCouponError('');
+
+    try {
+      const { data: sessionResult } = await supabase.auth.getSession();
+      const token = sessionResult.session?.access_token;
+      if (!token) {
+        setCouponError('Sign in before applying a promo code.');
+        setAppliedCoupon(null);
+        return;
+      }
+
+      const response = await fetch('/api/preview-coupon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          couponCode: code,
+          cartTotal,
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        setCouponError(result?.error || 'Promo code could not be checked.');
+        setAppliedCoupon(null);
+        return;
+      }
+
+      if (!result?.valid) {
+        setCouponError(result?.reason || 'Invalid or inactive promo code.');
+        setAppliedCoupon(null);
+        return;
+      }
+
+      setAppliedCoupon({
+        code,
+        discountPercentage: Number(result.discountPercentage) || 0,
+      });
+      setCouponError('');
+    } catch {
+      setCouponError('Promo code could not be checked.');
+      setAppliedCoupon(null);
+    } finally {
+      setIsCouponChecking(false);
+    }
   };
 
   return (
@@ -146,8 +191,10 @@ export function CartPage() {
               <div className="mt-6">
                 <label className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-[#8a7f7a]">Promo Code</label>
                 <div className="mt-2 flex">
-                  <input value={couponInput} onChange={(event) => setCouponInput(event.target.value)} className="min-w-0 flex-1 border border-[#2c2420]/15 px-3 py-3 font-sans text-sm outline-none focus:border-[#2c2420]" placeholder="BEAUTE10" />
-                  <button type="button" onClick={applyCoupon} className="bg-[#2c2420] px-4 font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-white">Apply</button>
+                  <input value={couponInput} onChange={(event) => setCouponInput(event.target.value)} disabled={isCouponChecking || !!appliedCoupon} className="min-w-0 flex-1 border border-[#2c2420]/15 px-3 py-3 font-sans text-sm outline-none focus:border-[#2c2420] disabled:opacity-60" placeholder="BEAUTE10" />
+                  <button type="button" onClick={appliedCoupon ? () => { setAppliedCoupon(null); setCouponInput(''); setCouponError(''); } : applyCoupon} disabled={isCouponChecking} className="bg-[#2c2420] px-4 font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-white disabled:opacity-60">
+                    {appliedCoupon ? 'Remove' : isCouponChecking ? 'Checking...' : 'Apply'}
+                  </button>
                 </div>
                 {couponError && <p className="mt-2 font-sans text-xs text-red-600">{couponError}</p>}
                 {appliedCoupon && <p className="mt-2 font-sans text-xs text-green-700">{appliedCoupon.code} applied.</p>}

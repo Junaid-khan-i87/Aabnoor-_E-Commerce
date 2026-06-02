@@ -6,10 +6,11 @@ import { useProducts } from '../ProductContext';
 import { useOrders } from '../OrderContext';
 import { useLoyalty } from '../LoyaltyContext';
 import { useSite } from '../SiteContext';
-import { Product, OrderStatus } from '../types';
+import { Coupon, Product, OrderStatus } from '../types';
 import { SafeImage } from '../components/SafeImage';
 import { useUI } from '../UIContext';
 import { supabase } from '../lib/supabase';
+import { deleteEntity, listEntities, upsertEntity } from '../lib/storeApi';
 
 type AdminTab = 'dashboard' | 'orders' | 'customers' | 'products' | 'discounts' | 'settings';
 
@@ -23,6 +24,58 @@ const ADMIN_TABS: { id: AdminTab; label: string }[] = [
 ];
 
 const ORDER_STATUS_VALUES: OrderStatus[] = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded'];
+
+function useAdminCoupons(isAdmin: boolean) {
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!isAdmin) {
+      setCoupons([]);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    listEntities<Coupon>('coupons').then(remoteCoupons => {
+      if (isMounted && remoteCoupons) {
+        setCoupons(remoteCoupons);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAdmin]);
+
+  const addCoupon = (coupon: Coupon) => {
+    setCoupons(prev => {
+      const next = [...prev, coupon];
+      upsertEntity('coupons', coupon);
+      return next;
+    });
+  };
+
+  const updateCoupon = (id: string, updates: Partial<Coupon>) => {
+    setCoupons(prev => {
+      const next = prev.map(coupon => coupon.id === id ? { ...coupon, ...updates } : coupon);
+      const updated = next.find(coupon => coupon.id === id);
+      if (updated) upsertEntity('coupons', updated);
+      return next;
+    });
+  };
+
+  const deleteCoupon = (id: string) => {
+    setCoupons(prev => {
+      const next = prev.filter(coupon => coupon.id !== id);
+      deleteEntity('coupons', id);
+      return next;
+    });
+  };
+
+  return { coupons, addCoupon, updateCoupon, deleteCoupon };
+}
 
 const toDateTimeLocalValue = (isoValue?: string) => {
   if (!isoValue) return '';
@@ -105,13 +158,13 @@ export function AdminPage() {
   const { 
     siteName, setSiteName, bannerText, setBannerText, isBannerActive, setIsBannerActive, 
     couponCode, setCouponCode, couponDiscount, setCouponDiscount, 
-    coupons, addCoupon, updateCoupon, deleteCoupon,
     settings, updateSettings,
     categories, addCategory, removeCategory,
     subCategories, addSubCategory, removeSubCategory,
     users, deleteUser, updateUser, warnUser,
     isAuthLoading, isAdmin, refreshAdminStatus,
   } = useSite();
+  const { coupons, addCoupon, updateCoupon, deleteCoupon } = useAdminCoupons(isAdmin);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedSubCatEditing, setSelectedSubCatEditing] = useState<string>('Skin Care');
   const [isCreating, setIsCreating] = useState(false);

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useOrders } from '../OrderContext';
 import { useSite } from '../SiteContext';
@@ -10,11 +10,13 @@ import { OrderStatus } from '../types';
 import { supabase } from '../lib/supabase';
 
 export function ProfilePage() {
-  const { orders } = useOrders();
+  const { fetchUserOrders, getUserOrders } = useOrders();
   const { currentUser, setCurrentUser, users } = useSite();
   const { setIsLoginOpen } = useUI();
   const { coins } = useLoyalty();
   const navigate = useNavigate();
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [ordersError, setOrdersError] = useState('');
 
   useEffect(() => {
     if (!currentUser) {
@@ -23,8 +25,32 @@ export function ProfilePage() {
     }
   }, [currentUser, navigate, setIsLoginOpen]);
 
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let isMounted = true;
+    setIsLoadingOrders(true);
+    setOrdersError('');
+
+    fetchUserOrders()
+      .catch(error => {
+        if (isMounted) {
+          setOrdersError(error instanceof Error ? error.message : 'Orders could not be loaded.');
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingOrders(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser, fetchUserOrders]);
+
   const userEmail = currentUser;
-  const myOrders = orders.filter(o => o.userEmail === userEmail);
+  const myOrders = userEmail ? getUserOrders(userEmail) : [];
   const myUserMatch = users.find(u => u.email === currentUser);
 
   const STAGES = ['Pending', 'Processing', 'Shipped', 'Delivered'];
@@ -94,7 +120,11 @@ export function ProfilePage() {
       </div>
 
       <div className="space-y-12">
-        {myOrders.length === 0 ? (
+        {isLoadingOrders ? (
+          <p className="font-sans text-sm text-[#1A1A1A]/60">Loading your orders...</p>
+        ) : ordersError ? (
+          <p className="font-sans text-sm text-red-600">{ordersError}</p>
+        ) : myOrders.length === 0 ? (
           <p className="font-sans text-sm text-[#1A1A1A]/60">You have no orders yet.</p>
         ) : (
           myOrders.map(order => {

@@ -96,6 +96,26 @@ const getServerPrice = (product: any, cartProductId: string) => {
     : basePrice;
 };
 
+const findCouponRow = async (supabaseAdmin: any, couponCode: string) => {
+  let { data: couponRow, error: couponError } = await supabaseAdmin
+    .from('coupons')
+    .select('id,data')
+    .eq('id', couponCode)
+    .maybeSingle();
+
+  if (!couponRow) {
+    const fallbackResult = await supabaseAdmin
+      .from('coupons')
+      .select('id,data')
+      .eq('data->>code', couponCode)
+      .maybeSingle();
+    couponRow = fallbackResult.data;
+    couponError = couponError || fallbackResult.error;
+  }
+
+  return { couponRow, couponError };
+};
+
 const setCorsHeaders = (req: any, res: any) => {
   const origin = String(req.headers.origin || '');
   if (origin && allowedOrigins.includes(origin)) {
@@ -164,6 +184,12 @@ export default async function handler(req: any, res: any) {
   const deliveryMethod = cleanText(req.body?.deliveryMethod, 20) || 'standard';
   const couponCode = cleanText(req.body?.couponCode, 40).toUpperCase();
   const requestedItems = Array.isArray(req.body?.items) ? req.body.items : [];
+  const requestedCoinsToRedeem = req.body?.coinsToRedeem ?? 0;
+  const coinsToRedeem = Number(requestedCoinsToRedeem);
+
+  if (!Number.isInteger(coinsToRedeem) || coinsToRedeem < 0) {
+    return res.status(400).json({ error: 'Loyalty coins must be a non-negative integer.' });
+  }
 
   if (!userName || !phoneRegex.test(phone) || !home || !state || !country) {
     return res.status(400).json({ error: 'Complete name, phone, and shipping address are required.' });
@@ -175,6 +201,34 @@ export default async function handler(req: any, res: any) {
 
   if (requestedItems.length < 1 || requestedItems.length > 50) {
     return res.status(400).json({ error: 'Cart is empty or too large.' });
+  }
+
+  const customerId = `USR-${user.id}`;
+  let { data: customerRow, error: customerError } = await supabaseAdmin
+    .from('customers')
+    .select('id,data')
+    .eq('data->>email', userEmail)
+    .maybeSingle();
+
+  if (!customerRow) {
+    const fallbackResult = await supabaseAdmin
+      .from('customers')
+      .select('id,data')
+      .eq('id', customerId)
+      .maybeSingle();
+    customerRow = fallbackResult.data;
+    customerError = customerError || fallbackResult.error;
+  }
+
+  if (customerError) {
+    return res.status(500).json({ error: 'Customer profile could not be loaded.' });
+  }
+
+  const customerData = customerRow?.data || {};
+  const customerCoins = Math.max(0, Math.floor(Number(customerData.coins) || 0));
+
+  if (coinsToRedeem > customerCoins) {
+    return res.status(400).json({ error: 'Insufficient loyalty coins.' });
   }
 
   const normalizedItems = requestedItems.map((item: any) => ({
@@ -231,11 +285,7 @@ export default async function handler(req: any, res: any) {
 
   let discountPercentage = 0;
   if (couponCode) {
-    const { data: couponRow } = await supabaseAdmin
-      .from('coupons')
-      .select('id,data')
-      .eq('id', couponCode)
-      .maybeSingle();
+    const { couponRow } = await findCouponRow(supabaseAdmin, couponCode);
     const coupon = couponRow?.data;
     const now = Date.now();
     const starts = coupon?.startDate ? Date.parse(coupon.startDate) : 0;
@@ -268,8 +318,11 @@ export default async function handler(req: any, res: any) {
     ? 0
     : Number(settings.deliveryFee || DEFAULT_SETTINGS.deliveryFee);
   const deliveryFee = deliveryMethod === 'express' ? baseDeliveryFee + 100 : baseDeliveryFee;
-  const total = Math.round((subtotalAfterDiscount + deliveryFee) * 100) / 100;
+  const totalBeforeCoinDiscount = Math.round((subtotalAfterDiscount + deliveryFee) * 100) / 100;
+  const coinDiscount = Math.min(totalBeforeCoinDiscount, Math.floor(coinsToRedeem / 10));
+  const total = Math.round((totalBeforeCoinDiscount - coinDiscount) * 100) / 100;
   const coinsEarned = Math.floor(total / 10);
+  const coinBalance = customerCoins - coinsToRedeem + coinsEarned;
   const nowIso = new Date().toISOString();
   const id = orderId();
   const tracking = trackingNumber();
@@ -284,11 +337,14 @@ export default async function handler(req: any, res: any) {
     items: orderItems,
     subtotal: Math.round(subtotal * 100) / 100,
     discountPercentage,
+    coinsToRedeem,
+    coinDiscount,
     deliveryFee,
     deliveryMethod,
     total,
     status: 'Pending',
     coinsEarned,
+    coinBalance,
     shippingAddress,
     paymentMethod,
     trackingNumber: tracking,
@@ -307,12 +363,30 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Order could not be saved.' });
   }
 
+  const nextCustomerData = {
+    ...customerData,
+    id: customerData.id || customerRow?.id || customerId,
+    email: userEmail,
+    name: customerData.name || userName,
+    coins: coinBalance,
+    joined: customerData.joined || new Date().toISOString().slice(0, 10),
+    warnings: Number(customerData.warnings) || 0,
+    status: customerData.status || 'Active',
+  };
+
+  const { error: customerUpdateError } = await supabaseAdmin
+    .from('customers')
+    .upsert({
+      id: customerRow?.id || customerId,
+      data: nextCustomerData,
+    });
+
+  if (customerUpdateError) {
+    return res.status(500).json({ error: 'Loyalty coins could not be updated.' });
+  }
+
   if (couponCode && discountPercentage > 0) {
-    const { data: couponRow } = await supabaseAdmin
-      .from('coupons')
-      .select('id,data')
-      .eq('id', couponCode)
-      .maybeSingle();
+    const { couponRow } = await findCouponRow(supabaseAdmin, couponCode);
 
     if (couponRow?.data) {
       await supabaseAdmin
@@ -327,5 +401,5 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  return res.status(200).json({ order });
+  return res.status(200).json({ order, coinsEarned, coinBalance });
 }

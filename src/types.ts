@@ -21,6 +21,9 @@ export interface Order {
   total: number;
   status: OrderStatus;
   coinsEarned: number;
+  coinsToRedeem?: number;
+  coinDiscount?: number;
+  coinBalance?: number;
   shippingAddress?: string;
   paymentMethod?: string;
   trackingUpdates?: { status: OrderStatus; date: string; note: string }[];

@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
+// ORDER_EMAIL_FROM must be set to a verified Resend domain address, e.g. noreply@aabnoor.shop
+// Configure at: https://resend.com/domains
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const resendApiKey = process.env.RESEND_API_KEY;
 const fromEmail = process.env.ORDER_EMAIL_FROM;
 const trackingUrl = process.env.ORDER_TRACKING_URL || 'https://aabnoor.shop/track';
@@ -45,7 +48,7 @@ export default async function handler(req: any, res: any) {
     return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
-  if (!supabaseUrl || !supabaseKey || !resendApiKey || !fromEmail) {
+  if (!supabaseUrl || !supabaseKey || !supabaseSecretKey || !resendApiKey || !fromEmail) {
     return res.status(500).json({ error: 'Email service is not configured.' });
   }
 
@@ -86,6 +89,10 @@ export default async function handler(req: any, res: any) {
   const order = orderRow?.data;
   if (!order || order.userEmail !== user.email) {
     return res.status(404).json({ error: 'Order not found for this user.' });
+  }
+
+  if (order.confirmationEmailSent === true) {
+    return res.status(200).json({ alreadySent: true });
   }
 
   const items = Array.isArray(order.items) ? order.items : [];
@@ -136,6 +143,24 @@ export default async function handler(req: any, res: any) {
   if (error) {
     return res.status(400).json({ error: 'Order confirmation email could not be sent.' });
   }
+
+  const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+
+  void Promise.resolve(
+    supabaseAdmin
+      .from('orders')
+      .update({ data: { ...order, confirmationEmailSent: true } })
+      .eq('id', orderId)
+  )
+    .then(({ error: updateError }) => {
+      if (updateError) console.error(updateError);
+    })
+    .catch(console.error);
 
   return res.status(200).json({ id: data?.id });
 }

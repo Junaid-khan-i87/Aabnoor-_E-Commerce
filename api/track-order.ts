@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { createHmac } from 'crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+const rateLimitSecret = process.env.RATE_LIMIT_SECRET || process.env.SIGNUP_OTP_SECRET;
 
 const trackingRegex = /^[A-Z]{2}-\d{2}-\d{7}$/i;
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'https://aabnoor.shop,https://www.aabnoor.shop')
   .split(',')
   .map(origin => origin.trim())
@@ -29,17 +30,39 @@ const getClientIp = (req: any) =>
     .split(',')[0]
     .trim();
 
-const checkRateLimit = (ip: string) => {
-  const now = Date.now();
-  const current = rateLimitStore.get(ip);
-  if (!current || current.resetAt <= now) {
-    rateLimitStore.set(ip, { count: 1, resetAt: now + 60_000 });
+const hashIp = (ip: string) =>
+  ip
+    ? createHmac('sha256', rateLimitSecret || '').update(ip).digest('hex')
+    : null;
+
+const createAdminSupabaseClient = () => {
+  if (!supabaseUrl || !supabaseSecretKey) return null;
+
+  return createClient(supabaseUrl, supabaseSecretKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+};
+
+const checkRateLimit = async (supabaseAdmin: any, ipHash: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabaseAdmin.rpc('check_tracking_rate_limit', {
+      target_ip_hash: ipHash,
+    });
+
+    if (error) {
+      console.error('Tracking rate limit check failed.', error);
+      return true;
+    }
+
+    const count = Number(Array.isArray(data) ? data[0]?.count : data?.count);
+    return !Number.isFinite(count) || count <= 5;
+  } catch (error) {
+    console.error('Tracking rate limit check failed.', error);
     return true;
   }
-
-  if (current.count >= 5) return false;
-  current.count += 1;
-  return true;
 };
 
 const publicTrackingMessage = (status: string) => {
@@ -64,12 +87,18 @@ export default async function handler(req: any, res: any) {
     return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
-  if (!checkRateLimit(getClientIp(req))) {
-    return res.status(429).json({ error: 'Too many tracking requests. Please wait a minute and try again.' });
-  }
-
   if (!supabaseUrl || !supabaseSecretKey || !supabasePublishableKey) {
     return res.status(500).json({ error: 'Tracking service is not configured.' });
+  }
+
+  const supabaseAdmin = createAdminSupabaseClient();
+  if (!supabaseAdmin) {
+    return res.status(500).json({ error: 'Tracking service is not configured.' });
+  }
+
+  const requestIpHash = hashIp(getClientIp(req));
+  if (requestIpHash && !(await checkRateLimit(supabaseAdmin, requestIpHash))) {
+    return res.status(429).json({ error: 'Too many tracking requests. Please wait a minute and try again.' });
   }
 
   const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
@@ -99,13 +128,6 @@ export default async function handler(req: any, res: any) {
   if (!trackingRegex.test(trackingNumber)) {
     return res.status(400).json({ error: 'A valid tracking number is required.' });
   }
-
-  const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
 
   const { data, error } = await supabaseAdmin
     .from('orders')

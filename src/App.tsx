@@ -42,7 +42,7 @@ import {
 
 import { SmoothScroll } from './components/SmoothScroll';
 
-import { SiteProvider } from './SiteContext';
+import { SiteProvider, useSite } from './SiteContext';
 
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })));
 const TextPage = lazy(() => import('./pages/TextPage').then((module) => ({ default: module.TextPage })));
@@ -62,59 +62,67 @@ function PageFallback() {
   );
 }
 
+function AppShell() {
+  const { isAdmin } = useSite();
+
+  return (
+    <UIProvider>
+      <LoyaltyProvider>
+        <ProductProvider>
+          <OrderProvider isAdmin={isAdmin}>
+            <CategoryProvider>
+              <WishlistProvider>
+                <CartProvider>
+                  <div className="min-h-screen bg-[#F9F7F2] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#1A1A1A] selection:text-[#F9F7F2]">
+                    <Header />
+                    <main className="flex-1 shrink-0">
+                      <Suspense fallback={<PageFallback />}>
+                        <Routes>
+                          <Route path="/" element={<HomePage />} />
+                          <Route path="/product/:id" element={<ProductPage />} />
+                          <Route path="/admin" element={<AdminPage />} />
+                          <Route path="/profile" element={<ProfilePage />} />
+                          <Route path="/cart" element={<CartPage />} />
+                          <Route path="/checkout" element={<CheckoutPage />} />
+                          <Route path="/track" element={<TrackPage />} />
+                          <Route path="/live-sale" element={<LiveSaleHubPage />} />
+                          <Route path="/privacy" element={<TextPage title="Privacy Policy" content={PrivacyContent} canonicalPath="/privacy" />} />
+                          <Route path="/terms" element={<TextPage title="Terms of Service" content={TermsContent} canonicalPath="/terms" />} />
+                          <Route path="/shipping" element={<TextPage title="Shipping & Returns" content={ShippingContent} canonicalPath="/shipping" />} />
+                          <Route path="/contact" element={<TextPage title="Contact Us" content={ContactContent} canonicalPath="/contact" />} />
+                          <Route path="/faq" element={<TextPage title="FAQs" content={FAQContent} canonicalPath="/faq" />} />
+                          <Route path="/our-story" element={<TextPage title="Our Story" content={StoryContent} canonicalPath="/our-story" />} />
+                          <Route path="/sustainability" element={<TextPage title="Sustainability" content={SustainabilityContent} canonicalPath="/sustainability" />} />
+                          <Route path="/ingredients" element={<TextPage title="Ingredients" content={IngredientsContent} canonicalPath="/ingredients" />} />
+                          <Route path="/journal" element={<TextPage title="Journal" content={JournalContent} canonicalPath="/journal" />} />
+                        </Routes>
+                      </Suspense>
+                    </main>
+                    <Footer />
+                    <Cart />
+                    <MobileMenu />
+                    <SearchOverlay />
+                    <LoginOverlay />
+                    <WishlistOverlay />
+                  </div>
+                </CartProvider>
+              </WishlistProvider>
+            </CategoryProvider>
+          </OrderProvider>
+        </ProductProvider>
+      </LoyaltyProvider>
+    </UIProvider>
+  );
+}
+
 export default function App() {
   return (
     <SmoothScroll>
       <BrowserRouter>
         <ScrollToTop />
         <SiteProvider>
-        <UIProvider>
-          <LoyaltyProvider>
-            <ProductProvider>
-              <OrderProvider>
-                <CategoryProvider>
-                  <WishlistProvider>
-                    <CartProvider>
-                      <div className="min-h-screen bg-[#F9F7F2] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#1A1A1A] selection:text-[#F9F7F2]">
-                        <Header />
-                        <main className="flex-1 shrink-0">
-                          <Suspense fallback={<PageFallback />}>
-                            <Routes>
-                              <Route path="/" element={<HomePage />} />
-                              <Route path="/product/:id" element={<ProductPage />} />
-                              <Route path="/admin" element={<AdminPage />} />
-                              <Route path="/profile" element={<ProfilePage />} />
-                              <Route path="/cart" element={<CartPage />} />
-                              <Route path="/checkout" element={<CheckoutPage />} />
-                              <Route path="/track" element={<TrackPage />} />
-                              <Route path="/live-sale" element={<LiveSaleHubPage />} />
-                              <Route path="/privacy" element={<TextPage title="Privacy Policy" content={PrivacyContent} canonicalPath="/privacy" />} />
-                              <Route path="/terms" element={<TextPage title="Terms of Service" content={TermsContent} canonicalPath="/terms" />} />
-                              <Route path="/shipping" element={<TextPage title="Shipping & Returns" content={ShippingContent} canonicalPath="/shipping" />} />
-                              <Route path="/contact" element={<TextPage title="Contact Us" content={ContactContent} canonicalPath="/contact" />} />
-                              <Route path="/faq" element={<TextPage title="FAQs" content={FAQContent} canonicalPath="/faq" />} />
-                              <Route path="/our-story" element={<TextPage title="Our Story" content={StoryContent} canonicalPath="/our-story" />} />
-                              <Route path="/sustainability" element={<TextPage title="Sustainability" content={SustainabilityContent} canonicalPath="/sustainability" />} />
-                              <Route path="/ingredients" element={<TextPage title="Ingredients" content={IngredientsContent} canonicalPath="/ingredients" />} />
-                              <Route path="/journal" element={<TextPage title="Journal" content={JournalContent} canonicalPath="/journal" />} />
-                            </Routes>
-                          </Suspense>
-                        </main>
-                        <Footer />
-                        <Cart />
-                        <MobileMenu />
-                        <SearchOverlay />
-                        <LoginOverlay />
-                        <WishlistOverlay />
-                      </div>
-                    </CartProvider>
-                  </WishlistProvider>
-                </CategoryProvider>
-              </OrderProvider>
-            </ProductProvider>
-          </LoyaltyProvider>
-        </UIProvider>
-      </SiteProvider>
+          <AppShell />
+        </SiteProvider>
       </BrowserRouter>
     </SmoothScroll>
   );

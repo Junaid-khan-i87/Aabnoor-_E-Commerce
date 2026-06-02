@@ -134,6 +134,10 @@ export default async function handler(req: any, res: any) {
     return res.status(404).json({ error: 'Order email address was not found.' });
   }
 
+  if (order.deliveryEmailSent === true) {
+    return res.status(200).json({ alreadySent: true });
+  }
+
   const items = Array.isArray(order.items) ? order.items : [];
   const itemsHtml = items
     .map((item: any) => {
@@ -182,6 +186,17 @@ export default async function handler(req: any, res: any) {
   if (error) {
     return res.status(400).json({ error: 'Delivery email could not be sent.' });
   }
+
+  void Promise.resolve(
+    supabaseAdmin
+      .from('orders')
+      .update({ data: { ...order, deliveryEmailSent: true } })
+      .eq('id', orderId)
+  )
+    .then(({ error: updateError }) => {
+      if (updateError) console.error(updateError);
+    })
+    .catch(console.error);
 
   return res.status(200).json({ id: data?.id, to: order.userEmail });
 }

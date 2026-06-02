@@ -8,12 +8,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { SafeImage } from '../components/SafeImage';
 import { useUI } from '../UIContext';
 import { supabase } from '../lib/supabase';
+import { useLoyalty } from '../LoyaltyContext';
 
 export function CheckoutPage() {
   const { items, cartTotal, clearCart } = useCart();
   const { placeOrder } = useOrders();
-  const { coupons, settings, currentUser, loginDiscountUsed, setLoginDiscountUsed } = useSite();
+  const { settings, currentUser, loginDiscountUsed, setLoginDiscountUsed } = useSite();
   const { setIsLoginOpen, addToast } = useUI();
+  const { coins, syncCoinBalance, refreshCoins } = useLoyalty();
   const navigate = useNavigate();
 
   const [checkoutStep, setCheckoutStep] = useState<'details' | 'complete'>('details');
@@ -22,8 +24,10 @@ export function CheckoutPage() {
   const [deliveryMethod, setDeliveryMethod] = useState<'standard' | 'express'>('standard');
 
   const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercentage: number } | null>(null);
   const [couponError, setCouponError] = useState('');
+  const [isCouponChecking, setIsCouponChecking] = useState(false);
+  const [coinsToRedeem, setCoinsToRedeem] = useState(0);
 
   const firstTimeDiscountEligible = currentUser && !loginDiscountUsed;
   const firstTimeDiscountAmount = firstTimeDiscountEligible ? 10 : 0;
@@ -35,6 +39,7 @@ export function CheckoutPage() {
   const finalTotal = subtotalAfterDiscount + deliveryFee;
   const coinsToEarn = Math.floor(finalTotal / 10);
   const deliveryWindow = deliveryMethod === 'express' ? '1-2 business days' : '3-5 business days';
+  const normalizedCoinsToRedeem = Math.max(0, Math.min(coins, Math.floor(Number(coinsToRedeem) || 0)));
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -80,18 +85,59 @@ export function CheckoutPage() {
 
   const hasDiscount = items.some(item => item.quantity >= 5);
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
-    const found = coupons.find(c => c.code.toUpperCase() === couponInput.trim().toUpperCase() && c.isActive);
-    if (found) {
-      if (found.minOrderAmount && cartTotal < found.minOrderAmount) {
-        setCouponError(`Minimum order amount is Rs. ${Number(found.minOrderAmount).toFixed(2)}`);
-      } else {
-        setAppliedCoupon(found);
-        setCouponError('');
+    if (!currentUser || !supabase) {
+      setIsLoginOpen(true);
+      return;
+    }
+
+    setIsCouponChecking(true);
+    setCouponError('');
+
+    try {
+      const { data: sessionResult } = await supabase.auth.getSession();
+      const token = sessionResult.session?.access_token;
+      if (!token) {
+        setIsLoginOpen(true);
+        return;
       }
-    } else {
-      setCouponError('Invalid or inactive coupon code');
+
+      const response = await fetch('/api/preview-coupon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          couponCode: couponInput.trim(),
+          cartTotal,
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        setCouponError(result?.error || 'Coupon could not be checked.');
+        setAppliedCoupon(null);
+        return;
+      }
+
+      if (!result?.valid) {
+        setCouponError(result?.reason || 'Invalid or inactive coupon code');
+        setAppliedCoupon(null);
+        return;
+      }
+
+      setAppliedCoupon({
+        code: couponInput.trim().toUpperCase(),
+        discountPercentage: Number(result.discountPercentage) || 0,
+      });
+      setCouponError('');
+    } catch {
+      setCouponError('Coupon could not be checked.');
+      setAppliedCoupon(null);
+    } finally {
+      setIsCouponChecking(false);
     }
   };
 
@@ -130,6 +176,7 @@ export function CheckoutPage() {
         paymentMethod: 'Cash on Delivery',
         deliveryMethod,
         couponCode: appliedCoupon?.code || '',
+        coinsToRedeem: normalizedCoinsToRedeem,
       });
     } catch {
       addToast('Order could not be saved. Please try again.', 'error');
@@ -161,7 +208,13 @@ export function CheckoutPage() {
       setLoginDiscountUsed(true);
     }
 
-    setEarnedCoins(newOrder.coinsEarned || coinsToEarn);
+    if (typeof newOrder.coinBalance === 'number') {
+      syncCoinBalance(newOrder.coinBalance);
+    } else {
+      refreshCoins();
+    }
+
+    setEarnedCoins(newOrder.coinsEarned ?? coinsToEarn);
     clearCart();
     setCheckoutStep('complete');
     window.scrollTo(0, 0);
@@ -192,6 +245,16 @@ export function CheckoutPage() {
           <p className="text-[#1A1A1A] font-sans text-[11px] font-bold uppercase tracking-[0.2em] mb-8 mt-2">
             You'll earn {earnedCoins} Aabnoor Coins once shipped
           </p>
+          {Number(completedOrder?.coinDiscount) > 0 && (
+            <p className="text-green-700 font-sans text-[10px] font-bold uppercase tracking-[0.16em] mb-8 -mt-5">
+              Loyalty discount applied: Rs. {Number(completedOrder.coinDiscount).toFixed(2)}
+            </p>
+          )}
+          {typeof completedOrder?.coinBalance === 'number' && (
+            <p className="text-[#1A1A1A]/60 font-sans text-[10px] font-bold uppercase tracking-[0.16em] mb-8 -mt-5">
+              Current balance: {completedOrder.coinBalance} coins
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/track" className="inline-block bg-[#1A1A1A] text-[#F9F7F2] px-8 py-3 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/90 transition-colors">
               Track Order
@@ -410,14 +473,15 @@ export function CheckoutPage() {
                     onChange={(e) => setCouponInput(e.target.value)}
                     placeholder="Enter code"
                     className="flex-1 border border-[#1A1A1A]/10 px-3 py-2 font-sans text-xs focus:border-[#1A1A1A] outline-none bg-white rounded-lg uppercase placeholder-[#1A1A1A]/40 font-bold tracking-wider" 
-                    disabled={!!appliedCoupon}
+                    disabled={!!appliedCoupon || isCouponChecking}
                   />
                   <button 
                     type="button"
                     onClick={appliedCoupon ? () => { setAppliedCoupon(null); setCouponInput(''); setCouponError(''); } : handleApplyCoupon}
-                    className="px-5 bg-[#1A1A1A] text-[#F9F7F2] font-sans text-[10px] uppercase font-bold tracking-widest transition-all hover:bg-[#CDA185] rounded-lg cursor-pointer shadow-sm shrink-0 font-bold whitespace-nowrap"
+                    disabled={isCouponChecking}
+                    className="px-5 bg-[#1A1A1A] text-[#F9F7F2] font-sans text-[10px] uppercase font-bold tracking-widest transition-all hover:bg-[#CDA185] rounded-lg cursor-pointer shadow-sm shrink-0 font-bold whitespace-nowrap disabled:opacity-50"
                   >
-                    {appliedCoupon ? 'Remove' : 'Apply'}
+                    {appliedCoupon ? 'Remove' : isCouponChecking ? 'Checking...' : 'Apply'}
                   </button>
                 </div>
                 {couponError && <p className="text-red-500 font-sans text-[9px] font-bold mt-1">⚠️ {couponError}</p>}
@@ -438,6 +502,38 @@ export function CheckoutPage() {
                    <span className="font-serif italic text-xs text-green-800 font-bold">-{firstTimeDiscountAmount}% off</span>
                 </div>
               )}
+
+              <div className="bg-white border border-[#1A1A1A]/10 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-sans text-[9px] uppercase font-bold tracking-widest text-[#1A1A1A]/50">Aabnoor Coins</p>
+                    <p className="font-sans text-xs text-[#1A1A1A]/70 mt-1">Available balance: <span className="font-bold text-[#1A1A1A]">{coins}</span></p>
+                  </div>
+                  <Coins className="w-5 h-5 text-[#CDA185] shrink-0" />
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={coins}
+                    step={1}
+                    value={coinsToRedeem}
+                    onChange={(event) => setCoinsToRedeem(Math.max(0, Math.floor(Number(event.target.value) || 0)))}
+                    className="flex-1 border border-[#1A1A1A]/10 px-3 py-2 font-sans text-xs focus:border-[#1A1A1A] outline-none bg-white rounded-lg"
+                    aria-label="Coins to redeem"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCoinsToRedeem(coins)}
+                    className="px-4 bg-[#1A1A1A]/5 text-[#1A1A1A] font-sans text-[10px] uppercase font-bold tracking-widest rounded-lg hover:bg-[#1A1A1A]/10 transition-colors"
+                  >
+                    Max
+                  </button>
+                </div>
+                <p className="font-sans text-[10px] text-[#1A1A1A]/50 leading-relaxed">
+                  Redemption is validated securely by the server after confirmation. 10 coins = Rs. 1.
+                </p>
+              </div>
 
               {/* Accounting details */}
               <div className="space-y-3 pt-2">
