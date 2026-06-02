@@ -234,7 +234,7 @@ export function ProductPage() {
 
   if (isLoading) {
     return (
-      <div className="pt-24 lg:pt-32 pb-24 max-w-7xl mx-auto px-6 animate-pulse">
+      <div className="pt-40 lg:pt-44 pb-24 max-w-7xl mx-auto px-6 animate-pulse">
         <div className="h-3 bg-[#1A1A1A]/10 rounded w-48 mb-8"></div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
           <div className="flex flex-col gap-6">
@@ -266,7 +266,7 @@ export function ProductPage() {
 
   if (!product) {
     return (
-      <div className="pt-32 pb-24 text-center min-h-[60vh] flex flex-col items-center justify-center">
+      <div className="pt-40 pb-24 text-center min-h-[60vh] flex flex-col items-center justify-center">
         <h1 className="font-serif italic text-4xl mb-6">Product Not Found</h1>
         <Link to="/" className="text-[11px] uppercase tracking-[0.2em] border-b border-[#1A1A1A] pb-1 hover:text-[#1A1A1A]/60 transition-colors">Return to Shop</Link>
       </div>
@@ -352,7 +352,7 @@ export function ProductPage() {
   };
 
   return (
-    <div className="pt-24 lg:pt-32 pb-24 max-w-7xl mx-auto px-6">
+    <div className="pt-40 lg:pt-44 pb-24 max-w-7xl mx-auto px-6">
       <SEO
         title={`${product.name} | ${product.category} | Aabnoor Beaute`}
         description={seoDescription.slice(0, 155)}
@@ -365,7 +365,7 @@ export function ProductPage() {
       <div className="flex items-center gap-2 font-sans text-[9px] uppercase tracking-[0.2em] text-[#1A1A1A]/50 mb-8">
         <Link to="/" className="hover:text-[#1A1A1A] transition-colors">Home</Link>
         <span>/</span>
-        <Link to="/#shop" className="hover:text-[#1A1A1A] transition-colors">Shop</Link>
+        <Link to="/shop" className="hover:text-[#1A1A1A] transition-colors">Shop</Link>
         <span>/</span>
         <span className="text-[#1A1A1A]">{product.category}</span>
       </div>

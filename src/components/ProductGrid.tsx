@@ -11,7 +11,7 @@ import { useSite } from '../SiteContext';
 import { Heart, Star } from 'lucide-react';
 import { getActivePrice, isFlashSaleActive } from '../lib/pricing';
 
-function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: Product) => void; key?: string | number }) {
+export function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: Product) => void; key?: string | number }) {
   const x = useMotionValue(0.5);
   const y = useMotionValue(0.5);
   const navigate = useNavigate();
@@ -55,7 +55,19 @@ function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: 
     }
   };
 
+  const activePrice = getActivePrice(product);
+  const reviewCount = product.reviews?.length || 0;
   const currentPrice = product.variants?.[0] ? product.variants[0].price : product.price;
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const itemToAdd = product.variants?.[0]
+      ? { ...product, id: `${product.id}-${product.variants[0].name}`, name: `${product.name} - ${product.variants[0].name}`, price: product.variants[0].price }
+      : product;
+
+    addToCart(itemToAdd);
+    addToast(`Added ${itemToAdd.name} to your bag`, 'success');
+  };
 
   return (
     <motion.div
@@ -109,25 +121,10 @@ function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: 
           onError={() => setImgSrc("https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80")}
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.12]"
           referrerPolicy="no-referrer"
+          loading="lazy"
+          decoding="async"
+          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
         />
-        {/* Hover Overlay Button */}
-        <div className="absolute inset-0 bg-[#F9F7F2]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4 pointer-events-none">
-          <button
-            aria-label={product.stock === 0 ? "Out of stock" : `Quick add ${product.name} to bag`}
-            disabled={product.stock === 0}
-            onClick={(e) => { 
-                e.stopPropagation(); 
-                const itemToAdd = product.variants?.[0] 
-                  ? { ...product, id: `${product.id}-${product.variants[0].name}`, name: `${product.name} - ${product.variants[0].name}`, price: product.variants[0].price }
-                  : product;
-                addToCart(itemToAdd); 
-                addToast(`Added ${itemToAdd.name} to your bag`, 'success');
-            }}
-            className="w-full bg-[#1c1a19] text-[#fffaf7] py-4 rounded-full text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-[#c9847a] transition-all disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto cursor-pointer"
-          >
-            {product.stock === 0 ? 'Out of Stock' : `Quick Add - Rs. ${getActivePrice(product).toFixed(2)}`}
-          </button>
-        </div>
       </motion.div>
       
       <div className="flex-1 flex flex-col cursor-pointer" onClick={() => navigate(`/product/${product.id}`)}>
@@ -135,46 +132,43 @@ function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: 
           <p className="font-sans text-[10px] uppercase tracking-widest text-[#1A1A1A]/50 font-bold">
             {product.category}
           </p>
-          {product.rating && (
-            <div className="flex items-center gap-1 font-sans text-[10px] font-bold">
-              <Star className="w-3 h-3 fill-[#CDA185] stroke-[#CDA185]" />
-              <span>{product.rating.toFixed(1)}</span>
-            </div>
-          )}
         </div>
         <h3 className="font-serif text-xl text-[#1A1A1A] leading-snug mb-2 transition-colors group-hover:text-[#CDA185]">
           {product.name}
         </h3>
-        <div className="flex items-end justify-between mt-auto pt-3 gap-2">
-          <div className="flex-1">
-            <p className="font-sans text-xs text-[#1A1A1A]/60 line-clamp-1 mb-1">
-              {product.description}
+        <div className="mb-3 flex items-center gap-2 font-sans text-[11px] font-bold text-[#5f5650]">
+          <span className="flex items-center gap-0.5 text-[#b8975a]" aria-label={`${(product.rating || 0).toFixed(1)} out of 5 stars`}>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Star
+                key={index}
+                className={`h-3.5 w-3.5 ${index < Math.round(product.rating || 0) ? 'fill-[#b8975a] stroke-[#b8975a]' : 'stroke-[#d9c9a8]'}`}
+              />
+            ))}
+          </span>
+          <span>{(product.rating || 0).toFixed(1)}</span>
+          <span className="text-[#2c2826]/25">/</span>
+          <span>{reviewCount} review{reviewCount === 1 ? '' : 's'}</span>
+        </div>
+        <p className="font-sans text-xs text-[#5f5650] line-clamp-2 mb-4">
+          {product.description}
+        </p>
+        <div className="mt-auto space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-serif italic text-lg text-[#1A1A1A]">
+              Rs. {activePrice.toFixed(2)}
             </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-serif italic text-lg text-[#1A1A1A]">
-                Rs. {getActivePrice(product).toFixed(2)}
+            {product.compareAtPrice && product.compareAtPrice > activePrice && (
+              <p className="font-sans text-xs text-[#6f625c] line-through">
+                Rs. {Number(product.compareAtPrice).toFixed(2)}
               </p>
-              {product.compareAtPrice && product.compareAtPrice > getActivePrice(product) && (
-                <p className="font-sans text-xs text-[#1A1A1A]/40 line-through">
-                  Rs. {Number(product.compareAtPrice).toFixed(2)}
-                </p>
-              )}
-            </div>
+            )}
           </div>
           <button
             disabled={product.stock === 0}
-            onClick={(e) => {
-              e.stopPropagation();
-              const itemToAdd = product.variants?.[0] 
-                ? { ...product, id: `${product.id}-${product.variants[0].name}`, name: `${product.name} - ${product.variants[0].name}`, price: product.variants[0].price }
-                : product;
-              
-              addToCart(itemToAdd);
-              addToast(`Added ${itemToAdd.name} to your bag`, 'success');
-            }}
-            className="shrink-0 px-4 py-2 border border-[#1A1A1A]/20 rounded-full text-[9px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A] hover:border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-[#F9F7F2] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            onClick={handleAddToCart}
+            className="w-full rounded-full bg-[#CDA185] px-4 py-3 text-center font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#2c2826] shadow-sm transition-colors hover:bg-[#b88768] focus:outline-none focus:ring-2 focus:ring-[#8a4f48] focus:ring-offset-2 focus:ring-offset-[#F9F7F2] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {product.stock === 0 ? 'Out of Stock' : 'Quick Add'}
+            {product.stock === 0 ? 'Out of Stock' : `Add to Cart - Rs. ${activePrice.toFixed(2)}`}
           </button>
         </div>
       </div>

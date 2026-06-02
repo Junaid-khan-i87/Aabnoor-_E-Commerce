@@ -223,7 +223,7 @@ export function CheckoutPage() {
 
   if (checkoutStep === 'complete') {
     return (
-      <div className="pt-32 pb-24 max-w-2xl mx-auto px-6 text-center min-h-[60vh] flex flex-col items-center justify-center">
+      <div className="pt-40 pb-24 max-w-2xl mx-auto px-6 text-center min-h-[60vh] flex flex-col items-center justify-center">
         <motion.div
            initial={{ opacity: 0, scale: 0.9 }}
            animate={{ opacity: 1, scale: 1 }}
@@ -269,7 +269,7 @@ export function CheckoutPage() {
   }
 
   return (
-    <div className="pt-24 lg:pt-32 pb-24 max-w-7xl mx-auto px-6 min-h-screen">
+    <div className="pt-40 lg:pt-44 pb-24 max-w-7xl mx-auto px-6 min-h-screen">
       <div className="flex items-center gap-4 mb-4 text-[#1A1A1A]/50 font-sans text-[10px] uppercase font-bold tracking-[0.2em]">
         <span className="text-[#1A1A1A]">1. DETAILS</span>
         <span className="w-8 h-px bg-[#1A1A1A]/20"></span>

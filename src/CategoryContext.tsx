@@ -1,26 +1,23 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Category } from './types';
+import { getShopHref } from './data/categories';
 
 interface CategoryContextType {
   activeCategory: Category;
   setActiveCategory: (category: Category) => void;
-  scrollToShopAndFilter: (category: Category) => void;
+  scrollToShopAndFilter: (category: Category, subcategory?: string) => void;
 }
 
 const CategoryContext = createContext<CategoryContextType | undefined>(undefined);
 
 export function CategoryProvider({ children }: { children: ReactNode }) {
   const [activeCategory, setActiveCategory] = useState<Category>('All');
+  const navigate = useNavigate();
 
-  const scrollToShopAndFilter = (category: Category) => {
+  const scrollToShopAndFilter = (category: Category, subcategory?: string) => {
     setActiveCategory(category);
-    setTimeout(() => {
-      const shopSection = document.getElementById('shop');
-      if (shopSection) {
-        const top = shopSection.getBoundingClientRect().top + window.scrollY - 80; // 80px offset for header
-        window.scrollTo({ top, behavior: 'smooth' });
-      }
-    }, 50); // slight delay to allow rendering if needed
+    navigate(category === 'All' ? '/shop' : getShopHref(category, subcategory));
   };
 
   return (

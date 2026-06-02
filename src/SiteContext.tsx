@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 import { deleteEntity, getStoreValue, listEntities, setStoreValue, upsertEntity } from './lib/storeApi';
 import { supabase } from './lib/supabase';
+import { FREE_SHIPPING_THRESHOLD } from './config';
 
 export const SUPPORT_EMAIL = 'support@aabnoor.shop';
 
@@ -39,7 +40,7 @@ const getDefaultLiveSaleEndTime = () => new Date(Date.now() + 18 * 60 * 60 * 100
 
 const DEFAULT_SETTINGS: SiteSettings = {
   deliveryFee: 150,
-  freeShippingThreshold: 5000,
+  freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
   storeEmail: 'support@aabnoor.shop',
   storePhone: '+92 (21) 111 287 233',
   storeAddress: 'Aabnoor Flagship Store, Ground Floor, Dolmen Mall Clifton, Karachi, Pakistan',

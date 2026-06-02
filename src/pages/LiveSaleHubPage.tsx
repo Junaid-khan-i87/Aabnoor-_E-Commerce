@@ -53,7 +53,7 @@ export function LiveSaleHubPage() {
   }, [settings.liveSaleEndTime]);
 
   return (
-    <div className="pt-24 pb-16 bg-[#F9F7F2] min-h-screen">
+    <div className="pt-40 pb-16 bg-[#F9F7F2] min-h-screen">
       <SEO
         title="Aabnoor Live Sale | Flash Deals on Beauty Essentials"
         description="Shop Aabnoor live sale offers on skincare, makeup, hair care and fragrance with limited-time discounts, secure checkout and order tracking."
@@ -158,6 +158,9 @@ export function LiveSaleHubPage() {
                       src={product.imageUrl} 
                       alt={product.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      loading="lazy"
+                      decoding="async"
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                     />
                     
                     {/* Discount badge */}

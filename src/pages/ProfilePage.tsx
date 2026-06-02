@@ -66,7 +66,7 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F7F2] pt-32 lg:pt-40 pb-24 px-4 md:px-8 max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#F9F7F2] pt-40 lg:pt-44 pb-24 px-4 md:px-8 max-w-4xl mx-auto">
       <div className="flex justify-between items-end mb-4 border-b border-[#1A1A1A]/10 pb-4">
         <div>
           <h1 className="font-serif italic text-4xl text-[#1A1A1A] mb-1">My Profile</h1>

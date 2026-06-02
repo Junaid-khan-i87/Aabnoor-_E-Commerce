@@ -555,7 +555,7 @@ export function AdminPage() {
 
   if (!isAuthenticated || isAuthLoading) {
     return (
-      <div className="min-h-[85vh] flex items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(201,132,122,0.18),transparent_32%),#faf6f1] p-4 pt-28 font-sans">
+      <div className="min-h-[85vh] flex items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(201,132,122,0.18),transparent_32%),#faf6f1] p-4 pt-40 font-sans">
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -992,7 +992,7 @@ export function AdminPage() {
   };
 
   return (
-    <div className="admin-redesign min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(201,132,122,0.18),transparent_30%),#faf6f1] pt-24 pb-12 px-4 md:px-8 text-[#2c2826]">
+    <div className="admin-redesign min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(201,132,122,0.18),transparent_30%),#faf6f1] pt-40 pb-12 px-4 md:px-8 text-[#2c2826]">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 rounded-[8px] border border-[#2c2826]/10 bg-[#2c2826] p-5 text-[#faf6f1] shadow-[0_24px_70px_rgba(44,40,38,0.18)] sm:p-7">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">

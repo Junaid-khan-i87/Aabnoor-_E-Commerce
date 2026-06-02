@@ -92,7 +92,7 @@ export function TrackPage() {
   const currentPriority = orderDetails ? statusPriority[orderDetails.status as keyof typeof statusPriority] : 0;
 
   return (
-    <div className="pt-32 lg:pt-40 pb-24 max-w-4xl mx-auto px-6 min-h-screen">
+    <div className="pt-40 lg:pt-44 pb-24 max-w-4xl mx-auto px-6 min-h-screen">
       <SEO
         title="Track Your Aabnoor Order | Aabnoor Beaute"
         description="Track your Aabnoor Beaute order using your tracking number and see live status updates for your beauty purchase."

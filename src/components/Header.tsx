@@ -1,28 +1,33 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Search, Menu, User, Coins, Heart } from 'lucide-react';
+import { Menu as HeadlessMenu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { ChevronDown, ShoppingBag, Menu, User, Coins, Heart } from 'lucide-react';
 import { useCart } from '../CartContext';
 import { useCategory } from '../CategoryContext';
 import { useUI } from '../UIContext';
 import { useLoyalty } from '../LoyaltyContext';
 import { useSite } from '../SiteContext';
+import { useProducts } from '../ProductContext';
 import { motion, useScroll, useMotionValueEvent } from 'motion/react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { SearchBar } from './SearchBar';
+import { getShopHref, withProductCounts } from '../data/categories';
 
 export function Header() {
   const { setIsCartOpen, cartCount } = useCart();
   const { scrollToShopAndFilter, activeCategory } = useCategory();
-  const { setIsSearchOpen, setIsMenuOpen, setIsLoginOpen, setIsWishlistOpen } = useUI();
+  const { setIsMenuOpen, setIsLoginOpen, setIsWishlistOpen } = useUI();
   const { coins } = useLoyalty();
-  const { siteName, categories, bannerText, isBannerActive, currentUser, settings } = useSite();
+  const { siteName, bannerText, isBannerActive, currentUser, settings } = useSite();
+  const { productsList } = useProducts();
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
   const [showBannerLocal, setShowBannerLocal] = useState(() => {
     return localStorage.getItem('aura_banner_closed') !== 'true';
   });
   const [isLoyaltyOpen, setIsLoyaltyOpen] = useState(false);
+  const navCategories = withProductCounts(productsList);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() || 0;
@@ -39,15 +44,8 @@ export function Header() {
     : `Free shipping over Rs. ${Number(settings.freeShippingThreshold).toFixed(0)} - COD, JazzCash and EasyPaisa supported - Track every order`;
   const showBanner = showBannerLocal;
 
-  const handleNav = (category: any) => {
-    if (location.pathname !== '/') {
-      navigate('/');
-      setTimeout(() => {
-        scrollToShopAndFilter(category);
-      }, 100);
-    } else {
-      scrollToShopAndFilter(category);
-    }
+  const handleNav = (category: string, subcategory?: string) => {
+    scrollToShopAndFilter(category, subcategory);
   };
 
   return (
@@ -88,22 +86,70 @@ export function Header() {
         </div>
 
         {/* Desktop Nav */}
-        <nav className="flex-1 hidden lg:flex items-center gap-6 font-sans text-[10px] font-medium tracking-[0.18em] uppercase text-[#2c2826]">
-          {categories.slice(0, 3).map(cat => {
-            const isActive = activeCategory === cat;
+        <nav className="flex-1 hidden lg:flex items-center gap-4 font-sans text-[10px] font-medium tracking-[0.16em] uppercase text-[#2c2826]">
+          {navCategories.map(cat => {
+            const isActive = activeCategory === cat.name;
             return (
-              <a 
-                key={cat} 
-                href="/#shop" 
-                onClick={(e) => { e.preventDefault(); handleNav(cat); }} 
-                className={`transition-colors border-b ${isActive ? 'border-[#c9847a] text-[#2c2826]' : 'text-[#7a706a] border-transparent hover:border-[#c9847a] hover:text-[#2c2826]'}`}
-              >
-                {cat}
-              </a>
+              <HeadlessMenu as="div" className="relative" key={cat.name}>
+                <MenuButton
+                  className={`inline-flex items-center gap-1 border-b py-1 transition-colors ${
+                    isActive
+                      ? 'border-[#c9847a] text-[#2c2826]'
+                      : 'border-transparent text-[#6f625c] hover:border-[#c9847a] hover:text-[#2c2826]'
+                  }`}
+                >
+                  {cat.name}
+                  <ChevronDown className="h-3 w-3" aria-hidden="true" />
+                </MenuButton>
+                <MenuItems className="absolute left-0 top-full z-50 mt-3 w-64 rounded-[8px] border border-[#2c2826]/10 bg-[#fffaf7] p-2 shadow-2xl outline-none">
+                  <MenuItem>
+                    {({ focus }) => (
+                      <Link
+                        to={getShopHref(cat.name)}
+                        onClick={() => handleNav(cat.name)}
+                        className={`flex items-center justify-between rounded-[6px] px-3 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.16em] ${
+                          focus ? 'bg-[#F9F7F2] text-[#8a4f48]' : 'text-[#2c2826]'
+                        }`}
+                      >
+                        All {cat.name}
+                        <span className="text-[#6f625c]">{cat.count}</span>
+                      </Link>
+                    )}
+                  </MenuItem>
+                  {cat.subcategories.map((subcategory) => (
+                    <MenuItem key={subcategory.name}>
+                      {({ focus }) => (
+                        <Link
+                          to={getShopHref(cat.name, subcategory.name)}
+                          onClick={() => handleNav(cat.name, subcategory.name)}
+                          className={`flex items-center justify-between rounded-[6px] px-3 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.16em] ${
+                            focus ? 'bg-[#F9F7F2] text-[#8a4f48]' : 'text-[#5f5650]'
+                          }`}
+                        >
+                          {subcategory.name}
+                          <span className="text-[#6f625c]">{subcategory.count}</span>
+                        </Link>
+                      )}
+                    </MenuItem>
+                  ))}
+                  {cat.isSale && (
+                    <MenuItem>
+                      {({ focus }) => (
+                        <Link
+                          to="/live-sale"
+                          className={`mt-1 flex items-center justify-between rounded-[6px] border-t border-[#2c2826]/10 px-3 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.16em] ${
+                            focus ? 'bg-[#2c2826] text-white' : 'text-[#8a4f48]'
+                          }`}
+                        >
+                          Live Sale Page
+                        </Link>
+                      )}
+                    </MenuItem>
+                  )}
+                </MenuItems>
+              </HeadlessMenu>
             );
           })}
-          <span className="text-[#2c2826]/15">|</span>
-          <Link to="/live-sale" className="text-[#c9847a] hover:text-[#8a4f48] transition-colors font-bold">Live Sale</Link>
         </nav>
 
         {/* Logo */}
@@ -144,14 +190,6 @@ export function Header() {
           </button>
 
           <button
-            className="flex p-2 hover:bg-[#2c2826]/5 rounded-full transition-colors cursor-pointer"
-            aria-label="Search"
-            onClick={() => setIsSearchOpen(true)}
-          >
-            <Search className="w-5 h-5 text-[#2c2826]" />
-          </button>
-          
-          <button
             onClick={() => currentUser ? navigate('/profile') : setIsLoginOpen(true)}
             className="hidden md:flex p-2 hover:bg-[#2c2826]/5 rounded-full transition-colors cursor-pointer"
             aria-label="User Account"
@@ -175,6 +213,12 @@ export function Header() {
                )}
             </div>
           </button>
+        </div>
+      </div>
+
+      <div className="border-t border-[#2c2826]/8 bg-[#fffaf7]/95">
+        <div className="mx-auto flex h-14 max-w-7xl items-center px-5 sm:px-6">
+          <SearchBar />
         </div>
       </div>
 

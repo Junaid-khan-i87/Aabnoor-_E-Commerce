@@ -71,6 +71,9 @@ export function WishlistOverlay() {
                           src={item.imageUrl} 
                           alt={item.name}
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                          sizes="96px"
                         />
                       </Link>
                       <div className="flex-1 py-1 flex flex-col">

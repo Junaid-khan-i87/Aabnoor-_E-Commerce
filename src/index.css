@@ -11,11 +11,11 @@
   --aab-cream: #faf6f1;
   --aab-paper: #fffaf7;
   --aab-charcoal: #1c1a19;
-  --aab-rose: #c9847a;
+  --aab-rose: #a65f56;
   --aab-rose-dark: #8a4f48;
   --aab-gold: #c2a370;
   --aab-gold-light: #ede0c8;
-  --aab-warm-gray: #7a706a;
+  --aab-warm-gray: #5f5650;
 }
 
 html {
@@ -33,6 +33,11 @@ body {
 ::selection {
   background: var(--aab-rose);
   color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--aab-rose-dark);
+  outline-offset: 3px;
 }
 
 /* Glassmorphism Utilities */

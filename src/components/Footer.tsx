@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
-import { useCategory } from '../CategoryContext';
 import { useSite } from '../SiteContext';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Instagram, Facebook, Twitter, MessageCircle } from 'lucide-react';
 import { useUI } from '../UIContext';
 import { SUPPORT_EMAIL } from '../SiteContext';
+import { getShopHref, SHOP_CATEGORIES } from '../data/categories';
 
 export function Footer() {
-  const { scrollToShopAndFilter } = useCategory();
-  const { siteName, categories, settings } = useSite();
+  const { siteName, settings } = useSite();
   const { addToast } = useUI();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [email, setEmail] = useState('');
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,17 +22,6 @@ export function Footer() {
       }
       setIsSubscribed(true);
       addToast('Thank you for subscribing to Aabnoor updates.', 'success');
-    }
-  };
-
-  const handleNav = (category: any) => {
-    if (location.pathname !== '/') {
-      navigate('/');
-      setTimeout(() => {
-        scrollToShopAndFilter(category);
-      }, 100);
-    } else {
-      scrollToShopAndFilter(category);
     }
   };
 
@@ -80,8 +66,12 @@ export function Footer() {
           <div>
             <h3 className="font-sans text-[10px] uppercase tracking-[0.22em] text-[#ede0c8] mb-6 font-medium">Shop</h3>
             <ul className="space-y-4 font-sans text-xs tracking-widest uppercase text-[#9a9088]">
-              {categories.slice(0, 4).map(cat => (
-                <li key={cat}><a href="/#shop" onClick={(e) => { e.preventDefault(); handleNav(cat); }} className="hover:text-[#faf6f1] transition-colors">{cat}</a></li>
+              {SHOP_CATEGORIES.filter((category) => !category.isSale).slice(0, 4).map((category) => (
+                <li key={category.name}>
+                  <Link to={getShopHref(category.name)} className="hover:text-[#faf6f1] transition-colors">
+                    {category.name}
+                  </Link>
+                </li>
               ))}
               <li><Link to="/live-sale" className="hover:text-[#faf6f1] transition-colors">Live Sale</Link></li>
             </ul>

@@ -16,7 +16,7 @@ export function Hero() {
     .slice(0, 3);
 
   return (
-    <section className="relative overflow-hidden bg-[#faf6f1] pt-28 sm:pt-32 pb-10">
+    <section className="relative overflow-hidden bg-[#faf6f1] pt-40 sm:pt-44 pb-10">
       <div className="relative mx-auto max-w-7xl overflow-hidden border border-[#2c2826]/10 bg-gradient-to-br from-[#2c2420] via-[#3d2b27] to-[#5a3932] shadow-[0_24px_70px_rgba(44,40,38,0.16)]">
         <div className="absolute inset-0 opacity-[0.08] [background-image:repeating-linear-gradient(45deg,#fff_0,#fff_1px,transparent_1px,transparent_22px)]" />
         <div className="relative grid min-h-[430px] grid-cols-1 items-center gap-8 px-6 py-14 sm:px-10 lg:grid-cols-[0.9fr_1.1fr] lg:px-14">
@@ -36,19 +36,16 @@ export function Hero() {
               {settings.heroSubtitle || 'Curated premium skincare, makeup, hair care and fragrance delivered with secure checkout and trackable orders.'}
             </p>
             <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-              <a
-                href="#shop"
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToShopAndFilter('All');
-                }}
+              <Link
+                to="/shop"
+                onClick={() => scrollToShopAndFilter('All')}
                 className="group relative inline-flex items-center justify-center gap-2 overflow-hidden bg-white/10 px-8 py-4 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:bg-white hover:text-[#2c2420] glass-panel"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   Shop Now
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
-              </a>
+              </Link>
               <Link
                 to="/live-sale"
                 className="inline-flex items-center justify-center border border-white/20 px-8 py-4 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:border-white hover:bg-white/5"
@@ -72,7 +69,15 @@ export function Hero() {
                   className={`group w-40 glass-panel p-3 text-center shadow-2xl transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:bg-white/20 ${index === 1 ? '-translate-y-8 scale-110 z-10' : ''}`}
                 >
                   <div className="mx-auto mb-4 aspect-[4/5] overflow-hidden rounded-sm bg-[#c8847a]/20">
-                    <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      referrerPolicy="no-referrer"
+                      loading={index === 1 ? 'eager' : 'lazy'}
+                      decoding="async"
+                      sizes="160px"
+                    />
                   </div>
                   <p className="font-sans text-[9px] uppercase tracking-[0.16em] text-white/80">{product.category}</p>
                   <p className="mt-1 line-clamp-2 font-serif text-[17px] leading-tight text-white">{product.name}</p>

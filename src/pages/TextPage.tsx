@@ -14,7 +14,7 @@ export function TextPage({ title, content, canonicalPath }: TextPageProps) {
   }, [title]);
 
   return (
-    <div className="pt-32 pb-24 max-w-3xl mx-auto px-6 font-sans">
+    <div className="pt-40 pb-24 max-w-3xl mx-auto px-6 font-sans">
       <SEO
         title={`${title} | Aabnoor Beaute`}
         description={`${title} information for Aabnoor Beaute customers, including premium beauty shopping support, policies and guidance.`}

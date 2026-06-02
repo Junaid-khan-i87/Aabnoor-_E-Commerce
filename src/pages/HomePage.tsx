@@ -3,11 +3,12 @@ import { Hero } from '../components/Hero';
 import { Marquee } from '../components/Marquee';
 import { ProductGrid } from '../components/ProductGrid';
 import { SocialGallery } from '../components/SocialGallery';
+import { TrustBadges } from '../components/TrustBadges';
 import { useProducts } from '../ProductContext';
 import { useSite } from '../SiteContext';
 import { useCategory } from '../CategoryContext';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Clock, Droplets, Heart, PackageCheck, Quote, Search, ShieldCheck, Sparkles, Star, Truck, WandSparkles } from 'lucide-react';
+import { ArrowRight, Clock, Droplets, Heart, PackageCheck, Quote, Search, ShieldCheck, Star, WandSparkles } from 'lucide-react';
 import { SEO, SEO_SITE_URL } from '../components/SEO';
 import { getActivePrice, isFlashSaleActive } from '../lib/pricing';
 
@@ -91,10 +92,10 @@ export function HomePage() {
           hasOfferCatalog: {
             '@type': 'OfferCatalog',
             name: 'Aabnoor Beauty Product Catalog',
-            itemListElement: Array.from(new Set(productsList.map((product) => product.category))).map((category) => ({
+            itemListElement: Array.from(new Set<string>(productsList.map((product) => product.category))).map((category) => ({
               '@type': 'OfferCatalog',
               name: category,
-              url: `${SEO_SITE_URL}/#shop`,
+              url: `${SEO_SITE_URL}/shop?category=${encodeURIComponent(category)}`,
             })),
           },
         }}
@@ -177,24 +178,7 @@ export function HomePage() {
           </div>
         </div>
       </section>
-      <section className="bg-[#F9F7F2] border-y border-[#1A1A1A]/10">
-        <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[
-            { icon: ShieldCheck, title: 'Secure Checkout', text: 'Protected login and verified order flow.' },
-            { icon: Truck, title: 'Fast Delivery', text: `Free shipping over Rs. ${Number(settings.freeShippingThreshold).toFixed(0)}.` },
-            { icon: PackageCheck, title: 'Order Tracking', text: 'Tracking number is saved and emailed.' },
-            { icon: Sparkles, title: 'Fresh Offers', text: `${liveSaleProducts.length} active flash deal${liveSaleProducts.length === 1 ? '' : 's'}.` },
-          ].map((item) => (
-            <div key={item.title} className="flex items-start gap-3 bg-white/70 border border-[#1A1A1A]/8 p-4">
-              <item.icon className="w-5 h-5 text-[#CDA185] mt-0.5 shrink-0" />
-              <div>
-                <h3 className="font-sans text-[10px] uppercase tracking-[0.18em] font-bold text-[#1A1A1A]">{item.title}</h3>
-                <p className="font-sans text-xs text-[#1A1A1A]/55 mt-1 leading-relaxed">{item.text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <TrustBadges />
 
       {categoryCards.length > 0 && (
         <section className="bg-[#faf6f1] py-16">
@@ -330,9 +314,9 @@ export function HomePage() {
               <Link to="/shipping" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Shipping Details</Link>
               <Link to="/faq" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Beauty FAQs</Link>
               <Link to="/track" className="text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">Track Order</Link>
-              <a href="#shop" className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">
+              <Link to="/shop" className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] font-bold border-b border-[#1A1A1A]/40 pb-1 hover:text-[#CDA185]">
                 Shop Now <ArrowRight className="h-3 w-3" />
-              </a>
+              </Link>
             </div>
           </div>
         </div>

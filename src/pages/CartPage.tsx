@@ -86,7 +86,7 @@ export function CartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf6f1] pt-28 pb-20">
+    <div className="min-h-screen bg-[#faf6f1] pt-40 pb-20">
       <SEO
         title="Cart | Aabnoor Beaute"
         description="Review your Aabnoor Beaute cart, apply promo codes and continue to secure checkout with COD, JazzCash and Easypaisa support."
@@ -110,7 +110,7 @@ export function CartPage() {
             </div>
             <h2 className="font-serif text-3xl text-[#2c2420]">Your bag is empty</h2>
             <p className="mt-3 font-sans text-sm text-[#8a7f7a]">Start with bestsellers or live sale picks.</p>
-            <Link to="/#shop" className="mt-8 inline-flex bg-[#2c2420] px-8 py-3.5 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white">
+            <Link to="/shop" className="mt-8 inline-flex bg-[#2c2420] px-8 py-3.5 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white">
               Start Shopping
             </Link>
           </div>
@@ -153,7 +153,7 @@ export function CartPage() {
                 <div className="border border-[#2c2420]/10 bg-[#fffaf7] p-5">
                   <div className="mb-4 flex items-center justify-between">
                     <h2 className="font-serif text-2xl text-[#2c2420]">You might also like</h2>
-                    <Link to="/#shop" className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-[#c8847a]">See all</Link>
+                    <Link to="/shop" className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-[#c8847a]">See all</Link>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     {upsell.map(product => (
@@ -177,7 +177,7 @@ export function CartPage() {
               )}
             </div>
 
-            <aside className="h-fit border border-[#2c2420]/10 bg-white p-6 lg:sticky lg:top-28">
+            <aside className="h-fit border border-[#2c2420]/10 bg-white p-6 lg:sticky lg:top-40">
               <h2 className="font-sans text-xs font-bold uppercase tracking-[0.22em] text-[#2c2420]">Order Summary</h2>
               <div className="mt-5 space-y-3 border-b border-[#2c2420]/10 pb-5 font-sans text-sm text-[#8a7f7a]">
                 <div className="flex justify-between"><span>Subtotal</span><span>PKR {cartTotal.toFixed(2)}</span></div>

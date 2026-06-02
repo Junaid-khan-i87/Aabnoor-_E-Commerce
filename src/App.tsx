@@ -24,7 +24,6 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { Cart } from './components/Cart';
 import { MobileMenu } from './components/MobileMenu';
-import { SearchOverlay } from './components/SearchOverlay';
 import { LoginOverlay } from './components/LoginOverlay';
 import { WishlistOverlay } from './components/WishlistOverlay';
 
@@ -45,6 +44,7 @@ import { SmoothScroll } from './components/SmoothScroll';
 import { SiteProvider, useSite } from './SiteContext';
 
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })));
+const ShopPage = lazy(() => import('./pages/ShopPage').then((module) => ({ default: module.ShopPage })));
 const TextPage = lazy(() => import('./pages/TextPage').then((module) => ({ default: module.TextPage })));
 const ProductPage = lazy(() => import('./pages/ProductPage').then((module) => ({ default: module.ProductPage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })));
@@ -79,6 +79,7 @@ function AppShell() {
                       <Suspense fallback={<PageFallback />}>
                         <Routes>
                           <Route path="/" element={<HomePage />} />
+                          <Route path="/shop" element={<ShopPage />} />
                           <Route path="/product/:id" element={<ProductPage />} />
                           <Route path="/admin" element={<AdminPage />} />
                           <Route path="/profile" element={<ProfilePage />} />
@@ -101,7 +102,6 @@ function AppShell() {
                     <Footer />
                     <Cart />
                     <MobileMenu />
-                    <SearchOverlay />
                     <LoginOverlay />
                     <WishlistOverlay />
                   </div>
