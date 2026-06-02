@@ -37,6 +37,7 @@
   "routes": [
     { "handle": "filesystem" },
     { "src": "/product/[^/]+", "dest": "/index.html" },
+    { "src": "/shop", "dest": "/index.html" },
     { "src": "/admin", "dest": "/index.html" },
     { "src": "/profile", "dest": "/index.html" },
     { "src": "/cart", "dest": "/index.html" },

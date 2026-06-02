@@ -107,7 +107,7 @@ export function withProductCounts(products: Product[]) {
             ).length,
       })),
     };
-  });
+  }).filter((category) => category.count > 0);
 }
 
 function countSaleSubcategory(products: Product[], subcategory: string) {

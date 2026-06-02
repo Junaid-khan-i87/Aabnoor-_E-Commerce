@@ -109,7 +109,7 @@ export function OrderProvider({ children, isAdmin = false }: { children: ReactNo
 
     const result = await response.json().catch(() => null);
     if (!response.ok || !result?.order) {
-      throw new Error(result?.error || 'Order could not be saved to the backend.');
+      throw new Error(result?.error || 'Order could not be placed. Please try again or contact support.');
     }
 
     const newOrder = {

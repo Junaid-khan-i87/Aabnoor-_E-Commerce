@@ -41,7 +41,7 @@ export function Header() {
 
   const announcementText = isBannerActive && bannerText.trim()
     ? bannerText
-    : `Free shipping over Rs. ${Number(settings.freeShippingThreshold).toFixed(0)} - COD, JazzCash and EasyPaisa supported - Track every order`;
+    : `Free shipping over Rs. ${Number(settings.freeShippingThreshold).toFixed(0)} - Cash on Delivery available - Track every order`;
   const showBanner = showBannerLocal;
 
   const handleNav = (category: string, subcategory?: string) => {

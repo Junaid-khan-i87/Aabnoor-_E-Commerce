@@ -8,7 +8,7 @@ import { SafeImage } from '../components/SafeImage';
 import { SEO } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 
-const paymentBadges = ['COD', 'JazzCash', 'Easypaisa', 'Visa', 'Mastercard'];
+const paymentBadges = ['COD', 'Order Tracking', 'Email Support'];
 
 export function CartPage() {
   const { items, addToCart, updateQuantity, removeFromCart, cartTotal } = useCart();
@@ -89,7 +89,7 @@ export function CartPage() {
     <div className="min-h-screen bg-[#faf6f1] pt-40 pb-20">
       <SEO
         title="Cart | Aabnoor Beaute"
-        description="Review your Aabnoor Beaute cart, apply promo codes and continue to secure checkout with COD, JazzCash and Easypaisa support."
+        description="Review your Aabnoor Beaute cart, apply promo codes and continue to checkout with Cash on Delivery support."
         canonicalPath="/cart"
       />
       <div className="max-w-7xl mx-auto px-5 sm:px-6">

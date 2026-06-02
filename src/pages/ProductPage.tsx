@@ -547,7 +547,7 @@ export function ProductPage() {
                   <span className="font-sans text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A]">Secure Purchase</span>
                 </div>
                 <p className="font-sans text-xs text-[#1A1A1A]/65 leading-relaxed">
-                  Authenticated checkout, order email, and backend tracking number are included.
+                  Cash on Delivery checkout, order email, and tracking support are included.
                 </p>
               </div>
               <div className="border border-[#1A1A1A]/10 bg-white p-4">
@@ -764,7 +764,7 @@ export function ProductPage() {
                 isOpen={openAccordion === 'usage'} 
                 onClick={() => toggleAccordion('usage')}
               >
-                <p>{product.howToUse || 'Apply to clean, dry skin morning and evening. Gently press into face and neck until fully absorbed. For optimal results, follow with your preferred Aabnoor Moderne protocols.'}</p>
+                <p>{product.howToUse || 'Follow the product label and patch test before regular use. Stop use if irritation occurs.'}</p>
               </AccordionItem>
               {product.advantages && product.advantages.length > 0 && (
                 <AccordionItem 

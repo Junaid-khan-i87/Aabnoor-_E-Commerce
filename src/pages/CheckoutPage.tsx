@@ -563,7 +563,7 @@ export function CheckoutPage() {
                   <span className="text-[#1A1A1A]">{settings.storePhone || settings.storeEmail}</span>
                 </div>
                 <p className="font-sans text-[10px] text-[#1A1A1A]/50 leading-relaxed">
-                  Order confirmation and tracking number are saved to the backend and sent by email when available.
+                  Order confirmation and tracking details are sent by email when available.
                 </p>
               </div>
             </div>

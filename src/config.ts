@@ -1,3 +1,3 @@
-export const FREE_SHIPPING_THRESHOLD = 5000;
+export const FREE_SHIPPING_THRESHOLD = 9999;
 export const HEADER_SCROLL_OFFSET = 132;
 export const BRAND_ACCENT = '#CDA185';

@@ -172,7 +172,7 @@ export function ShopPage() {
               </h1>
             </div>
             <p className="font-sans text-sm leading-7 text-[#5f5650] lg:max-w-xl">
-              Browse the full catalog with real product data from the backend. Use category, subcategory,
+              Browse the full catalog with current product data. Use category, subcategory,
               price and concern filters to find the right skincare, makeup, hair care or fragrance item.
             </p>
           </div>

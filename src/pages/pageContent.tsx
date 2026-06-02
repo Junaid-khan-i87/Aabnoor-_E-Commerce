@@ -3,8 +3,8 @@ import { SUPPORT_EMAIL } from '../SiteContext';
 
 export const PrivacyContent = (
   <>
-    <p>Last updated: October 2026</p>
-    <p>Aabnoor Moderne ("we," "us," or "our") respects your privacy. This Privacy Policy describes how we collect, use, and share your personal information when you visit or make a purchase from our website.</p>
+    <p>Last updated: June 2026</p>
+    <p>Aabnoor ("we," "us," or "our") respects your privacy. This Privacy Policy explains how we collect and use information when you browse products, create an account, contact support, or place an order.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Information We Collect</h3>
     <p>We collect information that you provide directly to us, such as when you create an account, subscribe to our newsletter, or make a purchase. This may include your name, email address, shipping address, and payment information.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">How We Use Your Information</h3>
@@ -14,22 +14,22 @@ export const PrivacyContent = (
 
 export const TermsContent = (
   <>
-    <p>Last updated: October 2026</p>
-    <p>Please read these Terms of Service completely using aabnoormoderne.com which is owned and operated by Aabnoor Moderne. This Agreement documents the legally binding terms and conditions attached to the use of the Site at aabnoormoderne.com.</p>
+    <p>Last updated: June 2026</p>
+    <p>Please read these Terms of Service before using aabnoor.shop. By browsing the site or placing an order, you agree to the terms that apply to product availability, pricing, delivery, returns, and account use.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Intellectual Property</h3>
-    <p>The Site and all of its original content are the sole property of Aabnoor Moderne and are, as such, fully protected by the appropriate international copyright and other intellectual property rights laws.</p>
+    <p>The Aabnoor name, storefront content, product photography, and site experience may not be copied or reused without permission. Brand names shown on product pages remain the property of their respective owners.</p>
   </>
 );
 
 export const ShippingContent = (
   <>
     <h3 className="text-xl font-bold mt-8 mb-4">Domestic Shipping</h3>
-    <p>We offer complimentary standard shipping on all domestic orders over Rs. 5000. Standard shipping typically takes 3-5 business days. Expedited shipping options are available at checkout for an additional fee.</p>
+    <p>We offer complimentary standard shipping on domestic orders over Rs. 9999. Standard shipping typically takes 3-5 business days after order confirmation. Express delivery options may be available at checkout for an additional fee.</p>
     <p>Shipping fees are shown before an order is completed so customers can review the final amount before confirming checkout. After purchase, the order confirmation email includes the order number and tracking number used on the Track Order page.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">International Shipping</h3>
-    <p>We currently ship to select international destinations. Shipping rates and delivery times are calculated at checkout based on the destination. Customers are responsible for any applicable duties and taxes.</p>
+    <p>We currently focus on Pakistan delivery. If your city or delivery area is not available at checkout, contact support before placing the order so we can confirm the best next step.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Returns</h3>
-    <p>We accept returns of unopened and gently used items within 30 days of purchase. Please contact our concierge team to initiate a return.</p>
+    <p>Beauty and personal care items can be returned only when unopened, unused, and reported within 7 days of delivery. Items with broken seals, missing packaging, or signs of use cannot be accepted for hygiene reasons.</p>
     <p>For faster return support, include your order number, tracking number, product name and a short description of the concern. Our support team will confirm the next step by email.</p>
   </>
 );
@@ -43,7 +43,7 @@ export const ContactContent = (
     <p>Use this support email for product questions, shipping concerns, delivery status, account help and order follow-up. If your message is about an order, include the order number and tracking number from your confirmation email.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Order Help</h3>
     <p>For order status, use the Track Order page with the tracking number sent in your confirmation email.</p>
-    <p>Tracking information is updated when an order moves from pending to processing, shipped and delivered. If a tracking page result looks incorrect, contact support so the order can be checked against the backend record.</p>
+    <p>Tracking information is updated as the order moves from pending to processing, shipped and delivered. If a tracking page result looks incorrect, contact support so our team can review the order.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Response Time</h3>
     <p>We usually respond within 1 business day. Please include your order number or tracking number when contacting support.</p>
   </>
@@ -57,38 +57,38 @@ export const FAQContent = (
     <p>Visit the Track Order page and enter the tracking number from your confirmation email.</p>
     <p>Tracking numbers are stored with the order and can be used at any time to confirm whether the order is pending, processing, shipped, delivered or cancelled.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Can I pay cash on delivery?</h3>
-    <p>Yes. Cash on Delivery is available at checkout along with card payment simulation.</p>
+    <p>Yes. Cash on Delivery is available at checkout. Please keep the exact order amount ready when the rider arrives.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">How do shipping costs work?</h3>
     <p>The checkout page displays delivery costs before the order is placed. Orders above the free shipping threshold qualify for complimentary standard delivery.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">How do reviews work?</h3>
     <p>Customers can rate products and leave notes on product pages. Reviews help other shoppers compare real experiences.</p>
-    <p>Reviews are saved through the backend for signed-in customers and can contribute to product ratings shown on product pages.</p>
+    <p>Signed-in customers can leave reviews on product pages. Reviews help other shoppers compare real experiences before ordering.</p>
   </>
 );
 
 export const StoryContent = (
   <>
-    <p className="text-lg leading-relaxed mb-6">Aabnoor Moderne was founded on a simple premise: beauty protocols should not compromise on efficacy, safety, or design.</p>
-    <p>Our founder, an experienced esthetician, observed a gap in the market for skincare that bridged the divide between clinical effectiveness and luxurious, sensorial experiences. What began as custom formulations in a small laboratory has evolved into a comprehensive line of high-performance beauty essentials.</p>
-    <p>We rigorously source our active ingredients, prioritizing bioavailability and stability, ensuring that every drop delivers visible results. But we also believe that your daily routine should be a moment of respite—which is why our packaging, textures, and subtle aromas are designed to soothe the senses.</p>
+    <p className="text-lg leading-relaxed mb-6">Aabnoor curates beauty essentials for shoppers in Pakistan who want clear product information, simple pricing, and reliable order support.</p>
+    <p>Our catalog focuses on skincare, hair care, fragrance, and daily beauty items from brands customers already search for. Product pages are kept practical with images, descriptions, availability, pricing, and support details.</p>
+    <p>We are building the store around trust: visible delivery information, Cash on Delivery support, order tracking, and a support channel customers can reach before or after purchase.</p>
   </>
 );
 
 export const SustainabilityContent = (
   <>
-    <p>We recognize that true luxury does not come at the expense of our planet. Sustainability is not an afterthought; it is woven into the fabric of Aabnoor Moderne.</p>
+    <p>We aim to operate responsibly as a beauty retailer by packing orders carefully, reducing unnecessary packaging where possible, and working with suppliers that provide genuine products.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Packaging</h3>
-    <p>We utilize infinitely recyclable glass and aluminum for the majority of our primary packaging. Our secondary boxes are crafted from FSC-certified paper and printed with soy-based inks. We are actively working towards eliminating all single-use plastics from our supply chain by 2028.</p>
+    <p>Orders are packed to protect products during local delivery. When possible, we reuse protective materials and avoid adding extra packaging that does not help the order arrive safely.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Sourcing</h3>
-    <p>Our botanical extracts are ethically sourced from farms that practice regenerative agriculture. We maintain strict supplier guidelines to ensure fair labor practices and minimize carbon footprints.</p>
+    <p>We prefer clear supplier relationships and product listings that show customers what they are buying before checkout.</p>
   </>
 );
 
 export const IngredientsContent = (
   <>
-    <p>Transparency is foundational to our philosophy. We formulate with a meticulous blend of clinically-proven synthetics and potent botanicals.</p>
+    <p>Ingredient transparency helps shoppers choose products that match their skin, hair, and fragrance preferences.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">What We Exclude</h3>
-    <p>Our formulas are strictly free from parabens, phthalates, sulfates (SLS/SLES), mineral oil, synthetic fragrances, and artificial dyes. We formulate for optimal skin harmony, excluding known sensitizers.</p>
+    <p>Each product is different. Check the product page, packaging, and brand label for the exact ingredient list, usage guidance, and warnings before use.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Key Actives</h3>
     <ul>
       <li className="mb-2"><strong>Niacinamide:</strong> A versatile vitamin B3 derivative that strengthens the skin barrier and refines texture.</li>
@@ -100,9 +100,9 @@ export const IngredientsContent = (
 
 export const JournalContent = (
   <>
-    <p>Welcome to our Journal—a space for deep dives into formulation science, interviews with industry experts, and guides to optimizing your beauty protocols.</p>
+    <p>Welcome to our Journal, a practical guide area for product education, routine planning, and store updates.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">Coming Beauty Guides</h3>
-    <p>Upcoming articles will cover ingredient routines, seasonal skincare planning, makeup preparation, hair care maintenance and fragrance layering. These guides are intended to help customers compare products and build simple routines before checkout.</p>
+    <p>Upcoming articles will cover ingredient routines, seasonal skincare planning, hair care maintenance and fragrance layering. These guides are intended to help customers compare products and build simple routines before checkout.</p>
     <h3 className="text-xl font-bold mt-8 mb-4">What To Read Now</h3>
     <p>Until the editorial archive is expanded, use the Ingredients guide for active ingredient education, the FAQ page for delivery and account answers, and product pages for usage notes, reviews, availability and pricing.</p>
     <p className="mt-8 italic text-[#1A1A1A]/50">Check back soon for our first editorial features.</p>

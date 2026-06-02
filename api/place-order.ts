@@ -64,7 +64,7 @@ const createAdminSupabaseClient = () => {
 
 const DEFAULT_SETTINGS = {
   deliveryFee: 150,
-  freeShippingThreshold: 5000,
+  freeShippingThreshold: 9999,
 };
 
 const allowedPaymentMethods = new Set(['Credit Card', 'Cash on Delivery']);

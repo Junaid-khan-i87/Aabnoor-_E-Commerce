@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSite } from '../SiteContext';
 import { Heart, Star } from 'lucide-react';
 import { getActivePrice, isFlashSaleActive } from '../lib/pricing';
+import { getShortProductName } from '../lib/productText';
 
 export function ProductCard({ product, addToCart }: { product: Product; addToCart: (p: Product) => void; key?: string | number }) {
   const x = useMotionValue(0.5);
@@ -18,6 +19,7 @@ export function ProductCard({ product, addToCart }: { product: Product; addToCar
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const { addToast } = useUI();
   const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const displayName = getShortProductName(product.name);
 
   // Smooth springs for mouse movement
   const mouseXSpring = useSpring(x, { stiffness: 300, damping: 30 });
@@ -134,7 +136,7 @@ export function ProductCard({ product, addToCart }: { product: Product; addToCar
           </p>
         </div>
         <h3 className="font-serif text-xl text-[#1A1A1A] leading-snug mb-2 transition-colors group-hover:text-[#CDA185]">
-          {product.name}
+          {displayName}
         </h3>
         <div className="mb-3 flex items-center gap-2 font-sans text-[11px] font-bold text-[#5f5650]">
           <span className="flex items-center gap-0.5 text-[#b8975a]" aria-label={`${(product.rating || 0).toFixed(1)} out of 5 stars`}>

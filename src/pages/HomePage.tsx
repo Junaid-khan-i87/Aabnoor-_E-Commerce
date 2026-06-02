@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Hero } from '../components/Hero';
 import { Marquee } from '../components/Marquee';
 import { ProductGrid } from '../components/ProductGrid';
-import { SocialGallery } from '../components/SocialGallery';
 import { TrustBadges } from '../components/TrustBadges';
 import { useProducts } from '../ProductContext';
 import { useSite } from '../SiteContext';
@@ -11,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Clock, Droplets, Heart, PackageCheck, Quote, Search, ShieldCheck, Star, WandSparkles } from 'lucide-react';
 import { SEO, SEO_SITE_URL } from '../components/SEO';
 import { getActivePrice, isFlashSaleActive } from '../lib/pricing';
+import { getShortProductName } from '../lib/productText';
 
 export function HomePage() {
   const { productsList } = useProducts();
@@ -215,7 +215,7 @@ export function HomePage() {
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
               <div>
-                <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#c9847a] font-bold mb-2">Backend Product Highlights</p>
+                <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#c9847a] font-bold mb-2">Customer Picks</p>
                 <h2 className="font-serif text-4xl text-[#2c2826]">Most Loved Right Now</h2>
               </div>
               {settings.liveSaleActive && (
@@ -239,7 +239,7 @@ export function HomePage() {
                         {(product.rating || 0).toFixed(1)}
                       </span>
                     </div>
-                    <h3 className="font-serif text-xl text-[#2c2826] group-hover:text-[#8a4f48] transition-colors line-clamp-1">{product.name}</h3>
+                    <h3 className="font-serif text-xl text-[#2c2826] group-hover:text-[#8a4f48] transition-colors line-clamp-1">{getShortProductName(product.name)}</h3>
                     <p className="font-sans text-xs text-[#7a706a] line-clamp-2 mt-2">{product.description}</p>
                     <p className="font-serif text-lg text-[#2c2826] mt-4">Rs. {getActivePrice(product).toFixed(2)}</p>
                   </div>
@@ -269,7 +269,7 @@ export function HomePage() {
                 <p className="mt-1 font-serif text-2xl text-[#ede0c8]">{liveSaleEndLabel}</p>
               </div>
               <Link to="/live-sale" className="inline-flex items-center justify-center gap-2 bg-[#faf6f1] px-6 py-3.5 font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#2c2826] transition-colors hover:bg-[#ede0c8]">
-                {liveSaleProducts.length || 0} Deals
+                {liveSaleProducts.length > 0 ? `${liveSaleProducts.length} Deals` : 'View Sale'}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -285,7 +285,7 @@ export function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { icon: Droplets, title: 'Routine Matching', text: 'Shop by glow, hydration, calm support or hair care goals.' },
-              { icon: PackageCheck, title: 'Backend Tracking', text: 'Orders save tracking numbers and live status history.' },
+              { icon: PackageCheck, title: 'Order Tracking', text: 'Use your tracking number to follow order progress after checkout.' },
               { icon: ShieldCheck, title: 'Verified Reviews', text: 'Signed-in customers can leave product feedback.' },
             ].map((item) => (
               <div key={item.title} className="border border-[#1A1A1A]/10 p-5 bg-[#F9F7F2]">
@@ -301,11 +301,11 @@ export function HomePage() {
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[0.85fr_1.15fr] gap-8 md:gap-12 items-start">
           <div>
             <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#CDA185] font-bold mb-3">Beauty Store in Pakistan</p>
-            <h2 className="font-serif italic text-3xl md:text-4xl text-[#1A1A1A] leading-tight">Premium skincare, makeup and hair care with clear delivery tracking.</h2>
+            <h2 className="font-serif italic text-3xl md:text-4xl text-[#1A1A1A] leading-tight">Beauty essentials with clear delivery tracking.</h2>
           </div>
           <div className="space-y-4 font-sans text-sm leading-7 text-[#1A1A1A]/68">
             <p>
-              Aabnoor Beaute curates daily beauty essentials for customers who want simple product discovery, clear pricing and a secure checkout experience. Browse skincare for hydration and barrier care, makeup for polished everyday looks, hair care for cleansing and repair, and fragrance picks for gifting or personal routines.
+              Aabnoor Beaute curates daily beauty essentials for customers who want simple product discovery, clear pricing and a secure checkout experience. Browse skincare, hair care, and fragrance picks for gifting or personal routines.
             </p>
             <p>
               Every product page is built with readable descriptions, product images, pricing, availability, customer reviews and order support details. Checkout includes shipping information before purchase, and each order receives a tracking number by email so customers can follow delivery from the store to their address.
@@ -327,7 +327,7 @@ export function HomePage() {
           <div className="max-w-7xl mx-auto px-6">
             <div className="mb-10 flex flex-col gap-3 text-center">
               <p className="font-sans text-[10px] uppercase tracking-[0.3em] text-[#c9847a] font-bold">Customer Love</p>
-              <h2 className="font-serif text-4xl md:text-5xl text-[#2c2826]">Real reviews from product pages</h2>
+              <h2 className="font-serif text-4xl md:text-5xl text-[#2c2826]">Customer feedback</h2>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               {reviewCards.map((review) => (
@@ -357,7 +357,6 @@ export function HomePage() {
           </div>
         </section>
       )}
-      <SocialGallery />
     </>
   );
 }

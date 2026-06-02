@@ -135,7 +135,7 @@ export function SearchOverlay() {
                     <div className="py-12 text-center max-w-md mx-auto">
                       <p className="font-serif italic text-lg text-[#1A1A1A] mb-2">No products found</p>
                       <p className="font-sans text-[11px] uppercase tracking-widest text-[#1A1A1A]/50">
-                        We couldn't find anything matching "{query}". Try searching for categories like "Skin Care", "Makeup", or check spelling.
+                        We couldn't find anything matching "{query}". Try searching for skincare, face wash, serum, hair treatment, or check spelling.
                       </p>
                     </div>
                   )}
@@ -148,7 +148,7 @@ export function SearchOverlay() {
                     Trending Searches
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {['Serum', 'Cleansing Balm', 'Lipstick', 'Mascara', 'Hair Care', 'Oud'].map(tag => (
+                    {['Serum', 'Face Wash', 'Hydraglow', 'Acne Care', 'Hair Treatment', 'Perfume'].map(tag => (
                       <button 
                         key={tag}
                         onClick={() => setQuery(tag)}

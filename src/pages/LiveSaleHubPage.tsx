@@ -68,26 +68,26 @@ export function LiveSaleHubPage() {
           
           <div className="space-y-4 max-w-xl">
             <span className="inline-flex items-center gap-1.5 bg-[#CDA185] text-[#F9F7F2] text-[10px] uppercase font-bold tracking-[0.2em] px-3.5 py-1.5 rounded-full shadow-md">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Global Live Sale Event
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Aabnoor Live Sale
             </span>
             <h1 className="font-serif italic text-4xl sm:text-5xl text-white tracking-tight leading-tight">
               {settings.liveSaleTitle || 'Midnight Bloom Flash Series'}
             </h1>
             <p className="font-sans text-xs sm:text-sm text-[#F9F7F2]/75 uppercase tracking-widest leading-relaxed">
-              {settings.liveSaleSubtitle || 'Bespoke dermal oils, hydrating essences and targeted peptide serums temporarily scaled down in values.'} <strong className="text-[#CDA185]">{settings.liveSaleDiscountText || 'up to 40% off'}</strong>. Restocking thresholds are highly limited.
+              {settings.liveSaleSubtitle || 'Limited beauty offers with clear pricing, Cash on Delivery, and order tracking.'} <strong className="text-[#CDA185]">{settings.liveSaleDiscountText || 'up to 40% off'}</strong>. Available while stock lasts.
             </p>
 
             <div className="flex items-center gap-4 text-[10px] text-[#F9F7F2]/60 font-sans tracking-wide uppercase font-semibold">
               <span className="flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-[#CDA185]" /> 100% Secure Checkout</span>
               <span className="w-1.5 h-1.5 bg-[#F9F7F2]/35 rounded-full" />
-              <span className="flex items-center gap-1"><Gift className="w-4 h-4 text-[#CDA185]" /> Complimetary Gifting wrap</span>
+              <span className="flex items-center gap-1"><Gift className="w-4 h-4 text-[#CDA185]" /> Careful order packing</span>
             </div>
           </div>
 
           {/* Master Countdown Timer Component */}
           <div className="bg-white/[0.04] border border-white/10 p-6 rounded-xl flex flex-col items-center justify-center min-w-[260px] relative backdrop-blur-sm self-start md:self-auto">
             <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-[#CDA185] mb-3 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 animate-pulse text-[#CDA185]" /> {timeLeft.isEnded ? 'Flash Session Ended' : 'Flash Session Ends In'}
+              <Clock className="w-3.5 h-3.5 animate-pulse text-[#CDA185]" /> {timeLeft.isEnded ? 'Sale Timing Updating' : 'Flash Session Ends In'}
             </span>
             
             <div className="flex gap-4 items-center">

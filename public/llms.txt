@@ -24,5 +24,5 @@ Customers receive an order number and tracking number by email after checkout. O
 
 ## Contact
 
-Customer support email: contact@flenogarei.resend.app
+Customer support email: support@aabnoor.shop
 

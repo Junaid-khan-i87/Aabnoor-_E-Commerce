@@ -4,13 +4,16 @@ import { Link } from 'react-router-dom';
 import { Instagram, Facebook, Twitter, MessageCircle } from 'lucide-react';
 import { useUI } from '../UIContext';
 import { SUPPORT_EMAIL } from '../SiteContext';
-import { getShopHref, SHOP_CATEGORIES } from '../data/categories';
+import { getShopHref, withProductCounts } from '../data/categories';
+import { useProducts } from '../ProductContext';
 
 export function Footer() {
   const { siteName, settings } = useSite();
   const { addToast } = useUI();
+  const { productsList } = useProducts();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [email, setEmail] = useState('');
+  const footerCategories = withProductCounts(productsList).filter((category) => !category.isSale).slice(0, 4);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +41,7 @@ export function Footer() {
               Premium skincare, makeup, hair care and fragrance with secure checkout, clear delivery tracking and local payment support.
             </p>
             <div className="flex flex-wrap gap-2 mb-7">
-              {['JazzCash', 'Easypaisa', 'COD', 'Visa'].map((method) => (
+              {['COD', 'Order Tracking', 'Email Support'].map((method) => (
                 <span key={method} className="rounded-[4px] bg-[#3a3330] px-2.5 py-1.5 font-sans text-[10px] uppercase tracking-[0.12em] text-[#ede0c8]">
                   {method}
                 </span>
@@ -66,7 +69,7 @@ export function Footer() {
           <div>
             <h3 className="font-sans text-[10px] uppercase tracking-[0.22em] text-[#ede0c8] mb-6 font-medium">Shop</h3>
             <ul className="space-y-4 font-sans text-xs tracking-widest uppercase text-[#9a9088]">
-              {SHOP_CATEGORIES.filter((category) => !category.isSale).slice(0, 4).map((category) => (
+              {footerCategories.map((category) => (
                 <li key={category.name}>
                   <Link to={getShopHref(category.name)} className="hover:text-[#faf6f1] transition-colors">
                     {category.name}
