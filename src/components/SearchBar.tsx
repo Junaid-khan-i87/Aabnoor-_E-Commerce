@@ -6,13 +6,14 @@ import { useProducts } from '../ProductContext';
 import { useUI } from '../UIContext';
 import { SafeImage } from './SafeImage';
 import { getActivePrice } from '../lib/pricing';
+import { getShortProductName } from '../lib/productText';
 
 interface SearchBarProps {
   onResultSelect?: () => void;
   placeholder?: string;
 }
 
-const TRENDING_SEARCHES = ['Serum', 'Cleansing Balm', 'Lipstick', 'Mascara', 'Hair Care', 'Oud'];
+const TRENDING_SEARCHES = ['Serum', 'Face Wash', 'Hydraglow', 'Acne Care', 'Hair Treatment', 'Perfume'];
 
 export function SearchBar({ onResultSelect, placeholder = 'Search products, category, concern, or price...' }: SearchBarProps) {
   const [query, setQuery] = useState('');
@@ -130,7 +131,7 @@ export function SearchBar({ onResultSelect, placeholder = 'Search products, cate
                           {product.category}
                         </span>
                         <span className="mt-1 block truncate font-serif text-base text-[#2c2826] group-hover:text-[#8a4f48]">
-                          {product.name}
+                          {getShortProductName(product.name)}
                         </span>
                         <span className="mt-1 block font-sans text-xs text-[#5f5650]">
                           Rs. {getActivePrice(product).toFixed(2)}

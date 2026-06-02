@@ -50,7 +50,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   heroImageUrl: 'https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=80&w=2400&auto=format&fit=crop',
   liveSaleActive: true,
   liveSaleTitle: 'Midnight Bloom Flash Series',
-  liveSaleSubtitle: 'Bespoke dermal oils, hydrating essences and targeted peptide serums temporarily scaled down in values.',
+  liveSaleSubtitle: 'Limited beauty offers with clear pricing, Cash on Delivery, and order tracking.',
   liveSaleDiscountText: 'up to 40% off',
   liveSaleEndTime: getDefaultLiveSaleEndTime(),
   socialInstagram: '#',

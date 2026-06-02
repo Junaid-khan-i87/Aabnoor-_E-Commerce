@@ -66,7 +66,7 @@ export function LoginOverlay() {
 
     if (!supabase) {
       setError('Supabase is not configured for this build.');
-      addToast('Login backend is not configured', 'error');
+      addToast('Login service is not configured', 'error');
       return;
     }
 
@@ -102,7 +102,7 @@ export function LoginOverlay() {
 
     if (!supabase) {
       setError('Supabase is not configured for this build.');
-      addToast('Login backend is not configured', 'error');
+      addToast('Login service is not configured', 'error');
       return;
     }
 
