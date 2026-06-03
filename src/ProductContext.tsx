@@ -4,6 +4,7 @@ import { deleteEntity, listEntities, replaceEntities, upsertEntity } from './lib
 
 interface ProductContextType {
   productsList: Product[];
+  isProductsLoading: boolean;
   addProduct: (product: Product) => void;
   updateProduct: (id: string, product: Product, persist?: boolean) => void;
   deleteProduct: (id: string) => void;
@@ -14,6 +15,7 @@ const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export function ProductProvider({ children }: { children: ReactNode }) {
   const [productsList, setProductsList] = useState<Product[]>([]);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -21,7 +23,10 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     listEntities<Product>('products').then(remoteProducts => {
       if (isMounted) {
         setProductsList(remoteProducts || []);
+        setIsProductsLoading(false);
       }
+    }).catch(() => {
+      if (isMounted) setIsProductsLoading(false);
     });
 
     return () => {
@@ -59,7 +64,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ProductContext.Provider value={{ productsList, addProduct, updateProduct, deleteProduct, saveProductsList }}>
+    <ProductContext.Provider value={{ productsList, isProductsLoading, addProduct, updateProduct, deleteProduct, saveProductsList }}>
       {children}
     </ProductContext.Provider>
   );
