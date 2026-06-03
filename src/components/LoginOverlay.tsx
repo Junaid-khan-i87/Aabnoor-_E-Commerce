@@ -37,6 +37,7 @@ export function LoginOverlay() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [pendingName, setPendingName] = useState('');
   const [pendingPassword, setPendingPassword] = useState('');
 
@@ -70,16 +71,21 @@ export function LoginOverlay() {
       return;
     }
 
-    const { error: googleError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
+    try {
+      setIsLoading(true);
+      const { error: googleError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
 
-    if (googleError) {
-      setError(googleError.message);
-      addToast(googleError.message, 'error');
+      if (googleError) {
+        setError(googleError.message);
+        addToast(googleError.message, 'error');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -109,122 +115,127 @@ export function LoginOverlay() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
 
-    if (isRegister && !otpSent) {
-      if (password.length < 8) {
-        setError('Password must be at least 8 characters.');
-        addToast('Password must be at least 8 characters', 'error');
-        return;
-      }
+    try {
+      setIsLoading(true);
+      if (isRegister && !otpSent) {
+        if (password.length < 8) {
+          setError('Password must be at least 8 characters.');
+          addToast('Password must be at least 8 characters', 'error');
+          return;
+        }
 
-      const response = await fetch('/api/signup-start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: cleanName,
-          email: cleanEmail,
-        }),
-      });
-
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message = result.error || 'Could not send signup OTP.';
-        setError(message);
-        addToast(message, 'error');
-        return;
-      }
-
-      setOtpSent(true);
-      setPendingName(cleanName);
-      setPendingPassword(password);
-      setPassword('');
-      setError('Verification OTP sent to your email. Enter it below to confirm your account.');
-      addToast('Verification OTP sent to your email', 'success');
-      return;
-    }
-
-    const authResult = isRegister
-      ? await (async () => {
-          const otpCode = password.replace(/\s/g, '');
-          if (!/^\d{6}$/.test(otpCode)) {
-            return { data: { session: null, user: null }, error: new Error('Enter the 6-digit OTP from your email.') };
-          }
-
-          const response = await fetch('/api/signup-verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: pendingName || cleanName,
-              email: cleanEmail,
-              password: pendingPassword,
-              otp: otpCode,
-            }),
-          });
-
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok) {
-            return { data: { session: null, user: null }, error: new Error(result.error || 'Could not verify signup OTP.') };
-          }
-
-          return supabase.auth.signInWithPassword({
+        const response = await fetch('/api/signup-start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: cleanName,
             email: cleanEmail,
-            password: pendingPassword,
-          });
-        })()
-      : await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
+          }),
         });
 
-    if (authResult.error) {
-      setError(authResult.error.message);
-      addToast(authResult.error.message, 'error');
-      return;
-    }
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const message = result.error || 'Could not send signup OTP.';
+          setError(message);
+          addToast(message, 'error');
+          return;
+        }
 
-    const session = authResult.data.session;
-    const user = authResult.data.user;
-
-    if (!session || !user) {
-      setError('Sign in could not be completed. Please try again.');
-      addToast('Sign in could not be completed', 'error');
-      return;
-    }
-
-    setCurrentUser(cleanEmail);
-
-    if (isRegister || pendingName || user.user_metadata?.full_name) {
-      const customer = {
-        id: `USR-${user.id}`,
-        email: cleanEmail,
-        name: pendingName || user.user_metadata?.full_name || cleanEmail.split('@')[0],
-        coins: 0,
-        joined: new Date().toISOString().slice(0, 10),
-        warnings: 0,
-        status: 'Active',
-      };
-      const { error: customerError } = await supabase.from('customers').upsert({ id: customer.id, data: customer });
-      if (customerError) {
-        setError(customerError.message);
-        addToast(customerError.message, 'error');
+        setOtpSent(true);
+        setPendingName(cleanName);
+        setPendingPassword(password);
+        setPassword('');
+        setError('Verification OTP sent to your email. Enter it below to confirm your account.');
+        addToast('Verification OTP sent to your email', 'success');
         return;
       }
-    }
 
-    addToast(
-      isRegister 
-        ? 'Welcome to Aabnoor! Account created successfully.' 
-        : `Signed in successfully as ${cleanEmail}`, 
-      'success'
-    );
-    setIsLoginOpen(false);
-    // Reset fields
-    setEmail('');
-    setPassword('');
-    setName('');
-    setOtpSent(false);
-    setPendingName('');
-    setPendingPassword('');
-    setError('');
+      const authResult = isRegister
+        ? await (async () => {
+            const otpCode = password.replace(/\s/g, '');
+            if (!/^\d{6}$/.test(otpCode)) {
+              return { data: { session: null, user: null }, error: new Error('Enter the 6-digit OTP from your email.') };
+            }
+
+            const response = await fetch('/api/signup-verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: pendingName || cleanName,
+                email: cleanEmail,
+                password: pendingPassword,
+                otp: otpCode,
+              }),
+            });
+
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              return { data: { session: null, user: null }, error: new Error(result.error || 'Could not verify signup OTP.') };
+            }
+
+            return supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password: pendingPassword,
+            });
+          })()
+        : await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password,
+          });
+
+      if (authResult.error) {
+        setError(authResult.error.message);
+        addToast(authResult.error.message, 'error');
+        return;
+      }
+
+      const session = authResult.data.session;
+      const user = authResult.data.user;
+
+      if (!session || !user) {
+        setError('Sign in could not be completed. Please try again.');
+        addToast('Sign in could not be completed', 'error');
+        return;
+      }
+
+      setCurrentUser(cleanEmail);
+
+      if (isRegister || pendingName || user.user_metadata?.full_name) {
+        const customer = {
+          id: `USR-${user.id}`,
+          email: cleanEmail,
+          name: pendingName || user.user_metadata?.full_name || cleanEmail.split('@')[0],
+          coins: 0,
+          joined: new Date().toISOString().slice(0, 10),
+          warnings: 0,
+          status: 'Active',
+        };
+        const { error: customerError } = await supabase.from('customers').upsert({ id: customer.id, data: customer });
+        if (customerError) {
+          setError(customerError.message);
+          addToast(customerError.message, 'error');
+          return;
+        }
+      }
+
+      addToast(
+        isRegister
+          ? 'Welcome to Aabnoor! Account created successfully.'
+          : `Signed in successfully as ${cleanEmail}`,
+        'success'
+      );
+      setIsLoginOpen(false);
+      // Reset fields
+      setEmail('');
+      setPassword('');
+      setName('');
+      setOtpSent(false);
+      setPendingName('');
+      setPendingPassword('');
+      setError('');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -274,8 +285,9 @@ export function LoginOverlay() {
 
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={handleGoogleLogin}
-                className="w-full min-h-11 bg-white border border-[#1A1A1A]/15 text-[#1A1A1A] py-3 px-4 rounded-full font-sans text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.13em] sm:tracking-[0.16em] hover:border-[#1A1A1A] hover:bg-[#1A1A1A]/5 transition-all flex items-center justify-center gap-2 cursor-pointer mb-4 shadow-sm"
+                className="w-full min-h-11 bg-white border border-[#1A1A1A]/15 text-[#1A1A1A] py-3 px-4 rounded-full font-sans text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.13em] sm:tracking-[0.16em] hover:border-[#1A1A1A] hover:bg-[#1A1A1A]/5 transition-all flex items-center justify-center gap-2 cursor-pointer mb-4 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <GoogleIcon />
                 Continue with Google
@@ -297,7 +309,9 @@ export function LoginOverlay() {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Full Name" 
                       aria-label="Full Name"
-                      className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11"
+                      required
+                      disabled={isLoading}
+                      className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                 )}
@@ -310,7 +324,9 @@ export function LoginOverlay() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email Address" 
                     aria-label="Email Address"
-                    className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11"
+                    required
+                    disabled={isLoading}
+                    className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -329,15 +345,18 @@ export function LoginOverlay() {
                     }}
                     placeholder={isRegister && otpSent ? 'Enter Email OTP Code' : 'Password'} 
                     aria-label={isRegister && otpSent ? 'Enter Email OTP Code' : 'Password'}
-                    className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11"
+                    required
+                    disabled={isLoading}
+                    className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
                 
                 <button 
                   type="submit"
-                  className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-3.5 sm:py-4 rounded-full font-sans text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.2em] hover:bg-[#CDA185] transition-all flex items-center justify-center gap-2 cursor-pointer mt-5 sm:mt-6 shadow-md min-h-12"
+                  disabled={isLoading}
+                  className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-3.5 sm:py-4 rounded-full font-sans text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.2em] hover:bg-[#CDA185] transition-all flex items-center justify-center gap-2 cursor-pointer mt-5 sm:mt-6 shadow-md min-h-12 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isRegister && otpSent ? 'Verify OTP' : isRegister ? 'Create Account' : 'Sign In'}
+                  {isLoading ? 'Please wait...' : (isRegister && otpSent ? 'Verify OTP' : isRegister ? 'Create Account' : 'Sign In')}
                 </button>
               </form>
 

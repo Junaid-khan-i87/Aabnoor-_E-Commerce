@@ -337,25 +337,25 @@ export function ProductGrid() {
             {activeCategory !== 'All' && (
               <span className="flex items-center gap-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 px-3 py-1.5 rounded-full text-[#1A1A1A]/80">
                 Category: {activeCategory}
-                <button onClick={() => setActiveCategory('All')} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
+                <button aria-label="Remove category filter" onClick={() => setActiveCategory('All')} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
               </span>
             )}
             {sortBy !== 'popular' && (
               <span className="flex items-center gap-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 px-3 py-1.5 rounded-full text-[#1A1A1A]/80">
                 Sort: {sortBy}
-                <button onClick={() => setSortBy('popular')} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
+                <button aria-label="Remove sort filter" onClick={() => setSortBy('popular')} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
               </span>
             )}
             {saleOnly && (
               <span className="flex items-center gap-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 px-3 py-1.5 rounded-full text-[#1A1A1A]/80">
                 Sale only
-                <button onClick={() => setSaleOnly(false)} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
+                <button aria-label="Remove sale filter" onClick={() => setSaleOnly(false)} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
               </span>
             )}
             {inStockOnly && (
               <span className="flex items-center gap-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 px-3 py-1.5 rounded-full text-[#1A1A1A]/80">
                 In stock
-                <button onClick={() => setInStockOnly(false)} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
+                <button aria-label="Remove stock filter" onClick={() => setInStockOnly(false)} className="hover:text-[#CDA185] ml-1 font-bold cursor-pointer text-xs">x</button>
               </span>
             )}
             <button 

@@ -1,3 +1,7 @@
-## 2026-06-03 - Form Input Accessibility
-**Learning:** The `LoginOverlay` component relies on placeholders and icons for its inputs (Full Name, Email, Password) instead of explicit `<label>` tags. This pattern might be common across the app's modals.
-**Action:** Always check modals and overlays for form inputs missing explicit labels or `aria-label` attributes to ensure screen reader compatibility.
+## 2026-06-03 - Prevent Double Submission & Add Accessibility to Login
+**Learning:** Implementing disabled states paired with loading indicators prevents duplicate async requests, while adding proper ARIA labels and required attributes vastly improves screen reader experience on form submissions.
+**Action:** Whenever adding interactive forms, ensure inputs include explicit ARIA labels and buttons reflect an explicit loading or disabled state to avoid duplicate actions.
+
+## 2024-10-24 - Icon-Only Button Accessibility in Chip Bars
+**Learning:** In dense UI elements like the "Active filters" chip bar in `ProductGrid.tsx`, small icon-only buttons (like an "x" to remove a filter) are often overlooked for accessibility. Without ARIA labels, screen readers announce them unhelpfully (e.g., "x" or "button").
+**Action:** Always verify that every interactive element, especially icon-only utility buttons within larger components, has a descriptive `aria-label` explaining the exact action it performs.
