@@ -296,6 +296,7 @@ export function LoginOverlay() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Full Name" 
+                      aria-label="Full Name"
                       className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11"
                     />
                   </div>
@@ -308,6 +309,7 @@ export function LoginOverlay() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email Address" 
+                    aria-label="Email Address"
                     className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11"
                   />
                 </div>
@@ -326,6 +328,7 @@ export function LoginOverlay() {
                       setPassword(nextValue);
                     }}
                     placeholder={isRegister && otpSent ? 'Enter Email OTP Code' : 'Password'} 
+                    aria-label={isRegister && otpSent ? 'Enter Email OTP Code' : 'Password'}
                     className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11"
                   />
                 </div>
