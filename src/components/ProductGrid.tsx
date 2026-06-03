@@ -59,12 +59,15 @@ export function ProductCard({ product, addToCart }: { product: Product; addToCar
 
   const activePrice = getActivePrice(product);
   const reviewCount = product.reviews?.length || 0;
-  const currentPrice = product.variants?.[0] ? product.variants[0].price : product.price;
+  const firstVariant = product.has_variants ? product.variants?.[0] : product.variants?.[0];
+  const firstVariantLabel = firstVariant?.label || firstVariant?.name;
+  const currentPrice = firstVariant ? firstVariant.price : product.price;
+  const displayPrice = firstVariant ? currentPrice : activePrice;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const itemToAdd = product.variants?.[0]
-      ? { ...product, id: `${product.id}-${product.variants[0].name}`, name: `${product.name} - ${product.variants[0].name}`, price: product.variants[0].price }
+    const itemToAdd = firstVariant && firstVariantLabel
+      ? { ...product, id: `${product.id}-${firstVariantLabel}`, name: `${product.name} - ${firstVariantLabel}`, price: firstVariant.price }
       : product;
 
     addToCart(itemToAdd);
@@ -93,6 +96,16 @@ export function ProductCard({ product, addToCart }: { product: Product; addToCar
             {product.isNew && (
               <div className="bg-[#1A1A1A] text-[#F9F7F2] rounded-full text-[9px] uppercase font-sans tracking-[0.2em] px-3 py-1 font-bold shadow-sm pointer-events-auto w-fit">
                 New
+              </div>
+            )}
+            {product.is_new_arrival && (
+              <div className="bg-green-700 text-white rounded-full text-[9px] uppercase font-sans tracking-[0.2em] px-3 py-1 font-bold shadow-sm pointer-events-auto w-fit">
+                New Arrival
+              </div>
+            )}
+            {product.is_best_seller && (
+              <div className="bg-amber-600 text-white rounded-full text-[9px] uppercase font-sans tracking-[0.2em] px-3 py-1 font-bold shadow-sm pointer-events-auto w-fit">
+                Best Seller
               </div>
             )}
             {isFlashSaleActive(product) && (
@@ -157,9 +170,9 @@ export function ProductCard({ product, addToCart }: { product: Product; addToCar
         <div className="mt-auto space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-serif italic text-lg text-[#1A1A1A]">
-              Rs. {activePrice.toFixed(2)}
+              Rs. {displayPrice.toFixed(2)}
             </p>
-            {product.compareAtPrice && product.compareAtPrice > activePrice && (
+            {product.compareAtPrice && product.compareAtPrice > displayPrice && (
               <p className="font-sans text-xs text-[#6f625c] line-through">
                 Rs. {Number(product.compareAtPrice).toFixed(2)}
               </p>
@@ -170,7 +183,7 @@ export function ProductCard({ product, addToCart }: { product: Product; addToCar
             onClick={handleAddToCart}
             className="w-full rounded-full bg-[#CDA185] px-4 py-3 text-center font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#2c2826] shadow-sm transition-colors hover:bg-[#b88768] focus:outline-none focus:ring-2 focus:ring-[#8a4f48] focus:ring-offset-2 focus:ring-offset-[#F9F7F2] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {product.stock === 0 ? 'Out of Stock' : `Add to Cart - Rs. ${activePrice.toFixed(2)}`}
+            {product.stock === 0 ? 'Out of Stock' : `Add to Cart - Rs. ${displayPrice.toFixed(2)}`}
           </button>
         </div>
       </div>
@@ -209,8 +222,8 @@ export function ProductGrid() {
   // This drastically reduces main thread blocking during unrelated state changes (like cart toggles)
   const filteredProducts = useMemo(() => {
     let result = activeCategory === 'All'
-      ? [...productsList]
-      : productsList.filter(p => p.category === activeCategory);
+      ? productsList.filter(p => (p.status || 'active') === 'active')
+      : productsList.filter(p => p.category === activeCategory && (p.status || 'active') === 'active');
 
     if (activeCategory !== 'All' && activeSubCategory !== 'All') {
       result = result.filter(p => p.subCategory === activeSubCategory);
@@ -229,10 +242,10 @@ export function ProductGrid() {
     } else if (sortBy === 'high-to-low') {
       result.sort((a, b) => getActivePrice(b) - getActivePrice(a));
     } else if (sortBy === 'newest') {
-      result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+      result.sort((a, b) => (b.is_new_arrival || b.isNew ? 1 : 0) - (a.is_new_arrival || a.isNew ? 1 : 0));
     } else {
       // popular
-      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      result.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (b.rating || 0) - (a.rating || 0));
     }
 
     return result;

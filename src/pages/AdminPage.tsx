@@ -90,6 +90,74 @@ const fromDateTimeLocalValue = (value: string) => {
   return new Date(value).toISOString();
 };
 
+const PRODUCT_FORM_OPTIONS = ['Cream', 'Serum', 'Oil', 'Toner', 'Lotion', 'Gel', 'Mask', 'Powder', 'Spray', 'Capsule', 'Tablet', 'Other'];
+const SKIN_TYPE_OPTIONS = [
+  ['dry', 'Dry'],
+  ['oily', 'Oily'],
+  ['combination', 'Combination'],
+  ['normal', 'Normal'],
+  ['sensitive', 'Sensitive'],
+  ['all', 'All Skin Types'],
+];
+const CONCERN_OPTIONS = [
+  ['acne', 'Acne'],
+  ['dark_spots', 'Dark Spots'],
+  ['anti_aging', 'Anti-Aging'],
+  ['brightening', 'Brightening'],
+  ['hydration', 'Hydration'],
+  ['pores', 'Open Pores'],
+  ['fine_lines', 'Fine Lines'],
+  ['pigmentation', 'Pigmentation'],
+  ['hair_fall', 'Hair Fall'],
+  ['dandruff', 'Dandruff'],
+];
+const VARIANT_TYPE_OPTIONS = [
+  ['shade', 'Shade/Color'],
+  ['size', 'Size'],
+  ['volume', 'Volume'],
+  ['pack_size', 'Pack Size'],
+  ['color', 'Color'],
+];
+
+const parseListValue = (value: FormDataEntryValue | null) =>
+  String(value || '')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+
+const labelizeValue = (value: string) =>
+  value
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, letter => letter.toUpperCase());
+
+const slugifyProductName = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+const generateSku = (category: string) => {
+  const abbreviation = (category.replace(/[^a-z]/gi, '').slice(0, 3) || 'PRD').toUpperCase();
+  return `${abbreviation}-${Math.floor(100000 + Math.random() * 900000)}`;
+};
+
+const uniqueSlug = (baseSlug: string, products: Product[], currentProductId?: string) => {
+  const rootSlug = baseSlug || 'product';
+  let nextSlug = rootSlug;
+  let suffix = 2;
+
+  while (products.some(product => product.id !== currentProductId && product.slug === nextSlug)) {
+    nextSlug = `${rootSlug}-${suffix}`;
+    suffix += 1;
+  }
+
+  return nextSlug;
+};
+
 export function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
@@ -170,6 +238,10 @@ export function AdminPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [uploadedAdditionalImages, setUploadedAdditionalImages] = useState<string[]>([]);
   const [newImageUrlInput, setNewImageUrlInput] = useState('');
+  const [seoTitleDraft, setSeoTitleDraft] = useState('');
+  const [seoDescriptionDraft, setSeoDescriptionDraft] = useState('');
+  const [hasVariantsDraft, setHasVariantsDraft] = useState(false);
+  const [variantRows, setVariantRows] = useState<Product['variants']>([]);
   
   // Bulk Flash Sale states
   const [isBulkFlashOpen, setIsBulkFlashOpen] = useState(false);
@@ -1751,6 +1823,10 @@ export function AdminPage() {
                     setIsCreating(true);
                     setUploadedImage(null);
                     setUploadedAdditionalImages([]);
+                    setSeoTitleDraft('');
+                    setSeoDescriptionDraft('');
+                    setHasVariantsDraft(false);
+                    setVariantRows([]);
                     setIsBulkFlashOpen(false);
                   }}
                   className="flex items-center gap-2 bg-[#1A1A1A] text-[#F9F7F2] px-4 py-2 font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/90 transition-colors"
@@ -2000,14 +2076,39 @@ export function AdminPage() {
                   onSubmit={(e) => {
                     e.preventDefault();
                     const formData = new FormData(e.currentTarget);
+                    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+                    const productName = formData.get('name') as string;
+                    const productCategory = formData.get('category') as string;
+                    const selectedStatus = submitter?.value === 'draft'
+                      ? 'draft'
+                      : (formData.get('status') as Product['status']) || 'active';
+                    const nextSku = (formData.get('sku') as string).trim() || generateSku(productCategory);
+                    const nextSlug = uniqueSlug(
+                      slugifyProductName((formData.get('slug') as string).trim() || productName),
+                      productsList,
+                      editingProduct?.id
+                    );
+                    const normalizedVariants = (variantRows || [])
+                      .map(variant => {
+                        const label = String(variant?.label || variant?.name || '').trim();
+                        return {
+                          label,
+                          name: label,
+                          price: Number(variant?.price) || 0,
+                          original_price: variant?.original_price ? Number(variant.original_price) : undefined,
+                          stock: Number(variant?.stock) || 0,
+                          image_url: String(variant?.image_url || '').trim(),
+                        };
+                      })
+                      .filter(variant => variant.label && variant.price > 0);
                     
                     const productData: Product = {
                       id: editingProduct?.id || `new-${Date.now()}`,
-                      name: formData.get('name') as string,
+                      name: productName,
                       description: formData.get('description') as string,
                       price: parseFloat(formData.get('price') as string),
                       compareAtPrice: formData.get('compareAtPrice') ? parseFloat(formData.get('compareAtPrice') as string) : undefined,
-                      category: formData.get('category') as string,
+                      category: productCategory,
                       imageUrl: uploadedImage || (formData.get('imageUrl') as string),
                       images: uploadedAdditionalImages,
                       stock: parseInt(formData.get('stock') as string) || 0,
@@ -2021,6 +2122,37 @@ export function AdminPage() {
                       isFlashSale: formData.get('isFlashSale') === 'true',
                       flashSalePrice: formData.get('flashSalePrice') ? parseFloat(formData.get('flashSalePrice') as string) : undefined,
                       flashSaleEndTime: formData.get('flashSaleEndTime') as string || undefined,
+                      sku: nextSku,
+                      brand: (formData.get('brand') as string).trim(),
+                      slug: nextSlug,
+                      product_form: formData.get('product_form') as string,
+                      net_weight: (formData.get('net_weight') as string).trim(),
+                      country_of_origin: (formData.get('country_of_origin') as string).trim() || 'Pakistan',
+                      shelf_life: (formData.get('shelf_life') as string).trim(),
+                      product_video_url: (formData.get('product_video_url') as string).trim(),
+                      seo_title: (formData.get('seo_title') as string).trim() || productName,
+                      seo_description: (formData.get('seo_description') as string).trim() || (formData.get('description') as string),
+                      tags: parseListValue(formData.get('tags')),
+                      status: selectedStatus,
+                      is_featured: formData.get('is_featured') === 'on',
+                      is_new_arrival: formData.get('is_new_arrival') === 'on',
+                      is_best_seller: formData.get('is_best_seller') === 'on',
+                      isNew: formData.get('is_new_arrival') === 'on',
+                      sort_order: parseInt(formData.get('sort_order') as string) || 0,
+                      skin_type: formData.getAll('skin_type').map(String),
+                      concerns: formData.getAll('concerns').map(String),
+                      claims: parseListValue(formData.get('claims')),
+                      is_cruelty_free: formData.get('is_cruelty_free') === 'on',
+                      is_vegan: formData.get('is_vegan') === 'on',
+                      is_derma_tested: formData.get('is_derma_tested') === 'on',
+                      shipping_weight: formData.get('shipping_weight') ? Number(formData.get('shipping_weight')) : undefined,
+                      is_free_shipping: formData.get('is_free_shipping') === 'on',
+                      estimated_delivery: (formData.get('estimated_delivery') as string).trim() || '3-5 business days',
+                      return_policy: ((formData.get('return_policy') as string) || '7-day-return') as Product['return_policy'],
+                      warranty_info: (formData.get('warranty_info') as string).trim(),
+                      has_variants: hasVariantsDraft,
+                      variant_type: hasVariantsDraft ? (formData.get('variant_type') as string) : undefined,
+                      variants: hasVariantsDraft ? normalizedVariants : [],
                     };
 
                     if (isCreating) {
@@ -2032,6 +2164,10 @@ export function AdminPage() {
                     setEditingProduct(null);
                     setUploadedImage(null);
                     setUploadedAdditionalImages([]);
+                    setSeoTitleDraft('');
+                    setSeoDescriptionDraft('');
+                    setHasVariantsDraft(false);
+                    setVariantRows([]);
                   }}
                   className="space-y-4"
                 >
@@ -2060,6 +2196,33 @@ export function AdminPage() {
                           <option key={sub} value={sub} />
                         ))}
                       </datalist>
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">SKU / Product Code</label>
+                      <input name="sku" defaultValue={editingProduct?.sku || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="Leave empty to auto-generate (e.g. SKN-482901)" />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Brand Name</label>
+                      <input name="brand" defaultValue={editingProduct?.brand || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="e.g. Neutrogena, Garnier, Local Brand" />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Product Form</label>
+                      <select name="product_form" defaultValue={editingProduct?.product_form || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] bg-white outline-none">
+                        <option value="">Select product form</option>
+                        {PRODUCT_FORM_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Net Weight / Volume</label>
+                      <input name="net_weight" defaultValue={editingProduct?.net_weight || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="e.g. 50ml, 100g, 30 Tablets" />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Country of Origin</label>
+                      <input name="country_of_origin" defaultValue={editingProduct?.country_of_origin || 'Pakistan'} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Shelf Life</label>
+                      <input name="shelf_life" defaultValue={editingProduct?.shelf_life || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="e.g. 24 months from manufacture date" />
                     </div>
                     <div>
                       <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Price (Rs. ) <span className="lowercase font-normal tracking-normal text-red-500">*</span></label>
@@ -2232,6 +2395,10 @@ export function AdminPage() {
                         </div>
                       )}
                     </div>
+                    <div className="md:col-span-2">
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Product Demo Video URL</label>
+                      <input name="product_video_url" defaultValue={editingProduct?.product_video_url || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="YouTube link or direct MP4 URL for product demo" />
+                    </div>
                     <div>
                       <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Stock Amount</label>
                       <input name="stock" type="number" defaultValue={editingProduct?.stock || 0} required className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
@@ -2265,6 +2432,186 @@ export function AdminPage() {
                       <input name="disadvantages" defaultValue={editingProduct?.disadvantages?.join(', ') || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
                     </div>
 
+                    <div className="md:col-span-2 border border-[#1A1A1A]/10 p-4 bg-white">
+                      <h4 className="font-sans text-[11px] font-bold uppercase tracking-widest text-[#1A1A1A] mb-3">SEO & Discoverability</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">URL Slug</label>
+                          <input name="slug" defaultValue={editingProduct?.slug || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="vitamin-c-serum-30ml" />
+                        </div>
+                        <div>
+                          <div className="flex justify-between gap-3">
+                            <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">SEO Title</label>
+                            <span className="font-sans text-[10px] text-[#1A1A1A]/45">{seoTitleDraft.length}/60</span>
+                          </div>
+                          <input name="seo_title" maxLength={60} value={seoTitleDraft} onChange={(event) => setSeoTitleDraft(event.target.value)} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="Defaults to product name if empty" />
+                        </div>
+                        <div className="md:col-span-2">
+                          <div className="flex justify-between gap-3">
+                            <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">SEO Meta Description</label>
+                            <span className="font-sans text-[10px] text-[#1A1A1A]/45">{seoDescriptionDraft.length}/160</span>
+                          </div>
+                          <textarea name="seo_description" maxLength={160} value={seoDescriptionDraft} onChange={(event) => setSeoDescriptionDraft(event.target.value)} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" rows={2} placeholder="Defaults to short description if empty" />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Product Tags</label>
+                          <input name="tags" defaultValue={editingProduct?.tags?.join(', ') || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="e.g. moisturizer, anti-aging, vitamin c" />
+                          <p className="mt-1 font-sans text-[10px] text-[#1A1A1A]/45">Press comma between tags. Tags save as removable-style pills on customer pages.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2 border border-[#1A1A1A]/10 p-4 bg-[#1A1A1A]/[0.02]">
+                      <h4 className="font-sans text-[11px] font-bold uppercase tracking-widest text-[#1A1A1A] mb-3">Status & Visibility</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-3 flex flex-wrap gap-2">
+                          {[
+                            ['active', 'Active'],
+                            ['draft', 'Draft'],
+                            ['hidden', 'Hidden'],
+                          ].map(([value, label]) => (
+                            <label key={value} className="flex items-center gap-2 border border-[#1A1A1A]/10 bg-white px-3 py-2 font-sans text-[10px] uppercase tracking-widest font-bold">
+                              <input type="radio" name="status" value={value} defaultChecked={(editingProduct?.status || 'active') === value} className="accent-[#1A1A1A]" />
+                              {label}
+                            </label>
+                          ))}
+                        </div>
+                        {[
+                          ['is_featured', 'Featured Product', editingProduct?.is_featured],
+                          ['is_new_arrival', 'New Arrival', editingProduct?.is_new_arrival || editingProduct?.isNew],
+                          ['is_best_seller', 'Best Seller', editingProduct?.is_best_seller],
+                        ].map(([name, label, checked]) => (
+                          <label key={String(name)} className="flex items-center justify-between gap-3 border border-[#1A1A1A]/10 bg-white p-3 font-sans text-[10px] uppercase tracking-widest font-bold">
+                            <span>{label}</span>
+                            <input type="checkbox" name={String(name)} defaultChecked={Boolean(checked)} className="h-4 w-4 accent-[#CDA185]" />
+                          </label>
+                        ))}
+                        <div>
+                          <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Sort Order</label>
+                          <input name="sort_order" type="number" defaultValue={editingProduct?.sort_order || 0} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2 border border-[#1A1A1A]/10 p-4 bg-white">
+                      <h4 className="font-sans text-[11px] font-bold uppercase tracking-widest text-[#1A1A1A] mb-3">Skin & Hair Suitability</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                          <p className="font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-2">Suitable Skin Type</p>
+                          <div className="flex flex-wrap gap-2">
+                            {SKIN_TYPE_OPTIONS.map(([value, label]) => (
+                              <label key={value} className="flex items-center gap-2 rounded-full border border-[#1A1A1A]/10 px-3 py-1.5 font-sans text-[10px] uppercase tracking-wider">
+                                <input type="checkbox" name="skin_type" value={value} defaultChecked={editingProduct?.skin_type?.includes(value)} className="accent-[#1A1A1A]" />
+                                {label}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-2">Targets Concern</p>
+                          <div className="flex flex-wrap gap-2">
+                            {CONCERN_OPTIONS.map(([value, label]) => (
+                              <label key={value} className="flex items-center gap-2 rounded-full border border-[#1A1A1A]/10 px-3 py-1.5 font-sans text-[10px] uppercase tracking-wider">
+                                <input type="checkbox" name="concerns" value={value} defaultChecked={editingProduct?.concerns?.includes(value)} className="accent-[#1A1A1A]" />
+                                {label}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Product Claims</label>
+                          <input name="claims" defaultValue={editingProduct?.claims?.join(', ') || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="e.g. paraben-free, sulfate-free, alcohol-free" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2 border border-[#1A1A1A]/10 p-4 bg-[#f7fbf6]">
+                      <h4 className="font-sans text-[11px] font-bold uppercase tracking-widest text-[#1A1A1A] mb-3">Certifications</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {[
+                          ['is_cruelty_free', 'Cruelty Free', editingProduct?.is_cruelty_free],
+                          ['is_vegan', 'Vegan Formula', editingProduct?.is_vegan],
+                          ['is_derma_tested', 'Dermatologically Tested', editingProduct?.is_derma_tested],
+                        ].map(([name, label, checked]) => (
+                          <label key={String(name)} className="flex items-center justify-between border border-green-700/15 bg-white p-4 font-sans text-[10px] uppercase tracking-widest font-bold text-green-800">
+                            <span>{label}</span>
+                            <input type="checkbox" name={String(name)} defaultChecked={Boolean(checked)} className="h-4 w-4 accent-green-700" />
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2 border border-[#1A1A1A]/10 p-4 bg-white">
+                      <h4 className="font-sans text-[11px] font-bold uppercase tracking-widest text-[#1A1A1A] mb-3">Shipping & Returns</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Shipping Weight (grams)</label>
+                          <input name="shipping_weight" type="number" step="0.01" defaultValue={editingProduct?.shipping_weight || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="e.g. 250" />
+                        </div>
+                        <label className="flex items-center justify-between gap-3 border border-[#1A1A1A]/10 p-3 font-sans text-[10px] uppercase tracking-widest font-bold">
+                          <span>Free Shipping</span>
+                          <input type="checkbox" name="is_free_shipping" defaultChecked={Boolean(editingProduct?.is_free_shipping)} className="h-4 w-4 accent-[#CDA185]" />
+                        </label>
+                        <div>
+                          <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Estimated Delivery</label>
+                          <input name="estimated_delivery" defaultValue={editingProduct?.estimated_delivery || '3-5 business days'} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="e.g. 2-3 business days" />
+                        </div>
+                        <div>
+                          <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Return Policy</label>
+                          <select name="return_policy" defaultValue={editingProduct?.return_policy || '7-day-return'} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] bg-white outline-none">
+                            <option value="no-return">No Returns</option>
+                            <option value="7-day-return">7-Day Return</option>
+                            <option value="14-day-return">14-Day Return</option>
+                            <option value="30-day-return">30-Day Return</option>
+                          </select>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Warranty Information</label>
+                          <input name="warranty_info" defaultValue={editingProduct?.warranty_info || ''} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" placeholder="e.g. 6 months, manufacturer defects only" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2 border border-[#1A1A1A]/10 p-4 bg-[#1A1A1A]/[0.02]">
+                      <div className="flex items-center justify-between gap-4 mb-3">
+                        <h4 className="font-sans text-[11px] font-bold uppercase tracking-widest text-[#1A1A1A]">Product Variants</h4>
+                        <label className="flex items-center gap-2 font-sans text-[10px] uppercase tracking-widest font-bold">
+                          <input type="checkbox" checked={hasVariantsDraft} onChange={(event) => {
+                            setHasVariantsDraft(event.target.checked);
+                            if (event.target.checked && (!variantRows || variantRows.length === 0)) {
+                              setVariantRows([{ name: '', label: '', price: 0, original_price: undefined, stock: 0, image_url: '' }]);
+                            }
+                          }} className="h-4 w-4 accent-[#1A1A1A]" />
+                          Has Variants
+                        </label>
+                      </div>
+                      {hasVariantsDraft && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Variant Type</label>
+                            <select name="variant_type" defaultValue={editingProduct?.variant_type || 'size'} className="w-full md:w-72 border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] bg-white outline-none">
+                              {VARIANT_TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            {(variantRows || []).map((variant, index) => (
+                              <div key={index} className="grid grid-cols-1 md:grid-cols-[1.1fr_.8fr_.8fr_.7fr_1.2fr_auto] gap-2">
+                                <input value={variant.label || variant.name || ''} onChange={(event) => setVariantRows(prev => (prev || []).map((row, rowIndex) => rowIndex === index ? { ...row, label: event.target.value, name: event.target.value } : row))} className="border border-[#1A1A1A]/20 p-2 font-sans text-xs outline-none" placeholder="Variant Label" />
+                                <input type="number" step="0.01" value={variant.price || ''} onChange={(event) => setVariantRows(prev => (prev || []).map((row, rowIndex) => rowIndex === index ? { ...row, price: Number(event.target.value) } : row))} className="border border-[#1A1A1A]/20 p-2 font-sans text-xs outline-none" placeholder="Price Rs." />
+                                <input type="number" step="0.01" value={variant.original_price || ''} onChange={(event) => setVariantRows(prev => (prev || []).map((row, rowIndex) => rowIndex === index ? { ...row, original_price: Number(event.target.value) || undefined } : row))} className="border border-[#1A1A1A]/20 p-2 font-sans text-xs outline-none" placeholder="Original Price" />
+                                <input type="number" value={variant.stock || ''} onChange={(event) => setVariantRows(prev => (prev || []).map((row, rowIndex) => rowIndex === index ? { ...row, stock: Number(event.target.value) } : row))} className="border border-[#1A1A1A]/20 p-2 font-sans text-xs outline-none" placeholder="Stock" />
+                                <input value={variant.image_url || ''} onChange={(event) => setVariantRows(prev => (prev || []).map((row, rowIndex) => rowIndex === index ? { ...row, image_url: event.target.value } : row))} className="border border-[#1A1A1A]/20 p-2 font-sans text-xs outline-none" placeholder="Image URL" />
+                                <button type="button" onClick={() => setVariantRows(prev => (prev || []).filter((_, rowIndex) => rowIndex !== index))} className="border border-red-500/20 px-3 py-2 text-red-600 font-sans text-[10px] uppercase tracking-widest font-bold">Remove</button>
+                              </div>
+                            ))}
+                          </div>
+                          <button type="button" onClick={() => setVariantRows(prev => [...(prev || []), { name: '', label: '', price: 0, original_price: undefined, stock: 0, image_url: '' }])} className="px-4 py-2 border border-[#1A1A1A]/20 font-sans text-[10px] uppercase tracking-widest font-bold hover:bg-[#1A1A1A] hover:text-white transition-colors">
+                            + Add Variant Row
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="md:col-span-2 border border-[#CDA185]/30 p-4 bg-[#CDA185]/5 rounded-lg mt-2">
                       <h4 className="font-sans text-[11px] font-bold uppercase tracking-widest text-[#CDA185] mb-1 flex items-center gap-1.5 font-bold">⚡ Flash Sale Session configuration</h4>
                       <p className="font-sans text-[10px] text-[#1A1A1A]/60 mb-3">Enabling flash sale overrides typical retail pricing and displays an active countdown timer on details pages.</p>
@@ -2290,15 +2637,25 @@ export function AdminPage() {
                   </div>
                   
                   <div className="flex justify-end gap-2 pt-4">
-                    <button 
+                    <button
                       type="button" 
-                      onClick={() => { setIsCreating(false); setEditingProduct(null); setUploadedImage(null); setUploadedAdditionalImages([]); }}
+                      onClick={() => { setIsCreating(false); setEditingProduct(null); setUploadedImage(null); setUploadedAdditionalImages([]); setSeoTitleDraft(''); setSeoDescriptionDraft(''); setHasVariantsDraft(false); setVariantRows([]); }}
                       className="px-6 py-2 border border-[#1A1A1A]/20 text-[#1A1A1A] font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/5 transition-colors"
                     >
                       Cancel
                     </button>
+                    <button
+                      type="submit"
+                      name="saveIntent"
+                      value="draft"
+                      className="px-6 py-2 border border-[#CDA185] text-[#8b5f3d] font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#CDA185]/10 transition-colors"
+                    >
+                      Save as Draft
+                    </button>
                     <button 
-                      type="submit" 
+                      type="submit"
+                      name="saveIntent"
+                      value="save"
                       className="px-6 py-2 bg-[#1A1A1A] text-[#F9F7F2] font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/90 transition-colors"
                     >
                       Save Product
@@ -2389,8 +2746,14 @@ export function AdminPage() {
                          </div>
                        </td>
                        <td className="px-6 py-4">
-                         <span className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold rounded-sm ${(product.stock || 0) === 0 ? 'bg-red-500/10 text-red-600' : 'bg-green-500/10 text-green-700'}`}>
-                           {(product.stock || 0) === 0 ? 'Draft' : 'Published'}
+                         <span className={`px-2 py-1 text-[9px] uppercase tracking-widest font-bold rounded-sm ${
+                           (product.status || 'active') === 'active'
+                             ? 'bg-green-500/10 text-green-700'
+                             : (product.status || 'active') === 'draft'
+                               ? 'bg-amber-500/10 text-amber-700'
+                               : 'bg-[#1A1A1A]/10 text-[#1A1A1A]/60'
+                         }`}>
+                           {labelizeValue(product.status || 'active')}
                          </span>
                        </td>
                        <td className="px-6 py-4">
@@ -2403,8 +2766,17 @@ export function AdminPage() {
                            >
                              <Eye className="w-4 h-4" />
                            </button>
-                           <button 
-                             onClick={() => { setEditingProduct(product); setIsCreating(false); setUploadedImage(product.imageUrl); setUploadedAdditionalImages(product.images || []); }}
+                          <button
+                             onClick={() => {
+                               setEditingProduct(product);
+                               setIsCreating(false);
+                               setUploadedImage(product.imageUrl);
+                               setUploadedAdditionalImages(product.images || []);
+                               setSeoTitleDraft(product.seo_title || '');
+                               setSeoDescriptionDraft(product.seo_description || '');
+                               setHasVariantsDraft(Boolean(product.has_variants || product.variants?.length));
+                               setVariantRows(product.variants || []);
+                             }}
                              className="p-1.5 hover:bg-[#1A1A1A]/10 rounded-sm text-[#1A1A1A]/60 hover:text-[#1A1A1A] transition-colors"
                            >
                              <Edit className="w-4 h-4" />

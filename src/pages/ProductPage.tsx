@@ -14,10 +14,28 @@ import { SEO, SEO_SITE_URL } from '../components/SEO';
 import { supabase } from '../lib/supabase';
 import { SUPPORT_EMAIL } from '../SiteContext';
 
+const labelizeValue = (value: string) =>
+  value
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, letter => letter.toUpperCase());
+
+const returnPolicyLabel = (value?: string) => {
+  if (value === 'no-return') return 'No Returns';
+  if (value === '14-day-return') return '14-Day Return';
+  if (value === '30-day-return') return '30-Day Return';
+  return '7-Day Return';
+};
+
+const youtubeEmbedUrl = (url: string) => {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]+)/i);
+  return match ? `https://www.youtube.com/embed/${match[1]}` : '';
+};
+
 export function ProductPage() {
   const { id } = useParams();
   const { productsList, updateProduct } = useProducts();
-  const product = productsList.find(p => p.id === id);
+  const product = productsList.find(p => (p.id === id || p.slug === id) && (p.status || 'active') === 'active');
   const { addToCart, setIsCartOpen } = useCart();
   const { redeemCoins, addCoins } = useLoyalty();
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
@@ -74,9 +92,9 @@ export function ProductPage() {
   // Dynamic gallery images based on category, prioritized by user uploaded custom images list if present
   const galleryImages = product ? (
     product.images && product.images.length > 0
-      ? [product.imageUrl, ...product.images]
+      ? [selectedVariant?.image_url || product.imageUrl, ...product.images]
       : [
-          product.imageUrl,
+          selectedVariant?.image_url || product.imageUrl,
           product.category === 'Skin Care' 
             ? 'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?q=80&w=800&auto=format&fit=crop'
             : product.category === 'Makeup'
@@ -189,7 +207,7 @@ export function ProductPage() {
       setTimeout(() => setRedeemMessage(null), 3500);
       
       const itemToAdd = selectedVariant
-        ? { ...product, id: `${product.id}-${selectedVariant.name}-free`, name: `${product.name} - ${selectedVariant.name} (Free)`, price: 0 }
+        ? { ...product, id: `${product.id}-${selectedVariantLabel}-free`, name: `${product.name} - ${selectedVariantLabel} (Free)`, price: 0, imageUrl: selectedVariant.image_url || product.imageUrl }
         : { ...product, id: `${product?.id}-free`, name: `${product?.name} (Free)`, price: 0 };
         
       for (let i = 0; i < quantity; i++) {
@@ -275,7 +293,7 @@ export function ProductPage() {
 
   const handleAddToCart = () => {
     const itemToAdd = selectedVariant
-      ? { ...product, id: `${product.id}-${selectedVariant.name}`, name: `${product.name} - ${selectedVariant.name}`, price: selectedVariant.price }
+      ? { ...product, id: `${product.id}-${selectedVariantLabel}`, name: `${product.name} - ${selectedVariantLabel}`, price: selectedVariant.price, stock: selectedVariant.stock ?? product.stock, imageUrl: selectedVariant.image_url || product.imageUrl }
       : product;
 
     for (let i = 0; i < quantity; i++) {
@@ -296,15 +314,23 @@ export function ProductPage() {
     }
   };
 
+  const selectedVariantLabel = selectedVariant?.label || selectedVariant?.name || '';
+  const selectedVariantStock = selectedVariant?.stock ?? product.stock;
   const basePrice = selectedVariant ? selectedVariant.price : product.price;
   const currentPrice = product.isFlashSale && product.flashSalePrice && !selectedVariant ? product.flashSalePrice : basePrice;
-  const comparePrice = product.compareAtPrice && product.compareAtPrice > currentPrice
+  const comparePrice = selectedVariant?.original_price && selectedVariant.original_price > currentPrice
+    ? selectedVariant.original_price
+    : product.compareAtPrice && product.compareAtPrice > currentPrice
     ? product.compareAtPrice
     : product.price > currentPrice
       ? product.price
       : undefined;
   const savingsPercent = comparePrice ? Math.round(((comparePrice - currentPrice) / comparePrice) * 100) : 0;
-  const seoDescription = `${product.name} from Aabnoor Beaute. ${product.description} Shop ${product.category.toLowerCase()} with secure checkout, delivery tracking and customer reviews.`;
+  const seoTitle = product.seo_title || product.name;
+  const seoDescription = (product.seo_description || `${product.name} from Aabnoor Beaute. ${product.description} Shop ${product.category.toLowerCase()} with secure checkout, delivery tracking and customer reviews.`).slice(0, 160);
+  const canonicalPath = product.slug ? `/product/${product.slug}` : `/product/${product.id}`;
+  const productVideoUrl = String(product.product_video_url || '').trim();
+  const embedVideoUrl = productVideoUrl ? youtubeEmbedUrl(productVideoUrl) : '';
   const productJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -313,17 +339,17 @@ export function ProductPage() {
     image: galleryImages.map((image) => image.startsWith('http') ? image : `${SEO_SITE_URL}${image}`),
     brand: {
       '@type': 'Brand',
-      name: 'Aabnoor Beaute',
+      name: product.brand || 'Aabnoor Beaute',
     },
     category: product.category,
-    sku: product.id,
-    url: `${SEO_SITE_URL}/product/${product.id}`,
+    sku: product.sku || product.id,
+    url: `${SEO_SITE_URL}${canonicalPath}`,
     offers: {
       '@type': 'Offer',
       priceCurrency: 'PKR',
       price: currentPrice.toFixed(2),
       availability: product.stock === 0 ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
-      url: `${SEO_SITE_URL}/product/${product.id}`,
+      url: `${SEO_SITE_URL}${canonicalPath}`,
       itemCondition: 'https://schema.org/NewCondition',
     },
     ...(product.rating ? {
@@ -354,9 +380,9 @@ export function ProductPage() {
   return (
     <div className="pt-40 lg:pt-44 pb-24 max-w-7xl mx-auto px-6">
       <SEO
-        title={`${product.name} | ${product.category} | Aabnoor Beaute`}
-        description={seoDescription.slice(0, 155)}
-        canonicalPath={`/product/${product.id}`}
+        title={`${seoTitle} | Aabnoor Beaute`}
+        description={seoDescription}
+        canonicalPath={canonicalPath}
         image={product.imageUrl}
         type="product"
         jsonLd={productJsonLd}
@@ -411,6 +437,18 @@ export function ProductPage() {
               </div>
             ))}
           </div>
+          {productVideoUrl && (
+            <div className="border border-[#1A1A1A]/10 bg-white p-4">
+              <p className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/60">Product Demo Video</p>
+              <div className="aspect-video overflow-hidden bg-[#1A1A1A]/5">
+                {embedVideoUrl ? (
+                  <iframe src={embedVideoUrl} title={`${product.name} product demo video`} className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                ) : (
+                  <video src={productVideoUrl} controls className="h-full w-full object-cover" />
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Left: Product Images (Mobile Carousel) */}
@@ -458,6 +496,19 @@ export function ProductPage() {
           ))}
         </div>
 
+        {productVideoUrl && (
+          <div className="lg:hidden border border-[#1A1A1A]/10 bg-white p-4 mb-8">
+            <p className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/60">Product Demo Video</p>
+            <div className="aspect-video overflow-hidden bg-[#1A1A1A]/5">
+              {embedVideoUrl ? (
+                <iframe src={embedVideoUrl} title={`${product.name} product demo video`} className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              ) : (
+                <video src={productVideoUrl} controls className="h-full w-full object-cover" />
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Right: Product Details (Sticky) */}
         <div>
           <div className="sticky top-32">
@@ -477,6 +528,14 @@ export function ProductPage() {
             <h1 className="font-serif italic font-light text-4xl lg:text-5xl leading-tight text-[#1A1A1A] mb-4">
               {product.name}
             </h1>
+
+            {(product.is_new_arrival || product.is_best_seller || product.is_featured) && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                {product.is_new_arrival && <span className="rounded-full bg-green-700/10 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-green-800">New Arrival</span>}
+                {product.is_best_seller && <span className="rounded-full bg-amber-600/10 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Best Seller</span>}
+                {product.is_featured && <span className="rounded-full bg-purple-700/10 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-purple-800">Featured</span>}
+              </div>
+            )}
 
             {product.rating && (
               <div className="flex items-center gap-2 mb-4">
@@ -508,10 +567,36 @@ export function ProductPage() {
               )}
               <div className="flex items-center gap-2">
                 <span className={`px-2.5 py-1 text-[9px] uppercase tracking-[0.2em] font-bold rounded-sm border ${product.isLimitedEdition ? 'border-[#1A1A1A] text-[#1A1A1A]' : 'border-[#1A1A1A]/20 text-[#1A1A1A]/60'}`}>
-                  {product.stock === 0 ? 'Out of Stock' : (product.isLimitedEdition ? 'Limited Edition' : `${product.stock !== undefined ? product.stock : 12} In Stock`)}
+                  {selectedVariantStock === 0 ? 'Out of Stock' : (product.isLimitedEdition ? 'Limited Edition' : `${selectedVariantStock !== undefined ? selectedVariantStock : 12} In Stock`)}
                 </span>
               </div>
             </div>
+
+            {(product.brand || product.net_weight || product.country_of_origin || product.product_form || product.shelf_life) && (
+              <div className="mb-5 flex flex-wrap gap-2">
+                {product.brand && <span className="border border-[#1A1A1A]/10 bg-white px-3 py-1.5 font-sans text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/70">Brand: {product.brand}</span>}
+                {product.net_weight && <span className="border border-[#1A1A1A]/10 bg-white px-3 py-1.5 font-sans text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/70">{product.net_weight}</span>}
+                {product.country_of_origin && <span className="border border-[#1A1A1A]/10 bg-white px-3 py-1.5 font-sans text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/70">Made in {product.country_of_origin}</span>}
+                {product.product_form && <span className="border border-[#1A1A1A]/10 bg-white px-3 py-1.5 font-sans text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/70">{product.product_form}</span>}
+                {product.shelf_life && <span className="border border-[#1A1A1A]/10 bg-white px-3 py-1.5 font-sans text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/70">{product.shelf_life}</span>}
+              </div>
+            )}
+
+            {(product.is_cruelty_free || product.is_vegan || product.is_derma_tested) && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                {product.is_cruelty_free && <span className="rounded-full bg-green-700/10 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider text-green-800">Cruelty Free</span>}
+                {product.is_vegan && <span className="rounded-full bg-green-700/10 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider text-green-800">Vegan</span>}
+                {product.is_derma_tested && <span className="rounded-full bg-green-700/10 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider text-green-800">Derma Tested</span>}
+              </div>
+            )}
+
+            {product.claims && product.claims.length > 0 && (
+              <div className="mb-6 flex flex-wrap gap-2">
+                {product.claims.map((claim) => (
+                  <span key={claim} className="rounded-full border border-[#CDA185]/30 bg-[#CDA185]/10 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider text-[#8b5f3d]"># {claim}</span>
+                ))}
+              </div>
+            )}
 
             {product.isFlashSale && product.flashSalePrice && timeLeft && (
               <div className="flex flex-col gap-2 p-4 bg-[#FF4C4C]/10 border border-[#FF4C4C]/20 rounded-sm mb-6">
@@ -574,23 +659,27 @@ export function ProductPage() {
             </div>
 
             {/* Variants Selector */}
-            {product.variants && product.variants.length > 0 && (
+            {(product.has_variants || product.variants?.length) && product.variants && product.variants.length > 0 && (
               <div className="mb-8">
                 <p className="font-sans text-[11px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A] mb-3">
-                  Size
+                  Select {product.variant_type ? labelizeValue(product.variant_type) : 'Variant'}
                 </p>
                 <div className="flex flex-wrap gap-3">
                   {product.variants.map((v) => (
                     <button
-                      key={v.name}
-                      onClick={() => setSelectedVariant(v)}
+                      key={v.label || v.name}
+                      onClick={() => {
+                        setSelectedVariant(v);
+                        setActiveImageIndex(0);
+                      }}
                       className={`px-4 py-3 text-[10px] font-sans tracking-widest uppercase transition-colors ${
-                        selectedVariant?.name === v.name
+                        (selectedVariant?.label || selectedVariant?.name) === (v.label || v.name)
                           ? 'bg-[#1A1A1A] text-[#F9F7F2]'
                           : 'bg-transparent text-[#1A1A1A] border border-[#1A1A1A]/20 hover:border-[#1A1A1A]'
                       }`}
                     >
-                      {v.name}
+                      {v.label || v.name}
+                      {v.stock === 0 ? ' - Out' : ''}
                     </button>
                   ))}
                 </div>
@@ -609,19 +698,19 @@ export function ProductPage() {
                   </button>
                   <span className="w-8 text-center font-sans text-sm">{quantity}</span>
                   <button 
-                    onClick={() => setQuantity(Math.min(product.stock !== undefined ? product.stock : 12, quantity + 1))}
+                    onClick={() => setQuantity(Math.min(selectedVariantStock !== undefined ? selectedVariantStock : 12, quantity + 1))}
                     className="px-5 h-full hover:bg-[#1A1A1A]/5 transition-colors rounded-r-full flex items-center justify-center cursor-pointer"
                   >
                     <Plus className="w-4 h-4 text-[#1A1A1A]" />
                   </button>
                 </div>
                 <button 
-                  aria-label={product.stock === 0 ? "Out of stock" : `Add ${product.name} to bag`}
-                  disabled={product.stock === 0}
+                  aria-label={selectedVariantStock === 0 ? "Out of stock" : `Add ${product.name} to bag`}
+                  disabled={selectedVariantStock === 0}
                   onClick={handleAddToCart}
                   className="flex-1 h-14 bg-[#1A1A1A] text-[#F9F7F2] rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {product.stock === 0 ? 'Out of Stock' : `Add to Cart - Rs. ${(currentPrice * quantity).toFixed(2)}`}
+                  {selectedVariantStock === 0 ? 'Out of Stock' : `Add to Cart - Rs. ${(currentPrice * quantity).toFixed(2)}`}
                 </button>
               </div>
 
@@ -635,7 +724,7 @@ export function ProductPage() {
               </button>
               
               <button
-                disabled={product.stock === 0}
+                disabled={selectedVariantStock === 0}
                 onClick={handleRedeem}
                 className="w-full h-14 border border-[#1A1A1A] text-[#1A1A1A] rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/5 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -648,6 +737,29 @@ export function ProductPage() {
               )}
             </div>
 
+            <div className="mb-10 border border-[#1A1A1A]/10 bg-white p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-sans text-xs text-[#1A1A1A]/70">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-[#CDA185]" />
+                  <span>{product.is_free_shipping ? 'Free Delivery' : 'Standard Delivery'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-[#CDA185]" />
+                  <span>Estimated: {product.estimated_delivery || '3-5 business days'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <PackageCheck className="h-4 w-4 text-[#CDA185]" />
+                  <span>{returnPolicyLabel(product.return_policy)}</span>
+                </div>
+                {product.warranty_info && (
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-[#CDA185]" />
+                    <span>Warranty: {product.warranty_info}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Product Tabs */}
             <div className="mt-8 mb-12 border border-[#1A1A1A]/10 bg-white">
               <div className="flex overflow-x-auto border-b border-[#1A1A1A]/10">
@@ -655,6 +767,7 @@ export function ProductPage() {
                   ['description', 'Description'],
                   ['ingredients', 'Ingredients'],
                   ['usage', 'How to Use'],
+                  ...((product.skin_type?.length || product.concerns?.length) ? [['suitability', 'Suitable For']] : []),
                   ['reviews', `Reviews (${product.reviews?.length || 0})`],
                   ...(product.advantages?.length ? [['advantages', 'Benefits']] : []),
                   ...(product.warnings ? [['warnings', 'Warnings']] : []),
@@ -703,6 +816,31 @@ export function ProductPage() {
 
                 {openAccordion === 'usage' && (
                   <p>{product.howToUse || 'Apply to clean, dry skin morning and evening. Gently press into face and neck until fully absorbed.'}</p>
+                )}
+
+                {openAccordion === 'suitability' && (
+                  <div className="space-y-4">
+                    {product.skin_type && product.skin_type.length > 0 && (
+                      <div>
+                        <p className="mb-2 font-sans text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]/50">Skin Type</p>
+                        <div className="flex flex-wrap gap-2">
+                          {product.skin_type.map((item) => (
+                            <span key={item} className="rounded-full bg-[#1A1A1A]/5 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider">{labelizeValue(item)}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {product.concerns && product.concerns.length > 0 && (
+                      <div>
+                        <p className="mb-2 font-sans text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]/50">Concerns</p>
+                        <div className="flex flex-wrap gap-2">
+                          {product.concerns.map((item) => (
+                            <span key={item} className="rounded-full bg-[#CDA185]/10 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider text-[#8b5f3d]">{labelizeValue(item)}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {openAccordion === 'advantages' && product.advantages && (

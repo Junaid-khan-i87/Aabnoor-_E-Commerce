@@ -1,6 +1,10 @@
 export interface ProductVariant {
   name: string;
+  label?: string;
   price: number;
+  original_price?: number;
+  stock?: number;
+  image_url?: string;
 }
 
 export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Refunded';
@@ -66,6 +70,35 @@ export interface Product {
   isFlashSale?: boolean;
   flashSalePrice?: number;
   flashSaleEndTime?: string;
+  sku?: string;
+  brand?: string;
+  slug?: string;
+  product_form?: string;
+  net_weight?: string;
+  country_of_origin?: string;
+  shelf_life?: string;
+  skin_type?: string[];
+  concerns?: string[];
+  claims?: string[];
+  seo_title?: string;
+  seo_description?: string;
+  tags?: string[];
+  status?: 'active' | 'draft' | 'hidden';
+  is_featured?: boolean;
+  is_new_arrival?: boolean;
+  is_best_seller?: boolean;
+  sort_order?: number;
+  is_cruelty_free?: boolean;
+  is_vegan?: boolean;
+  is_derma_tested?: boolean;
+  shipping_weight?: number;
+  is_free_shipping?: boolean;
+  estimated_delivery?: string;
+  return_policy?: 'no-return' | '7-day-return' | '14-day-return' | '30-day-return';
+  warranty_info?: string;
+  product_video_url?: string;
+  has_variants?: boolean;
+  variant_type?: 'shade' | 'size' | 'volume' | 'pack_size' | 'color' | string;
 }
 
 export interface Coupon {

@@ -18,10 +18,11 @@ export function HomePage() {
   const { scrollToShopAndFilter } = useCategory();
   const [smartQuery, setSmartQuery] = useState('');
   const [routineConcern, setRoutineConcern] = useState('glow');
-  const bestSellers = [...productsList]
+  const visibleProducts = productsList.filter(product => (product.status || 'active') === 'active');
+  const bestSellers = [...visibleProducts]
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 3);
-  const liveSaleProducts = productsList.filter(product => isFlashSaleActive(product));
+  const liveSaleProducts = visibleProducts.filter(product => isFlashSaleActive(product));
   const routineOptions = [
     { id: 'glow', label: 'Glow', terms: ['glow', 'bright', 'vitamin', 'radiance', 'makeup'] },
     { id: 'hydrate', label: 'Hydrate', terms: ['hydrate', 'hyaluronic', 'moisture', 'serum', 'cream'] },
@@ -29,7 +30,7 @@ export function HomePage() {
     { id: 'hair', label: 'Hair Care', terms: ['hair', 'shampoo', 'conditioner', 'scalp'] },
   ];
   const selectedRoutine = routineOptions.find(option => option.id === routineConcern) || routineOptions[0];
-  const routineMatches = productsList
+  const routineMatches = visibleProducts
     .filter((product) => {
       const haystack = [product.name, product.category, product.subCategory, product.description, product.fullDetails].join(' ').toLowerCase();
       return selectedRoutine.terms.some(term => haystack.includes(term));
@@ -37,7 +38,7 @@ export function HomePage() {
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 3);
   const routineProducts = routineMatches.length > 0 ? routineMatches : bestSellers;
-  const smartResults = productsList
+  const smartResults = visibleProducts
     .filter((product) => {
       const query = smartQuery.trim().toLowerCase();
       if (!query) return false;
@@ -56,14 +57,14 @@ export function HomePage() {
     'from-[#d8eadc] to-[#7a9b7e]',
     'from-[#ede0c8] to-[#9b9470]',
   ];
-  const categoryCards = Array.from(new Set(productsList.map(product => product.category).filter(Boolean)))
+  const categoryCards = Array.from(new Set(visibleProducts.map(product => product.category).filter(Boolean)))
     .slice(0, 4)
     .map((category, index) => ({
       category,
-      count: productsList.filter(product => product.category === category).length,
+      count: visibleProducts.filter(product => product.category === category).length,
       style: categoryStyles[index % categoryStyles.length],
     }));
-  const reviewCards = productsList
+  const reviewCards = visibleProducts
     .flatMap(product => (product.reviews || []).map(review => ({ ...review, productName: product.name })))
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 3);
@@ -92,7 +93,7 @@ export function HomePage() {
           hasOfferCatalog: {
             '@type': 'OfferCatalog',
             name: 'Aabnoor Beauty Product Catalog',
-            itemListElement: Array.from(new Set<string>(productsList.map((product) => product.category))).map((category) => ({
+            itemListElement: Array.from(new Set<string>(visibleProducts.map((product) => product.category))).map((category) => ({
               '@type': 'OfferCatalog',
               name: category,
               url: `${SEO_SITE_URL}/shop?category=${encodeURIComponent(category)}`,
