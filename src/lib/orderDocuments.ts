@@ -415,6 +415,7 @@ const documentHtml = (kind: DocumentKind, context: OrderDocumentContext) => {
 export const printOrderDocument = (kind: DocumentKind, context: OrderDocumentContext) => {
   const popup = window.open('', '_blank', 'width=900,height=900');
   if (!popup) return false;
+  popup.opener = null;
 
   popup.document.write(`
     <!doctype html>
