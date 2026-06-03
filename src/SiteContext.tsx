@@ -19,9 +19,20 @@ export interface UserAccount {
 export interface SiteSettings {
   deliveryFee: number;
   freeShippingThreshold: number;
+  storeName: string;
+  logoUrl: string;
   storeEmail: string;
   storePhone: string;
   storeAddress: string;
+  supportEmail: string;
+  supportPhone: string;
+  websiteUrl: string;
+  businessAddress: string;
+  returnAddress: string;
+  ntn: string;
+  strn: string;
+  taxEnabled: boolean;
+  defaultReturnPolicy: string;
   heroEyebrow: string;
   heroTitle: string;
   heroSubtitle: string;
@@ -41,9 +52,20 @@ const getDefaultLiveSaleEndTime = () => new Date(Date.now() + 18 * 60 * 60 * 100
 const DEFAULT_SETTINGS: SiteSettings = {
   deliveryFee: 150,
   freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
+  storeName: 'Aabnoor Beauty',
+  logoUrl: '',
   storeEmail: 'support@aabnoor.shop',
   storePhone: '+92 (21) 111 287 233',
   storeAddress: 'Aabnoor Flagship Store, Ground Floor, Dolmen Mall Clifton, Karachi, Pakistan',
+  supportEmail: 'support@aabnoor.shop',
+  supportPhone: '+92 (21) 111 287 233',
+  websiteUrl: 'https://aabnoor.shop',
+  businessAddress: 'Aabnoor Flagship Store, Ground Floor, Dolmen Mall Clifton, Karachi, Pakistan',
+  returnAddress: 'Aabnoor Returns Desk, Ground Floor, Dolmen Mall Clifton, Karachi, Pakistan',
+  ntn: '',
+  strn: '',
+  taxEnabled: false,
+  defaultReturnPolicy: 'Beauty and personal care items can be returned only when unopened, unused, and reported within 7 days of delivery.',
   heroEyebrow: 'The Future of Beauty',
   heroTitle: 'Redefine Your Beauty Routine',
   heroSubtitle: 'Curated skincare, makeup, hair care, and fragrance essentials designed for modern beauty.',

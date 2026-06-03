@@ -11,6 +11,7 @@ import { SafeImage } from '../components/SafeImage';
 import { useUI } from '../UIContext';
 import { supabase } from '../lib/supabase';
 import { deleteEntity, listEntities, upsertEntity } from '../lib/storeApi';
+import { downloadInvoicePdf, downloadShippingLabelPdf, printOrderDocument } from '../lib/orderDocuments';
 
 type AdminTab = 'dashboard' | 'orders' | 'customers' | 'products' | 'discounts' | 'settings';
 
@@ -1063,6 +1064,28 @@ export function AdminPage() {
     doc.save(`Shipping-Label-${order.id.slice(0, 8)}.pdf`);
   };
 
+  const getOrderDocumentContext = (order: typeof orders[0]) => ({
+    order,
+    products: productsList,
+    settings,
+    siteName: settings.storeName || siteName || 'Aabnoor Beauty',
+  });
+
+  const handlePrintOrderDocument = (kind: 'shipping-label' | 'invoice' | 'packing-slip', order: typeof orders[0]) => {
+    const opened = printOrderDocument(kind, getOrderDocumentContext(order));
+    if (!opened) {
+      addToast('Pop-up was blocked. Allow pop-ups for admin print documents and try again.', 'error');
+    }
+  };
+
+  const handleDownloadInvoicePdf = async (order: typeof orders[0]) => {
+    await downloadInvoicePdf(getOrderDocumentContext(order));
+  };
+
+  const handleDownloadLabelPdf = async (order: typeof orders[0]) => {
+    await downloadShippingLabelPdf(getOrderDocumentContext(order));
+  };
+
   return (
     <div className="admin-redesign min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(201,132,122,0.18),transparent_30%),#faf6f1] pt-40 pb-12 px-4 md:px-8 text-[#2c2826]">
       <div className="max-w-7xl mx-auto">
@@ -1684,37 +1707,65 @@ export function AdminPage() {
                                  <div className="pt-6 border-t border-[#1A1A1A]/10">
                                    <div className="flex justify-between items-center mb-3">
                                      <h4 className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]">Tracking History</h4>
-                                     <div className="flex items-center gap-2">
-                                       <button 
-                                         onClick={(e) => {
-                                           e.stopPropagation();
-                                           generateInvoice(order);
-                                         }}
-                                         className="flex items-center gap-2 px-3 py-1.5 bg-[#1A1A1A]/5 hover:bg-[#1A1A1A]/10 transition-colors rounded text-[#1A1A1A] font-sans text-[10px] font-bold uppercase tracking-[0.1em]"
-                                        >
-                                          <FileText className="w-3.5 h-3.5" />
-                                          Invoice
-                                        </button>
-                                        <button 
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <button
                                           type="button"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            generateShippingLabel(order);
+                                            handlePrintOrderDocument('shipping-label', order);
                                           }}
-                                          className="flex items-center gap-2 px-3 py-1.5 bg-[#CDA185]/10 hover:bg-[#CDA185]/25 transition-colors rounded text-[#CDA185] font-sans text-[10px] font-bold uppercase tracking-[0.1em] cursor-pointer"
+                                          className="flex items-center gap-2 px-3 py-1.5 bg-[#CDA185]/10 hover:bg-[#CDA185]/25 transition-colors rounded text-[#8b5f3d] font-sans text-[10px] font-bold uppercase tracking-[0.1em] cursor-pointer"
                                         >
                                           <Package className="w-3.5 h-3.5" />
-                                          Shipping Label
+                                          Print Shipping Label
                                         </button>
                                         <button
-                                          className="hidden"
-                                       >
-                                         <FileText className="w-3.5 h-3.5" />
-                                         Invoice
-                                       </button>
-                                       <button
-                                         onClick={(e) => {
-                                           e.stopPropagation();
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePrintOrderDocument('invoice', order);
+                                          }}
+                                          className="flex items-center gap-2 px-3 py-1.5 bg-[#1A1A1A]/5 hover:bg-[#1A1A1A]/10 transition-colors rounded text-[#1A1A1A] font-sans text-[10px] font-bold uppercase tracking-[0.1em] cursor-pointer"
+                                        >
+                                          <FileText className="w-3.5 h-3.5" />
+                                          Print Invoice
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePrintOrderDocument('packing-slip', order);
+                                          }}
+                                          className="flex items-center gap-2 px-3 py-1.5 bg-[#1A1A1A]/5 hover:bg-[#1A1A1A]/10 transition-colors rounded text-[#1A1A1A] font-sans text-[10px] font-bold uppercase tracking-[0.1em] cursor-pointer"
+                                        >
+                                          <FileText className="w-3.5 h-3.5" />
+                                          Print Packing Slip
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDownloadInvoicePdf(order);
+                                          }}
+                                          className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 transition-colors rounded text-[#1A1A1A] font-sans text-[10px] font-bold uppercase tracking-[0.1em] cursor-pointer"
+                                        >
+                                          <FileText className="w-3.5 h-3.5" />
+                                          Download Invoice PDF
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDownloadLabelPdf(order);
+                                          }}
+                                          className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-[#CDA185]/10 border border-[#CDA185]/30 transition-colors rounded text-[#8b5f3d] font-sans text-[10px] font-bold uppercase tracking-[0.1em] cursor-pointer"
+                                        >
+                                          <Package className="w-3.5 h-3.5" />
+                                          Download Label PDF
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
                                            setConfirmDialog({
                                              isOpen: true,
                                              title: 'Delete Order',
@@ -3292,20 +3343,61 @@ export function AdminPage() {
                 </div>
 
                 <div className="pt-6 border-t border-[#1A1A1A]/10">
-                  <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-4">Store Details & Contact</label>
-                  <div className="space-y-4">
+                  <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-4">Store Details, Invoice & Label Settings</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Store Name on Documents</label>
+                      <input type="text" value={settingsForm.storeName} onChange={(e) => setSettingsForm({...settingsForm, storeName: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Logo URL</label>
+                      <input type="url" value={settingsForm.logoUrl} onChange={(e) => setSettingsForm({...settingsForm, logoUrl: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Website URL</label>
+                      <input type="url" value={settingsForm.websiteUrl} onChange={(e) => setSettingsForm({...settingsForm, websiteUrl: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    </div>
                     <div>
                       <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Store Email</label>
-                      <input type="email" value={settingsForm.storeEmail} onChange={(e) => setSettingsForm({...settingsForm, storeEmail: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                      <input type="email" value={settingsForm.storeEmail} onChange={(e) => setSettingsForm({...settingsForm, storeEmail: e.target.value, supportEmail: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
                     </div>
                     <div>
-                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Store Phone</label>
-                      <input type="text" value={settingsForm.storePhone} onChange={(e) => setSettingsForm({...settingsForm, storePhone: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Store Phone / WhatsApp</label>
+                      <input type="text" value={settingsForm.storePhone} onChange={(e) => setSettingsForm({...settingsForm, storePhone: e.target.value, supportPhone: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
                     </div>
                     <div>
-                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Store Address</label>
-                      <input type="text" value={settingsForm.storeAddress} onChange={(e) => setSettingsForm({...settingsForm, storeAddress: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Support Email Override</label>
+                      <input type="email" value={settingsForm.supportEmail} onChange={(e) => setSettingsForm({...settingsForm, supportEmail: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
                     </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">NTN</label>
+                      <input type="text" value={settingsForm.ntn} onChange={(e) => setSettingsForm({...settingsForm, ntn: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">STRN</label>
+                      <input type="text" value={settingsForm.strn} onChange={(e) => setSettingsForm({...settingsForm, strn: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Business Address</label>
+                      <textarea value={settingsForm.businessAddress || settingsForm.storeAddress} onChange={(e) => setSettingsForm({...settingsForm, businessAddress: e.target.value, storeAddress: e.target.value})} rows={2} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Return Address</label>
+                      <textarea value={settingsForm.returnAddress} onChange={(e) => setSettingsForm({...settingsForm, returnAddress: e.target.value})} rows={2} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    </div>
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Default Return / Exchange Policy</label>
+                      <textarea value={settingsForm.defaultReturnPolicy} onChange={(e) => setSettingsForm({...settingsForm, defaultReturnPolicy: e.target.value})} rows={3} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    </div>
+                    <label className="flex items-start gap-3 rounded border border-[#1A1A1A]/10 bg-white p-3 font-sans text-sm text-[#1A1A1A]/70">
+                      <input type="checkbox" checked={settingsForm.taxEnabled} onChange={(e) => setSettingsForm({...settingsForm, taxEnabled: e.target.checked})} className="mt-1 accent-[#1A1A1A]" />
+                      <span>
+                        <span className="block font-bold text-[#1A1A1A]">Show tax/GST only when enabled and an order has tax amount</span>
+                        Keep this off if the seller is not sales-tax registered. Documents will not claim GST when disabled.
+                      </span>
+                    </label>
                   </div>
                 </div>
 

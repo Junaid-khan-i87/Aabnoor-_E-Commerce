@@ -14,6 +14,10 @@ export interface OrderItem {
   name: string;
   price: number;
   quantity: number;
+  sku?: string;
+  variant?: string;
+  imageUrl?: string;
+  discount?: number;
 }
 
 export interface Order {
@@ -30,9 +34,43 @@ export interface Order {
   coinBalance?: number;
   shippingAddress?: string;
   paymentMethod?: string;
+  paymentStatus?: string;
+  payment_status?: string;
+  invoiceNumber?: string;
+  invoice_number?: string;
+  courierName?: string;
+  courier_name?: string;
+  codAmount?: number;
+  cod_amount?: number;
+  amountPaid?: number;
+  amount_paid?: number;
+  deliveryFee?: number;
+  deliveryCharges?: number;
+  delivery_charges?: number;
+  discountAmount?: number;
+  discount_amount?: number;
+  taxAmount?: number;
+  tax_amount?: number;
+  subtotal?: number;
+  grandTotal?: number;
+  grand_total?: number;
+  customerName?: string;
+  customer_name?: string;
+  customerPhone?: string;
+  customer_phone?: string;
+  shipping_address?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  postal_code?: string;
+  parcelWeight?: string;
+  parcel_weight?: string;
+  internalNotes?: string;
+  internal_notes?: string;
   trackingUpdates?: { status: OrderStatus; date: string; note: string }[];
   coinsAdded?: boolean;
   trackingNumber?: string;
+  tracking_number?: string;
 }
 
 export interface Review {

@@ -65,6 +65,7 @@ const createAdminSupabaseClient = () => {
 const DEFAULT_SETTINGS = {
   deliveryFee: 150,
   freeShippingThreshold: 9999,
+  taxEnabled: false,
 };
 
 const allowedPaymentMethods = new Set(['Credit Card', 'Cash on Delivery']);
@@ -258,10 +259,19 @@ export default async function handler(req: any, res: any) {
 
     const price = getServerPrice(product, item.productId);
     if (!Number.isFinite(price) || price < 0) return null;
+    const variantKey = item.productId.startsWith(`${product.id}-`)
+      ? item.productId.slice(product.id.length + 1)
+      : '';
+    const variant = Array.isArray(product.variants)
+      ? product.variants.find((entry: any) => String(entry?.name || '') === variantKey || String(entry?.label || '') === variantKey)
+      : null;
 
     return {
       productId: item.productId,
       name: cleanText(item.productId === product.id ? product.name : `${product.name} - ${item.productId.slice(product.id.length + 1)}`, 160),
+      sku: cleanText(variant?.sku || product.sku || item.productId, 80),
+      variant: cleanText(variant?.label || variant?.name || variantKey, 80),
+      imageUrl: cleanText(variant?.image_url || product.imageUrl || '', 500),
       price,
       quantity: item.quantity,
     };
@@ -314,11 +324,13 @@ export default async function handler(req: any, res: any) {
   }
 
   const subtotalAfterDiscount = subtotal * (1 - discountPercentage / 100);
+  const promotionalDiscount = Math.round((subtotal - subtotalAfterDiscount) * 100) / 100;
   const baseDeliveryFee = subtotal >= Number(settings.freeShippingThreshold || DEFAULT_SETTINGS.freeShippingThreshold)
     ? 0
     : Number(settings.deliveryFee || DEFAULT_SETTINGS.deliveryFee);
   const deliveryFee = deliveryMethod === 'express' ? baseDeliveryFee + 100 : baseDeliveryFee;
-  const totalBeforeCoinDiscount = Math.round((subtotalAfterDiscount + deliveryFee) * 100) / 100;
+  const taxAmount = 0;
+  const totalBeforeCoinDiscount = Math.round((subtotalAfterDiscount + deliveryFee + taxAmount) * 100) / 100;
   const coinDiscount = Math.min(totalBeforeCoinDiscount, Math.floor(coinsToRedeem / 10));
   const total = Math.round((totalBeforeCoinDiscount - coinDiscount) * 100) / 100;
   const coinsEarned = Math.floor(total / 10);
@@ -326,28 +338,62 @@ export default async function handler(req: any, res: any) {
   const nowIso = new Date().toISOString();
   const id = orderId();
   const tracking = trackingNumber();
+  const invoice = `INV-${id.replace(/^ORD-/i, '').slice(0, 10).toUpperCase()}`;
   const shippingAddress = cleanMultilineText(`${home}\n${state}, ${country}\nPhone: ${phone}\nEmail: ${userEmail}`, 600);
+  const isCod = /cash|cod/i.test(paymentMethod);
 
   const order = {
     id,
+    invoiceNumber: invoice,
+    invoice_number: invoice,
     authUserId: user.id,
     userEmail,
     userName,
+    customerName: userName,
+    customer_name: userName,
+    customerPhone: phone,
+    customer_phone: phone,
     date: nowIso,
     items: orderItems,
     subtotal: Math.round(subtotal * 100) / 100,
     discountPercentage,
+    discountAmount: Math.round((promotionalDiscount + coinDiscount) * 100) / 100,
+    discount_amount: Math.round((promotionalDiscount + coinDiscount) * 100) / 100,
     coinsToRedeem,
     coinDiscount,
     deliveryFee,
+    deliveryCharges: deliveryFee,
+    delivery_charges: deliveryFee,
     deliveryMethod,
+    taxAmount,
+    tax_amount: taxAmount,
     total,
+    grandTotal: total,
+    grand_total: total,
     status: 'Pending',
     coinsEarned,
     coinBalance,
     shippingAddress,
+    shipping_address: shippingAddress,
+    city: state,
+    province: country,
+    postalCode: '',
+    postal_code: '',
     paymentMethod,
+    paymentStatus: isCod ? 'COD Due' : 'Paid',
+    payment_status: isCod ? 'COD Due' : 'Paid',
+    codAmount: isCod ? total : 0,
+    cod_amount: isCod ? total : 0,
+    amountPaid: isCod ? 0 : total,
+    amount_paid: isCod ? 0 : total,
+    courierName: '',
+    courier_name: '',
+    parcelWeight: '',
+    parcel_weight: '',
+    internalNotes: '',
+    internal_notes: '',
     trackingNumber: tracking,
+    tracking_number: tracking,
     trackingUpdates: [{
       status: 'Pending',
       date: nowIso,
