@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { Category, Product } from '../types';
 import { useCart } from '../CartContext';
@@ -199,35 +199,44 @@ export function ProductGrid() {
     return () => clearTimeout(timer);
   }, [activeCategory, activeSubCategory, sortBy, saleOnly, inStockOnly]);
 
-  const uniqueCategories = Array.from(new Set<string>(productsList.map(p => p.category)));
-  const categories: Category[] = ['All', ...uniqueCategories];
+  // ⚡ Bolt: Memoize categories generation to prevent O(N) operations on every re-render
+  const categories = useMemo(() => {
+    const uniqueCategories = Array.from(new Set<string>(productsList.map(p => p.category)));
+    return ['All', ...uniqueCategories] as Category[];
+  }, [productsList]);
 
-  let filteredProducts = activeCategory === 'All'
-    ? [...productsList]
-    : productsList.filter(p => p.category === activeCategory);
+  // ⚡ Bolt: Memoize filtered/sorted products to avoid expensive O(N) filtering and O(N log N) sorting
+  // This drastically reduces main thread blocking during unrelated state changes (like cart toggles)
+  const filteredProducts = useMemo(() => {
+    let result = activeCategory === 'All'
+      ? [...productsList]
+      : productsList.filter(p => p.category === activeCategory);
 
-  if (activeCategory !== 'All' && activeSubCategory !== 'All') {
-    filteredProducts = filteredProducts.filter(p => p.subCategory === activeSubCategory);
-  }
+    if (activeCategory !== 'All' && activeSubCategory !== 'All') {
+      result = result.filter(p => p.subCategory === activeSubCategory);
+    }
 
-  if (saleOnly) {
-    filteredProducts = filteredProducts.filter(p => isFlashSaleActive(p) || Boolean(p.compareAtPrice && p.compareAtPrice > p.price));
-  }
+    if (saleOnly) {
+      result = result.filter(p => isFlashSaleActive(p) || Boolean(p.compareAtPrice && p.compareAtPrice > p.price));
+    }
 
-  if (inStockOnly) {
-    filteredProducts = filteredProducts.filter(p => (p.stock ?? 1) > 0);
-  }
+    if (inStockOnly) {
+      result = result.filter(p => (p.stock ?? 1) > 0);
+    }
 
-  if (sortBy === 'low-to-high') {
-    filteredProducts.sort((a, b) => getActivePrice(a) - getActivePrice(b));
-  } else if (sortBy === 'high-to-low') {
-    filteredProducts.sort((a, b) => getActivePrice(b) - getActivePrice(a));
-  } else if (sortBy === 'newest') {
-    filteredProducts.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
-  } else {
-    // popular
-    filteredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  }
+    if (sortBy === 'low-to-high') {
+      result.sort((a, b) => getActivePrice(a) - getActivePrice(b));
+    } else if (sortBy === 'high-to-low') {
+      result.sort((a, b) => getActivePrice(b) - getActivePrice(a));
+    } else if (sortBy === 'newest') {
+      result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+    } else {
+      // popular
+      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    }
+
+    return result;
+  }, [productsList, activeCategory, activeSubCategory, saleOnly, inStockOnly, sortBy]);
 
   return (
     <section id="shop" className="py-24 lg:py-32 bg-[#F9F7F2]">
