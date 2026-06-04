@@ -181,7 +181,7 @@ export function ProductCard({ product, addToCart }: { product: Product; addToCar
           <button
             disabled={product.stock === 0}
             onClick={handleAddToCart}
-            className="w-full rounded-full bg-[#CDA185] px-4 py-3 text-center font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#2c2826] shadow-sm transition-colors hover:bg-[#b88768] focus:outline-none focus:ring-2 focus:ring-[#8a4f48] focus:ring-offset-2 focus:ring-offset-[#F9F7F2] disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-full bg-[#CDA185] px-4 py-3 text-center font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#2c2826] shadow-sm transition-all duration-300 hover:bg-[#b88768] focus:outline-none focus:ring-2 focus:ring-[#8a4f48] focus:ring-offset-2 focus:ring-offset-[#F9F7F2] disabled:cursor-not-allowed disabled:opacity-50 sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-y-0 sm:group-focus-within:opacity-100"
           >
             {product.stock === 0 ? 'Out of Stock' : `Add to Cart - Rs. ${displayPrice.toFixed(2)}`}
           </button>

@@ -31,14 +31,16 @@ export function CheckoutPage() {
 
   const firstTimeDiscountEligible = currentUser && !loginDiscountUsed;
   const firstTimeDiscountAmount = firstTimeDiscountEligible ? 10 : 0;
+  const canUseCoupons = settings.enableCoupons !== false;
+  const canUseExpressDelivery = settings.enableExpressDelivery !== false;
 
-  const effectiveDiscount = appliedCoupon ? appliedCoupon.discountPercentage : firstTimeDiscountAmount;
+  const effectiveDiscount = canUseCoupons && appliedCoupon ? appliedCoupon.discountPercentage : firstTimeDiscountAmount;
   const deliveryFee = cartTotal >= settings.freeShippingThreshold ? 0 : (deliveryMethod === 'express' ? settings.deliveryFee + 100 : settings.deliveryFee);
 
-  const subtotalAfterDiscount = (appliedCoupon || firstTimeDiscountEligible) ? cartTotal * (1 - effectiveDiscount / 100) : cartTotal;
+  const subtotalAfterDiscount = ((canUseCoupons && appliedCoupon) || firstTimeDiscountEligible) ? cartTotal * (1 - effectiveDiscount / 100) : cartTotal;
   const finalTotal = subtotalAfterDiscount + deliveryFee;
   const coinsToEarn = Math.floor(finalTotal / 10);
-  const deliveryWindow = deliveryMethod === 'express' ? '1-2 business days' : '3-5 business days';
+  const deliveryWindow = deliveryMethod === 'express' ? settings.expressDeliveryWindow : settings.standardDeliveryWindow;
   const normalizedCoinsToRedeem = Math.max(0, Math.min(coins, Math.floor(Number(coinsToRedeem) || 0)));
 
   const [name, setName] = useState('');
@@ -61,6 +63,12 @@ export function CheckoutPage() {
       navigate('/');
     }
   }, [items, checkoutStep, navigate]);
+
+  useEffect(() => {
+    if (!canUseExpressDelivery && deliveryMethod === 'express') {
+      setDeliveryMethod('standard');
+    }
+  }, [canUseExpressDelivery, deliveryMethod]);
 
   useEffect(() => {
     const savedDetails = localStorage.getItem('aura_checkout_details');
@@ -86,6 +94,10 @@ export function CheckoutPage() {
   const hasDiscount = items.some(item => item.quantity >= 5);
 
   const handleApplyCoupon = async () => {
+    if (!canUseCoupons) {
+      setCouponError('Coupons are currently disabled by the store.');
+      return;
+    }
     if (!couponInput.trim()) return;
     if (!currentUser || !supabase) {
       setIsLoginOpen(true);
@@ -173,7 +185,7 @@ export function CheckoutPage() {
         home: formHome,
         state: formState,
         country: formCountry,
-        paymentMethod: 'Cash on Delivery',
+        paymentMethod: settings.codPaymentLabel || 'Cash on Delivery',
         deliveryMethod,
         couponCode: appliedCoupon?.code || '',
         coinsToRedeem: normalizedCoinsToRedeem,
@@ -354,22 +366,24 @@ export function CheckoutPage() {
                   <div className="flex items-center gap-4">
                     <input type="radio" value="standard" checked={deliveryMethod === 'standard'} onChange={() => setDeliveryMethod('standard')} className="accent-[#1A1A1A] w-4 h-4" />
                     <div>
-                      <p className="font-sans text-sm font-medium">Standard Delivery</p>
-                      <p className="font-sans text-xs text-[#1A1A1A]/60">3-5 business days</p>
+                      <p className="font-sans text-sm font-medium">{settings.standardDeliveryLabel}</p>
+                      <p className="font-sans text-xs text-[#1A1A1A]/60">{settings.standardDeliveryWindow}</p>
                     </div>
                   </div>
                   <span className="font-sans text-sm font-bold">{cartTotal >= settings.freeShippingThreshold ? 'Free' : `Rs. ${Number(settings.deliveryFee).toFixed(2)}`}</span>
                 </label>
+                {canUseExpressDelivery && (
                 <label className={`flex items-center justify-between p-4 border cursor-pointer transition-colors ${deliveryMethod === 'express' ? 'border-[#1A1A1A] bg-[#1A1A1A]/5' : 'border-[#1A1A1A]/20 hover:border-[#1A1A1A]/50'}`}>
                   <div className="flex items-center gap-4">
                     <input type="radio" value="express" checked={deliveryMethod === 'express'} onChange={() => setDeliveryMethod('express')} className="accent-[#1A1A1A] w-4 h-4" />
                     <div>
-                      <p className="font-sans text-sm font-medium">Express Delivery</p>
-                      <p className="font-sans text-xs text-[#1A1A1A]/60">1-2 business days</p>
+                      <p className="font-sans text-sm font-medium">{settings.expressDeliveryLabel}</p>
+                      <p className="font-sans text-xs text-[#1A1A1A]/60">{settings.expressDeliveryWindow}</p>
                     </div>
                   </div>
                   <span className="font-sans text-sm font-bold">{cartTotal >= settings.freeShippingThreshold ? `Rs. ${Number(100).toFixed(2)}` : `Rs. ${Number(settings.deliveryFee + 100).toFixed(2)}`}</span>
                 </label>
+                )}
               </div>
             </div>
             
@@ -382,7 +396,7 @@ export function CheckoutPage() {
                 </div>
                 <div className="border border-[#1A1A1A]/10 bg-white p-3 flex items-start gap-2">
                   <CreditCard className="w-4 h-4 text-[#CDA185] mt-0.5 shrink-0" />
-                  <span className="font-sans text-[10px] uppercase tracking-wider font-bold text-[#1A1A1A]/70">Cash on delivery</span>
+                  <span className="font-sans text-[10px] uppercase tracking-wider font-bold text-[#1A1A1A]/70">{settings.codPaymentLabel}</span>
                 </div>
                 <div className="border border-[#1A1A1A]/10 bg-white p-3 flex items-start gap-2">
                   <Truck className="w-4 h-4 text-[#CDA185] mt-0.5 shrink-0" />
@@ -399,9 +413,14 @@ export function CheckoutPage() {
                     readOnly
                     className="accent-[#1A1A1A] w-4 h-4"
                   />
-                  <span className="font-sans text-base">Cash on Delivery</span>
+                  <span className="font-sans text-base">{settings.codPaymentLabel}</span>
                 </label>
               </div>
+              {settings.checkoutNotice && (
+                <p className="mt-4 rounded border border-[#1A1A1A]/10 bg-white px-4 py-3 font-sans text-xs leading-6 text-[#1A1A1A]/60">
+                  {settings.checkoutNotice}
+                </p>
+              )}
             </div>
           </form>
         </div>
@@ -464,6 +483,7 @@ export function CheckoutPage() {
               </div>
 
               {/* Coupon inputs */}
+              {canUseCoupons && (
               <div className="mb-6 space-y-2 pb-6 border-b border-[#1A1A1A]/10">
                 <label className="block font-sans text-[9px] uppercase font-bold tracking-widest text-[#1A1A1A]/50">Discount Code / Voucher</label>
                 <div className="flex gap-2">
@@ -487,6 +507,7 @@ export function CheckoutPage() {
                 {couponError && <p className="text-red-500 font-sans text-[9px] font-bold mt-1">⚠️ {couponError}</p>}
                 {appliedCoupon && <p className="text-green-600 font-sans text-[9px] font-bold mt-1">✓ Coupon applied! {appliedCoupon.discountPercentage}% discount badge activated.</p>}
               </div>
+              )}
 
               {/* Banners */}
               {hasDiscount && (
@@ -545,7 +566,7 @@ export function CheckoutPage() {
                   <span>Shipping Fee</span>
                   <span className="font-sans font-bold">{deliveryFee === 0 ? 'Free' : `Rs. ${Number(deliveryFee).toFixed(2)}`}</span>
                 </div>
-                {(appliedCoupon || firstTimeDiscountEligible) && (
+                {((canUseCoupons && appliedCoupon) || firstTimeDiscountEligible) && (
                   <div className="flex justify-between font-sans text-xs text-green-700 font-medium">
                     <span>Discount</span>
                     <span className="font-sans font-bold">-{effectiveDiscount}%</span>
@@ -581,7 +602,7 @@ export function CheckoutPage() {
                 disabled={isProcessing}
                 className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-4 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#CDA185] transition-all flex flex-col items-center justify-center gap-1 leading-none disabled:opacity-50 cursor-pointer shadow-md"
               >
-                <span>{isProcessing ? 'Processing Securely...' : 'Confirm COD Order'}</span>
+                <span>{isProcessing ? 'Processing Securely...' : settings.orderButtonLabel}</span>
                 <span className="text-[9px] text-[#F9F7F2]/60 tracking-wider normal-case font-normal flex items-center gap-1.5 mt-1 font-semibold">
                   <Coins className="w-3.5 h-3.5 text-[#CDA185]" /> Earn {coinsToEarn} Aabnoor Coins
                 </span>

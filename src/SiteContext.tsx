@@ -17,6 +17,11 @@ export interface UserAccount {
 }
 
 export interface SiteSettings {
+  themePrimary: string;
+  themeBackground: string;
+  themeText: string;
+  themeMuted: string;
+  themeAccent: string;
   deliveryFee: number;
   freeShippingThreshold: number;
   storeName: string;
@@ -37,6 +42,70 @@ export interface SiteSettings {
   heroTitle: string;
   heroSubtitle: string;
   heroImageUrl: string;
+  heroPrimaryCtaLabel: string;
+  heroPrimaryCtaUrl: string;
+  heroSecondaryCtaLabel: string;
+  heroSecondaryCtaUrl: string;
+  homeSeoTitle: string;
+  homeSeoDescription: string;
+  showHomeHero: boolean;
+  showHomeMarquee: boolean;
+  showHomeSmartSearch: boolean;
+  showHomeTrustBadges: boolean;
+  showHomeCategories: boolean;
+  showHomeBestSellers: boolean;
+  showHomeLiveSalePromo: boolean;
+  showHomeBenefits: boolean;
+  showHomeSeoContent: boolean;
+  showHomeProductGrid: boolean;
+  showHomeReviews: boolean;
+  enableAnnouncementBar: boolean;
+  announcementMessages: string[];
+  enableHeaderSearch: boolean;
+  enableWishlistFeature: boolean;
+  enableLoyaltyWidget: boolean;
+  enableMobileBottomNav: boolean;
+  enableWhatsApp: boolean;
+  enableSkinQuiz: boolean;
+  enableCoupons: boolean;
+  enableExpressDelivery: boolean;
+  maintenanceMode: boolean;
+  maintenanceTitle: string;
+  maintenanceMessage: string;
+  maintenanceEta: string;
+  promoPopupEnabled: boolean;
+  promoPopupTitle: string;
+  promoPopupBody: string;
+  promoPopupCode: string;
+  promoPopupCtaLabel: string;
+  promoPopupCtaUrl: string;
+  whatsappMessage: string;
+  checkoutNotice: string;
+  standardDeliveryLabel: string;
+  standardDeliveryWindow: string;
+  expressDeliveryLabel: string;
+  expressDeliveryWindow: string;
+  codPaymentLabel: string;
+  orderButtonLabel: string;
+  footerTagline: string;
+  showFooterNewsletter: boolean;
+  privacyPageContent: string;
+  termsPageContent: string;
+  shippingPageContent: string;
+  contactPageContent: string;
+  faqPageContent: string;
+  storyPageContent: string;
+  sustainabilityPageContent: string;
+  ingredientsPageContent: string;
+  journalPageContent: string;
+  trustBadgeSecureTitle: string;
+  trustBadgeSecureText: string;
+  trustBadgeDeliveryTitle: string;
+  trustBadgeDeliveryText: string;
+  trustBadgeTrackingTitle: string;
+  trustBadgeTrackingText: string;
+  trustBadgeOffersTitle: string;
+  trustBadgeOffersText: string;
   liveSaleActive: boolean;
   liveSaleTitle: string;
   liveSaleSubtitle: string;
@@ -50,6 +119,11 @@ export interface SiteSettings {
 const getDefaultLiveSaleEndTime = () => new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString();
 
 const DEFAULT_SETTINGS: SiteSettings = {
+  themePrimary: '#C97A82',
+  themeBackground: '#FAF6F0',
+  themeText: '#2D2426',
+  themeMuted: '#8A7070',
+  themeAccent: '#B8895A',
   deliveryFee: 150,
   freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
   storeName: 'Aabnoor Beauty',
@@ -66,10 +140,79 @@ const DEFAULT_SETTINGS: SiteSettings = {
   strn: '',
   taxEnabled: false,
   defaultReturnPolicy: 'Beauty and personal care items can be returned only when unopened, unused, and reported within 7 days of delivery.',
-  heroEyebrow: 'The Future of Beauty',
-  heroTitle: 'Redefine Your Beauty Routine',
-  heroSubtitle: 'Curated skincare, makeup, hair care, and fragrance essentials designed for modern beauty.',
+  heroEyebrow: 'New Collection',
+  heroTitle: 'Discover Your Glow',
+  heroSubtitle: 'Premium beauty essentials, curated for you with secure checkout, Cash on Delivery, and trackable orders.',
   heroImageUrl: 'https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=80&w=2400&auto=format&fit=crop',
+  heroPrimaryCtaLabel: 'Shop Now',
+  heroPrimaryCtaUrl: '/shop',
+  heroSecondaryCtaLabel: 'Take Skin Quiz',
+  heroSecondaryCtaUrl: '/skin-quiz',
+  homeSeoTitle: 'Aabnoor Beauty | Premium Beauty & Skincare',
+  homeSeoDescription: 'Shop Aabnoor Beauty for premium skincare, makeup, hair care, fragrance, live sale offers, secure checkout and order tracking.',
+  showHomeHero: true,
+  showHomeMarquee: true,
+  showHomeSmartSearch: true,
+  showHomeTrustBadges: true,
+  showHomeCategories: true,
+  showHomeBestSellers: true,
+  showHomeLiveSalePromo: true,
+  showHomeBenefits: true,
+  showHomeSeoContent: true,
+  showHomeProductGrid: true,
+  showHomeReviews: true,
+  enableAnnouncementBar: true,
+  announcementMessages: [
+    'Free shipping over Rs. 9999',
+    'Cash on Delivery available',
+    '10% off your first order',
+    'Track every order after checkout',
+  ],
+  enableHeaderSearch: true,
+  enableWishlistFeature: true,
+  enableLoyaltyWidget: true,
+  enableMobileBottomNav: true,
+  enableWhatsApp: true,
+  enableSkinQuiz: true,
+  enableCoupons: true,
+  enableExpressDelivery: true,
+  maintenanceMode: false,
+  maintenanceTitle: 'Aabnoor Beauty is getting polished',
+  maintenanceMessage: 'We are updating the store experience. Please check back shortly or contact support for urgent orders.',
+  maintenanceEta: 'Back soon',
+  promoPopupEnabled: false,
+  promoPopupTitle: 'Glow offer unlocked',
+  promoPopupBody: 'Use today\'s beauty offer before checkout. Limited-time savings are applied by coupon code.',
+  promoPopupCode: 'AABNOOR10',
+  promoPopupCtaLabel: 'Shop Offer',
+  promoPopupCtaUrl: '/shop',
+  whatsappMessage: 'Hi Aabnoor Beauty, I need help with my order.',
+  checkoutNotice: 'Cash on Delivery orders are confirmed by phone before dispatch. Please enter an active contact number.',
+  standardDeliveryLabel: 'Standard Delivery',
+  standardDeliveryWindow: '3-5 business days',
+  expressDeliveryLabel: 'Express Delivery',
+  expressDeliveryWindow: '1-2 business days',
+  codPaymentLabel: 'Cash on Delivery',
+  orderButtonLabel: 'Confirm COD Order',
+  footerTagline: 'Premium skincare, makeup, hair care and fragrance with secure checkout, clear delivery tracking and local payment support.',
+  showFooterNewsletter: true,
+  privacyPageContent: '',
+  termsPageContent: '',
+  shippingPageContent: '',
+  contactPageContent: '',
+  faqPageContent: '',
+  storyPageContent: '',
+  sustainabilityPageContent: '',
+  ingredientsPageContent: '',
+  journalPageContent: '',
+  trustBadgeSecureTitle: 'Secure Checkout',
+  trustBadgeSecureText: 'Protected login and verified order flow.',
+  trustBadgeDeliveryTitle: 'Fast Delivery',
+  trustBadgeDeliveryText: 'Free shipping over Rs. {threshold}.',
+  trustBadgeTrackingTitle: 'Order Tracking',
+  trustBadgeTrackingText: 'Tracking number is saved and emailed.',
+  trustBadgeOffersTitle: 'Fresh Offers',
+  trustBadgeOffersText: '{count} active flash deal{plural}.',
   liveSaleActive: true,
   liveSaleTitle: 'Midnight Bloom Flash Series',
   liveSaleSubtitle: 'Limited beauty offers with clear pricing, Cash on Delivery, and order tracking.',
@@ -293,13 +436,19 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       if (remoteSettings) {
         const savedEmail = String(remoteSettings.storeEmail || '').trim().toLowerCase();
         const shouldReplacePlaceholderEmail = ['hello@aabnoor.com', 'contact@aabnoor.com'].includes(savedEmail);
+        const shouldReplaceOldHero =
+          remoteSettings.heroTitle === 'Redefine Your Beauty Routine' &&
+          remoteSettings.heroSubtitle === 'Curated skincare, makeup, hair care, and fragrance essentials designed for modern beauty.';
         const mergedSettings = {
           ...DEFAULT_SETTINGS,
           ...remoteSettings,
           storeEmail: shouldReplacePlaceholderEmail ? SUPPORT_EMAIL : remoteSettings.storeEmail || SUPPORT_EMAIL,
+          heroEyebrow: shouldReplaceOldHero ? DEFAULT_SETTINGS.heroEyebrow : remoteSettings.heroEyebrow || DEFAULT_SETTINGS.heroEyebrow,
+          heroTitle: shouldReplaceOldHero ? DEFAULT_SETTINGS.heroTitle : remoteSettings.heroTitle || DEFAULT_SETTINGS.heroTitle,
+          heroSubtitle: shouldReplaceOldHero ? DEFAULT_SETTINGS.heroSubtitle : remoteSettings.heroSubtitle || DEFAULT_SETTINGS.heroSubtitle,
         };
         setSettingsState(mergedSettings);
-        if (!remoteSettings.liveSaleEndTime || shouldReplacePlaceholderEmail) {
+        if (!remoteSettings.liveSaleEndTime || shouldReplacePlaceholderEmail || shouldReplaceOldHero) {
           setStoreValue('settings', mergedSettings);
         }
       } else {

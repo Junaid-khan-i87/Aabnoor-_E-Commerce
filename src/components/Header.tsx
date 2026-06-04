@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Menu as HeadlessMenu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { ChevronDown, ShoppingBag, Menu, User, Coins, Heart } from 'lucide-react';
+import { ChevronDown, ShoppingBag, Menu, User, Coins, Heart, X } from 'lucide-react';
 import { useCart } from '../CartContext';
 import { useCategory } from '../CategoryContext';
 import { useUI } from '../UIContext';
 import { useLoyalty } from '../LoyaltyContext';
 import { useSite } from '../SiteContext';
 import { useProducts } from '../ProductContext';
+import { useWishlist } from '../WishlistContext';
 import { motion, useScroll, useMotionValueEvent } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SearchBar } from './SearchBar';
@@ -15,12 +16,12 @@ import { getShopHref, withProductCounts } from '../data/categories';
 export function Header() {
   const { setIsCartOpen, cartCount } = useCart();
   const { scrollToShopAndFilter, activeCategory } = useCategory();
-  const { setIsMenuOpen, setIsLoginOpen, setIsWishlistOpen } = useUI();
+  const { setIsMenuOpen, setIsLoginOpen } = useUI();
   const { coins } = useLoyalty();
   const { siteName, bannerText, isBannerActive, currentUser, settings } = useSite();
   const { productsList } = useProducts();
+  const { wishlist } = useWishlist();
   const { scrollY } = useScroll();
-  const [hidden, setHidden] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const [showBannerLocal, setShowBannerLocal] = useState(() => {
@@ -28,21 +29,37 @@ export function Header() {
   });
   const [isLoyaltyOpen, setIsLoyaltyOpen] = useState(false);
   const navCategories = withProductCounts(productsList);
+  const announcementMessages = useMemo(() => {
+    const adminMessage = isBannerActive && bannerText.trim() ? bannerText.trim() : '';
+    return [
+      adminMessage,
+      ...((settings.announcementMessages || []).map((message) =>
+        message.replace('{threshold}', Number(settings.freeShippingThreshold).toFixed(0))
+      )),
+    ].filter(Boolean);
+  }, [bannerText, isBannerActive, settings.announcementMessages, settings.freeShippingThreshold]);
+  const [announcementIndex, setAnnouncementIndex] = useState(0);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    const previous = scrollY.getPrevious() || 0;
-    if (latest > previous && latest > 150) {
-      setHidden(true);
-    } else {
-      setHidden(false);
-    }
     setIsScrolled(latest > 50);
   });
 
-  const announcementText = isBannerActive && bannerText.trim()
-    ? bannerText
-    : `Free shipping over Rs. ${Number(settings.freeShippingThreshold).toFixed(0)} - Cash on Delivery available - Track every order`;
-  const showBanner = showBannerLocal;
+  useEffect(() => {
+    if (announcementMessages.length < 2) return undefined;
+    const timer = window.setInterval(() => {
+      setAnnouncementIndex((current) => (current + 1) % announcementMessages.length);
+    }, 3500);
+    return () => window.clearInterval(timer);
+  }, [announcementMessages.length]);
+
+  useEffect(() => {
+    if (announcementIndex >= announcementMessages.length) {
+      setAnnouncementIndex(0);
+    }
+  }, [announcementIndex, announcementMessages.length]);
+
+  const announcementText = announcementMessages[announcementIndex] || announcementMessages[0] || '';
+  const showBanner = showBannerLocal && settings.enableAnnouncementBar !== false && announcementMessages.length > 0;
 
   const handleNav = (category: string, subcategory?: string) => {
     scrollToShopAndFilter(category, subcategory);
@@ -54,15 +71,15 @@ export function Header() {
         visible: { y: 0 },
         hidden: { y: "-100%" },
       }}
-      animate={hidden ? "hidden" : "visible"}
+      animate="visible"
       transition={{ duration: 0.35, ease: "easeInOut" }}
-      className={`fixed top-0 inset-x-0 z-30 transition-colors duration-300 flex flex-col ${
+      className={`fixed top-0 inset-x-0 z-[100] transition-colors duration-300 flex flex-col ${
         isScrolled ? 'bg-[#fffaf7]/92 backdrop-blur-md border-b border-[#2c2826]/10 shadow-sm' : 'bg-[#fffaf7] border-b border-[#2c2826]/10'
       }`}
     >
       {showBanner && (
         <div className="w-full bg-[#2c2826] text-[#faf6f1] py-2 px-6 flex items-center justify-center relative">
-          <p className="font-sans text-[10px] uppercase tracking-[0.2em] font-medium text-center text-[#ede0c8]">
+          <p key={announcementText} className="animate-slide-in-right font-sans text-[10px] uppercase tracking-[0.2em] font-medium text-center text-[#ede0c8]">
             {announcementText}
           </p>
           <button 
@@ -73,11 +90,11 @@ export function Header() {
             className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
             aria-label="Close announcement"
           >
-             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            <X className="h-3 w-3" />
           </button>
         </div>
       )}
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 h-16 w-full flex items-center justify-between">
+      <div className={`max-w-7xl mx-auto px-5 sm:px-6 w-full flex items-center justify-between transition-[height] duration-300 ${isScrolled ? 'h-14' : 'h-16'}`}>
         {/* Mobile Menu */}
         <div className="flex-1 lg:hidden">
           <button className="p-2 -ml-2 hover:bg-[#2c2826]/5 rounded-full transition-colors" aria-label="Menu" onClick={() => setIsMenuOpen(true)}>
@@ -170,6 +187,7 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex-1 flex justify-end items-center gap-2 md:gap-6">
+          {settings.enableLoyaltyWidget !== false && (
           <button 
             type="button"
             onClick={() => setIsLoyaltyOpen(true)}
@@ -180,14 +198,22 @@ export function Header() {
             <Coins className="w-4 h-4 text-[#b8975a]" />
             <span className="font-sans text-[11px] font-bold tracking-[0.1em] text-[#2c2826]">{coins}</span>
           </button>
+          )}
 
+          {settings.enableWishlistFeature !== false && (
           <button
-            className="flex p-2 hover:bg-[#2c2826]/5 rounded-full transition-colors cursor-pointer"
+            className="relative flex p-2 hover:bg-[#2c2826]/5 rounded-full transition-colors cursor-pointer"
             aria-label="Wishlist"
-            onClick={() => setIsWishlistOpen(true)}
+            onClick={() => navigate('/wishlist')}
           >
             <Heart className="w-5 h-5 text-[#2c2826]" />
+            {wishlist.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#c97a82] px-1 font-sans text-[9px] font-bold text-white">
+                {wishlist.length}
+              </span>
+            )}
           </button>
+          )}
 
           <button
             onClick={() => currentUser ? navigate('/profile') : setIsLoginOpen(true)}
@@ -216,11 +242,13 @@ export function Header() {
         </div>
       </div>
 
+      {settings.enableHeaderSearch !== false && (
       <div className="border-t border-[#2c2826]/8 bg-[#fffaf7]/95">
-        <div className="mx-auto flex h-14 max-w-7xl items-center px-5 sm:px-6">
+        <div className={`mx-auto flex max-w-7xl items-center px-5 sm:px-6 transition-[height] duration-300 ${isScrolled ? 'h-12' : 'h-14'}`}>
           <SearchBar />
         </div>
       </div>
+      )}
 
       {/* Loyalty Coins Info Modal */}
       {isLoyaltyOpen && (

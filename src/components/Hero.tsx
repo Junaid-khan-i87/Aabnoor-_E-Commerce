@@ -27,30 +27,30 @@ export function Hero() {
           >
             <p className="mb-4 inline-flex w-fit items-center gap-2 border border-[#c8847a] px-3 py-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-[#f0d5d0]">
               <Sparkles className="h-3.5 w-3.5" />
-              {settings.heroEyebrow || 'New Collection 2026'}
+              {settings.heroEyebrow || 'New Collection'}
             </p>
             <h1 className="max-w-xl font-serif text-5xl font-light leading-[0.95] tracking-normal text-white sm:text-6xl lg:text-7xl">
-              {settings.heroTitle || 'Reveal Your Radiance'}
+              {settings.heroTitle || 'Discover Your Glow'}
             </h1>
             <p className="mt-6 max-w-md font-sans text-sm leading-7 text-white/65 sm:text-base">
-              {settings.heroSubtitle || 'Curated premium skincare, makeup, hair care and fragrance delivered with secure checkout and trackable orders.'}
+              {settings.heroSubtitle || 'Premium beauty essentials, curated for you with secure checkout, Cash on Delivery, and trackable orders.'}
             </p>
             <div className="mt-9 flex flex-col gap-4 sm:flex-row">
               <Link
-                to="/shop"
+                to={settings.heroPrimaryCtaUrl || '/shop'}
                 onClick={() => scrollToShopAndFilter('All')}
                 className="group relative inline-flex items-center justify-center gap-2 overflow-hidden bg-white/10 px-8 py-4 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:bg-white hover:text-[#2c2420] glass-panel"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Shop Now
+                  {settings.heroPrimaryCtaLabel || 'Shop Now'}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
               </Link>
               <Link
-                to="/live-sale"
+                to={settings.heroSecondaryCtaUrl || '/skin-quiz'}
                 className="inline-flex items-center justify-center border border-white/20 px-8 py-4 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:border-white hover:bg-white/5"
               >
-                Live Sale
+                {settings.heroSecondaryCtaLabel || 'Take Skin Quiz'}
               </Link>
             </div>
           </motion.div>

@@ -26,6 +26,12 @@ import { Cart } from './components/Cart';
 import { MobileMenu } from './components/MobileMenu';
 import { LoginOverlay } from './components/LoginOverlay';
 import { WishlistOverlay } from './components/WishlistOverlay';
+import { SearchOverlay } from './components/SearchOverlay';
+import { MobileBottomNav } from './components/MobileBottomNav';
+import { FloatingWhatsApp } from './components/FloatingWhatsApp';
+import { ThemeController } from './components/ThemeController';
+import { MaintenanceGate } from './components/MaintenanceGate';
+import { PromoPopup } from './components/PromoPopup';
 
 import {
   PrivacyContent,
@@ -53,6 +59,8 @@ const LiveSaleHubPage = lazy(() => import('./pages/LiveSaleHubPage').then((modul
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })));
 const TrackPage = lazy(() => import('./pages/TrackPage').then((module) => ({ default: module.TrackPage })));
 const CartPage = lazy(() => import('./pages/CartPage').then((module) => ({ default: module.CartPage })));
+const WishlistPage = lazy(() => import('./pages/WishlistPage').then((module) => ({ default: module.WishlistPage })));
+const SkinQuizPage = lazy(() => import('./pages/SkinQuizPage').then((module) => ({ default: module.SkinQuizPage })));
 
 function PageFallback() {
   return (
@@ -73,8 +81,10 @@ function AppShell() {
             <CategoryProvider>
               <WishlistProvider>
                 <CartProvider>
-                  <div className="min-h-screen bg-[#F9F7F2] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#1A1A1A] selection:text-[#F9F7F2]">
+                  <div className="min-h-screen bg-[#F9F7F2] text-[#1A1A1A] flex flex-col pb-16 font-sans selection:bg-[#1A1A1A] selection:text-[#F9F7F2] md:pb-0">
+                    <ThemeController />
                     <Header />
+                    <MaintenanceGate>
                     <main className="flex-1 shrink-0">
                       <Suspense fallback={<PageFallback />}>
                         <Routes>
@@ -84,6 +94,8 @@ function AppShell() {
                           <Route path="/admin" element={<AdminPage />} />
                           <Route path="/profile" element={<ProfilePage />} />
                           <Route path="/cart" element={<CartPage />} />
+                          <Route path="/wishlist" element={<WishlistPage />} />
+                          <Route path="/skin-quiz" element={<SkinQuizPage />} />
                           <Route path="/checkout" element={<CheckoutPage />} />
                           <Route path="/track" element={<TrackPage />} />
                           <Route path="/live-sale" element={<LiveSaleHubPage />} />
@@ -99,11 +111,16 @@ function AppShell() {
                         </Routes>
                       </Suspense>
                     </main>
+                    </MaintenanceGate>
                     <Footer />
                     <Cart />
                     <MobileMenu />
                     <LoginOverlay />
+                    <SearchOverlay />
                     <WishlistOverlay />
+                    <FloatingWhatsApp />
+                    <MobileBottomNav />
+                    <PromoPopup />
                   </div>
                 </CartProvider>
               </WishlistProvider>

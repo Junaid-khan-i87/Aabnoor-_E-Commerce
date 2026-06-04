@@ -38,7 +38,7 @@ export function Footer() {
               {siteName}
             </h2>
             <p className="font-sans text-[12px] text-[#9a9088] max-w-xs leading-7 mb-7">
-              Premium skincare, makeup, hair care and fragrance with secure checkout, clear delivery tracking and local payment support.
+              {settings.footerTagline}
             </p>
             <div className="flex flex-wrap gap-2 mb-7">
               {['COD', 'Order Tracking', 'Email Support'].map((method) => (
@@ -111,6 +111,7 @@ export function Footer() {
             </a>
           </div>
 
+          {settings.showFooterNewsletter !== false && (
           <div>
             <h3 className="font-sans text-[10px] uppercase tracking-[0.22em] text-[#ede0c8] mb-6 font-medium">Newsletter</h3>
             
@@ -143,6 +144,7 @@ export function Footer() {
               </>
             )}
           </div>
+          )}
 
         </div>
 

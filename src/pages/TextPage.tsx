@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
+import { useSite } from '../SiteContext';
 
 interface TextPageProps {
   title: string;
@@ -9,9 +10,36 @@ interface TextPageProps {
 }
 
 export function TextPage({ title, content, canonicalPath }: TextPageProps) {
+  const { settings } = useSite();
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [title]);
+
+  const pageKey = (canonicalPath || '').replace(/^\//, '').replace(/-/g, '');
+  const overrides: Record<string, string> = {
+    privacy: settings.privacyPageContent,
+    terms: settings.termsPageContent,
+    shipping: settings.shippingPageContent,
+    contact: settings.contactPageContent,
+    faq: settings.faqPageContent,
+    ourstory: settings.storyPageContent,
+    sustainability: settings.sustainabilityPageContent,
+    ingredients: settings.ingredientsPageContent,
+    journal: settings.journalPageContent,
+  };
+  const adminContent = overrides[pageKey]?.trim();
+  const renderedContent = adminContent ? (
+    <>
+      {adminContent.split(/\n{2,}/).map((block, index) => {
+        const trimmed = block.trim();
+        if (!trimmed) return null;
+        if (trimmed.startsWith('### ')) {
+          return <h3 key={index} className="text-xl font-bold mt-8 mb-4">{trimmed.replace(/^###\s+/, '')}</h3>;
+        }
+        return <p key={index}>{trimmed}</p>;
+      })}
+    </>
+  ) : content;
 
   return (
     <div className="pt-40 pb-24 max-w-3xl mx-auto px-6 font-sans">
@@ -44,7 +72,7 @@ export function TextPage({ title, content, canonicalPath }: TextPageProps) {
       />
       <h1 className="font-serif italic font-light text-5xl mb-12 text-[#1A1A1A]">{title}</h1>
       <div className="prose prose-sm md:prose-base prose-neutral max-w-none text-[#1A1A1A]/80 leading-relaxed space-y-6">
-        {content}
+        {renderedContent}
       </div>
       <nav className="mt-16 border-t border-[#1A1A1A]/10 pt-8" aria-label="Related customer links">
         <p className="font-sans text-[10px] uppercase tracking-[0.22em] font-bold text-[#1A1A1A]/45 mb-4">Related Aabnoor Help</p>

@@ -3178,7 +3178,7 @@ export function AdminPage() {
             </div>
 
             <div className="bg-white p-6 border border-[#1A1A1A]/10 shadow-sm">
-              <div className="space-y-6 max-w-xl">
+              <div className="space-y-6 max-w-5xl">
                 <div>
                   <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-2">Site Name</label>
                   <div className="flex gap-2">
@@ -3218,6 +3218,118 @@ export function AdminPage() {
                 </div>
 
                 <div className="pt-6 border-t border-[#1A1A1A]/10">
+                  <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-4">Theme, Header & Mobile Controls</label>
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    {[
+                      ['themePrimary', 'Primary'],
+                      ['themeBackground', 'Background'],
+                      ['themeText', 'Text'],
+                      ['themeMuted', 'Muted'],
+                      ['themeAccent', 'Accent'],
+                    ].map(([key, label]) => (
+                      <div key={key}>
+                        <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/60 mb-1">{label}</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            value={String(settingsForm[key as keyof typeof settingsForm] || '#000000')}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, [key]: e.target.value })}
+                            className="h-10 w-12 border border-[#1A1A1A]/20 bg-white p-1"
+                          />
+                          <input
+                            type="text"
+                            value={String(settingsForm[key as keyof typeof settingsForm] || '')}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, [key]: e.target.value })}
+                            className="min-w-0 flex-1 border border-[#1A1A1A]/20 p-2 font-sans text-xs focus:border-[#1A1A1A] outline-none"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Rotating Announcement Messages</label>
+                      <textarea
+                        value={(settingsForm.announcementMessages || []).join('\n')}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, announcementMessages: e.target.value.split('\n').map(line => line.trim()).filter(Boolean) })}
+                        rows={5}
+                        placeholder="One message per line. Use {threshold} for free shipping amount."
+                        className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 content-start">
+                      {[
+                        ['enableAnnouncementBar', 'Announcement bar'],
+                        ['enableHeaderSearch', 'Header search'],
+                        ['enableWishlistFeature', 'Wishlist feature'],
+                        ['enableLoyaltyWidget', 'Loyalty widget'],
+                        ['enableMobileBottomNav', 'Mobile bottom nav'],
+                        ['enableWhatsApp', 'WhatsApp button'],
+                      ].map(([key, label]) => (
+                        <label key={key} className="flex items-center gap-2 rounded border border-[#1A1A1A]/10 bg-[#F9F7F2] p-3 font-sans text-xs font-bold uppercase tracking-[0.12em] text-[#1A1A1A]/70">
+                          <input
+                            type="checkbox"
+                            checked={settingsForm[key as keyof typeof settingsForm] !== false}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, [key]: e.target.checked })}
+                            className="accent-[#1A1A1A]"
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">WhatsApp Default Message</label>
+                    <input
+                      type="text"
+                      value={settingsForm.whatsappMessage}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, whatsappMessage: e.target.value })}
+                      className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-[#1A1A1A]/10">
+                  <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-4">Store Operations & Conversion Tools</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      ['maintenanceMode', 'Maintenance mode'],
+                      ['promoPopupEnabled', 'Promo popup'],
+                      ['enableSkinQuiz', 'Skin quiz page'],
+                      ['enableCoupons', 'Checkout coupons'],
+                      ['enableExpressDelivery', 'Express delivery'],
+                    ].map(([key, label]) => (
+                      <label key={key} className="flex items-center gap-2 rounded border border-[#1A1A1A]/10 bg-[#F9F7F2] p-3 font-sans text-xs font-bold uppercase tracking-[0.12em] text-[#1A1A1A]/70">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(settingsForm[key as keyof typeof settingsForm])}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, [key]: e.target.checked })}
+                          className="accent-[#1A1A1A]"
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="text" value={settingsForm.maintenanceTitle} onChange={(e) => setSettingsForm({ ...settingsForm, maintenanceTitle: e.target.value })} placeholder="Maintenance title" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <input type="text" value={settingsForm.maintenanceEta} onChange={(e) => setSettingsForm({ ...settingsForm, maintenanceEta: e.target.value })} placeholder="Maintenance ETA" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <input type="text" value={settingsForm.orderButtonLabel} onChange={(e) => setSettingsForm({ ...settingsForm, orderButtonLabel: e.target.value })} placeholder="Checkout button label" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <textarea value={settingsForm.maintenanceMessage} onChange={(e) => setSettingsForm({ ...settingsForm, maintenanceMessage: e.target.value })} rows={3} placeholder="Maintenance message" className="md:col-span-3 w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" value={settingsForm.promoPopupTitle} onChange={(e) => setSettingsForm({ ...settingsForm, promoPopupTitle: e.target.value })} placeholder="Promo popup title" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <input type="text" value={settingsForm.promoPopupCode} onChange={(e) => setSettingsForm({ ...settingsForm, promoPopupCode: e.target.value })} placeholder="Promo coupon code" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <input type="text" value={settingsForm.promoPopupCtaLabel} onChange={(e) => setSettingsForm({ ...settingsForm, promoPopupCtaLabel: e.target.value })} placeholder="Promo CTA label" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <input type="text" value={settingsForm.promoPopupCtaUrl} onChange={(e) => setSettingsForm({ ...settingsForm, promoPopupCtaUrl: e.target.value })} placeholder="/shop" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <textarea value={settingsForm.promoPopupBody} onChange={(e) => setSettingsForm({ ...settingsForm, promoPopupBody: e.target.value })} rows={3} placeholder="Promo popup body" className="md:col-span-2 w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-[#1A1A1A]/10">
                   <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-4">Homepage Hero Content</label>
                   <div className="space-y-4">
                     <input
@@ -3248,6 +3360,81 @@ export function AdminPage() {
                       placeholder="Hero image URL"
                       className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
                     />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input
+                        type="text"
+                        value={settingsForm.heroPrimaryCtaLabel}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, heroPrimaryCtaLabel: e.target.value })}
+                        placeholder="Primary CTA label"
+                        className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                      />
+                      <input
+                        type="text"
+                        value={settingsForm.heroPrimaryCtaUrl}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, heroPrimaryCtaUrl: e.target.value })}
+                        placeholder="/shop"
+                        className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                      />
+                      <input
+                        type="text"
+                        value={settingsForm.heroSecondaryCtaLabel}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, heroSecondaryCtaLabel: e.target.value })}
+                        placeholder="Secondary CTA label"
+                        className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                      />
+                      <input
+                        type="text"
+                        value={settingsForm.heroSecondaryCtaUrl}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, heroSecondaryCtaUrl: e.target.value })}
+                        placeholder="/skin-quiz"
+                        className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-[#1A1A1A]/10">
+                  <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-4">Homepage Layout & SEO</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                    <input
+                      type="text"
+                      value={settingsForm.homeSeoTitle}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, homeSeoTitle: e.target.value })}
+                      placeholder="Home SEO title"
+                      className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={settingsForm.homeSeoDescription}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, homeSeoDescription: e.target.value })}
+                      placeholder="Home SEO description"
+                      className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[
+                      ['showHomeHero', 'Hero'],
+                      ['showHomeMarquee', 'Marquee'],
+                      ['showHomeSmartSearch', 'Smart search block'],
+                      ['showHomeTrustBadges', 'Trust badges'],
+                      ['showHomeCategories', 'Category cards'],
+                      ['showHomeBestSellers', 'Best sellers'],
+                      ['showHomeLiveSalePromo', 'Live sale promo'],
+                      ['showHomeBenefits', 'Benefits section'],
+                      ['showHomeSeoContent', 'SEO content block'],
+                      ['showHomeProductGrid', 'Home product grid'],
+                      ['showHomeReviews', 'Customer reviews'],
+                    ].map(([key, label]) => (
+                      <label key={key} className="flex items-center gap-2 rounded border border-[#1A1A1A]/10 bg-[#F9F7F2] p-3 font-sans text-xs font-bold uppercase tracking-[0.12em] text-[#1A1A1A]/70">
+                        <input
+                          type="checkbox"
+                          checked={settingsForm[key as keyof typeof settingsForm] !== false}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, [key]: e.target.checked })}
+                          className="accent-[#1A1A1A]"
+                        />
+                        {label}
+                      </label>
+                    ))}
                   </div>
                 </div>
 
@@ -3340,6 +3527,15 @@ export function AdminPage() {
                     </div>
                   </div>
                   <p className="text-xs text-[#1A1A1A]/50 mt-2">Adjust delivery fee and min. total before it becomes free.</p>
+                  <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" value={settingsForm.standardDeliveryLabel} onChange={(e) => setSettingsForm({...settingsForm, standardDeliveryLabel: e.target.value})} placeholder="Standard delivery label" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <input type="text" value={settingsForm.standardDeliveryWindow} onChange={(e) => setSettingsForm({...settingsForm, standardDeliveryWindow: e.target.value})} placeholder="Standard delivery window" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <input type="text" value={settingsForm.expressDeliveryLabel} onChange={(e) => setSettingsForm({...settingsForm, expressDeliveryLabel: e.target.value})} placeholder="Express delivery label" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <input type="text" value={settingsForm.expressDeliveryWindow} onChange={(e) => setSettingsForm({...settingsForm, expressDeliveryWindow: e.target.value})} placeholder="Express delivery window" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <input type="text" value={settingsForm.codPaymentLabel} onChange={(e) => setSettingsForm({...settingsForm, codPaymentLabel: e.target.value})} placeholder="COD payment label" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <input type="text" value={settingsForm.orderButtonLabel} onChange={(e) => setSettingsForm({...settingsForm, orderButtonLabel: e.target.value})} placeholder="Order button label" className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                    <textarea value={settingsForm.checkoutNotice} onChange={(e) => setSettingsForm({...settingsForm, checkoutNotice: e.target.value})} rows={3} placeholder="Checkout notice" className="md:col-span-2 w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
+                  </div>
                 </div>
 
                 <div className="pt-6 border-t border-[#1A1A1A]/10">
@@ -3402,6 +3598,50 @@ export function AdminPage() {
                 </div>
 
                 <div className="pt-6 border-t border-[#1A1A1A]/10">
+                  <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-4">Footer & Trust Badge Content</label>
+                  <div className="space-y-4">
+                    <label className="flex items-center gap-2 font-sans text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        checked={settingsForm.showFooterNewsletter !== false}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, showFooterNewsletter: e.target.checked })}
+                        className="accent-[#1A1A1A]"
+                      />
+                      Show footer newsletter signup
+                    </label>
+                    <textarea
+                      value={settingsForm.footerTagline}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, footerTagline: e.target.value })}
+                      rows={2}
+                      placeholder="Footer brand tagline"
+                      className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        ['trustBadgeSecureTitle', 'Secure title'],
+                        ['trustBadgeSecureText', 'Secure text'],
+                        ['trustBadgeDeliveryTitle', 'Delivery title'],
+                        ['trustBadgeDeliveryText', 'Delivery text'],
+                        ['trustBadgeTrackingTitle', 'Tracking title'],
+                        ['trustBadgeTrackingText', 'Tracking text'],
+                        ['trustBadgeOffersTitle', 'Offers title'],
+                        ['trustBadgeOffersText', 'Offers text'],
+                      ].map(([key, label]) => (
+                        <input
+                          key={key}
+                          type="text"
+                          value={String(settingsForm[key as keyof typeof settingsForm] || '')}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, [key]: e.target.value })}
+                          placeholder={label}
+                          className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-[#1A1A1A]/50">Trust badge templates support {'{threshold}'}, {'{count}'} and {'{plural}'}.</p>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-[#1A1A1A]/10">
                   <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-4">Social Accounts</label>
                   <div className="space-y-4">
                     <div>
@@ -3412,6 +3652,37 @@ export function AdminPage() {
                       <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-1">Facebook URL</label>
                       <input type="text" value={settingsForm.socialFacebook} onChange={(e) => setSettingsForm({...settingsForm, socialFacebook: e.target.value})} className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none" />
                     </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-[#1A1A1A]/10">
+                  <label className="block font-sans text-[10px] uppercase font-bold tracking-widest text-[#1A1A1A]/70 mb-4">Editable Site Pages</label>
+                  <p className="mb-4 font-sans text-xs leading-6 text-[#1A1A1A]/55">
+                    Leave a page blank to use the built-in copy. Use blank lines between paragraphs and start a heading with "### ".
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      ['privacyPageContent', 'Privacy Policy'],
+                      ['termsPageContent', 'Terms of Service'],
+                      ['shippingPageContent', 'Shipping & Returns'],
+                      ['contactPageContent', 'Contact Page'],
+                      ['faqPageContent', 'FAQs'],
+                      ['storyPageContent', 'Our Story'],
+                      ['sustainabilityPageContent', 'Sustainability'],
+                      ['ingredientsPageContent', 'Ingredients'],
+                      ['journalPageContent', 'Journal'],
+                    ].map(([key, label]) => (
+                      <div key={key} className="md:col-span-1">
+                        <label className="mb-1 block font-sans text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]/60">{label}</label>
+                        <textarea
+                          value={String(settingsForm[key as keyof typeof settingsForm] || '')}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, [key]: e.target.value })}
+                          rows={5}
+                          className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
+                          placeholder={`Custom ${label} content...`}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -3494,7 +3765,7 @@ export function AdminPage() {
                               className="hover:text-red-600 transition-colors cursor-pointer text-[10px] font-extrabold ml-1"
                               title="Delete sub-category"
                             >
-                              ✕
+                              X
                             </button>
                           </span>
                         ))

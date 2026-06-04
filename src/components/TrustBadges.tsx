@@ -8,12 +8,21 @@ export function TrustBadges() {
   const { settings } = useSite();
   const { productsList } = useProducts();
   const activeFlashDeals = productsList.filter((product) => isFlashSaleActive(product)).length;
+  const flashPlural = activeFlashDeals === 1 ? '' : 's';
 
   const badges = [
-    { icon: ShieldCheck, title: 'Secure Checkout', text: 'Protected login and verified order flow.' },
-    { icon: Truck, title: 'Fast Delivery', text: `Free shipping over Rs. ${Number(settings.freeShippingThreshold).toFixed(0)}.` },
-    { icon: PackageCheck, title: 'Order Tracking', text: 'Tracking number is saved and emailed.' },
-    { icon: Sparkles, title: 'Fresh Offers', text: `${activeFlashDeals} active flash deal${activeFlashDeals === 1 ? '' : 's'}.` },
+    { icon: ShieldCheck, title: settings.trustBadgeSecureTitle, text: settings.trustBadgeSecureText },
+    {
+      icon: Truck,
+      title: settings.trustBadgeDeliveryTitle,
+      text: settings.trustBadgeDeliveryText.replace('{threshold}', Number(settings.freeShippingThreshold).toFixed(0)),
+    },
+    { icon: PackageCheck, title: settings.trustBadgeTrackingTitle, text: settings.trustBadgeTrackingText },
+    {
+      icon: Sparkles,
+      title: settings.trustBadgeOffersTitle,
+      text: settings.trustBadgeOffersText.replace('{count}', String(activeFlashDeals)).replace('{plural}', flashPlural),
+    },
   ];
 
   return (

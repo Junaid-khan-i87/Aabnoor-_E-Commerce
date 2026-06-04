@@ -76,12 +76,23 @@ export function HomePage() {
         minute: '2-digit',
       })
     : 'Tonight';
+  const showHomeHero = settings.showHomeHero !== false;
+  const showHomeMarquee = settings.showHomeMarquee !== false;
+  const showHomeSmartSearch = settings.showHomeSmartSearch !== false;
+  const showHomeTrustBadges = settings.showHomeTrustBadges !== false;
+  const showHomeCategories = settings.showHomeCategories !== false;
+  const showHomeBestSellers = settings.showHomeBestSellers !== false;
+  const showHomeLiveSalePromo = settings.showHomeLiveSalePromo !== false;
+  const showHomeBenefits = settings.showHomeBenefits !== false;
+  const showHomeSeoContent = settings.showHomeSeoContent !== false;
+  const showHomeProductGrid = settings.showHomeProductGrid !== false;
+  const showHomeReviews = settings.showHomeReviews !== false;
 
   return (
     <>
       <SEO
-        title="Aabnoor Beaute | Premium Beauty & Skincare"
-        description="Shop Aabnoor Beaute for premium skincare, makeup, hair care, fragrance, live sale offers, secure checkout and order tracking."
+        title={settings.homeSeoTitle || 'Aabnoor Beauty | Premium Beauty & Skincare'}
+        description={settings.homeSeoDescription || 'Shop Aabnoor Beauty for premium skincare, makeup, hair care, fragrance, live sale offers, secure checkout and order tracking.'}
         canonicalPath="/"
         jsonLd={{
           '@context': 'https://schema.org',
@@ -101,8 +112,9 @@ export function HomePage() {
           },
         }}
       />
-      <Hero />
-      <Marquee />
+      {showHomeHero && <Hero />}
+      {showHomeMarquee && <Marquee />}
+      {showHomeSmartSearch && (
       <section className="bg-[#F9F7F2] pt-10 pb-8">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-5 items-stretch">
           <div className="bg-white border border-[#1A1A1A]/10 shadow-sm p-4 sm:p-5">
@@ -179,9 +191,10 @@ export function HomePage() {
           </div>
         </div>
       </section>
-      <TrustBadges />
+      )}
+      {showHomeTrustBadges && <TrustBadges />}
 
-      {categoryCards.length > 0 && (
+      {showHomeCategories && categoryCards.length > 0 && (
         <section className="bg-[#faf6f1] py-16">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-10">
@@ -211,7 +224,7 @@ export function HomePage() {
         </section>
       )}
 
-      {bestSellers.length > 0 && (
+      {showHomeBestSellers && bestSellers.length > 0 && (
         <section className="bg-[#faf6f1] py-20">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
@@ -251,7 +264,7 @@ export function HomePage() {
         </section>
       )}
 
-      {settings.liveSaleActive && (
+      {showHomeLiveSalePromo && settings.liveSaleActive && (
         <section className="bg-[#2c2826] py-10">
           <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 gap-6 md:grid-cols-[1fr_auto] md:items-center">
             <div>
@@ -277,6 +290,7 @@ export function HomePage() {
           </div>
         </section>
       )}
+      {showHomeBenefits && (
       <section className="bg-white py-20 border-y border-[#1A1A1A]/10">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 items-start">
           <div>
@@ -298,6 +312,8 @@ export function HomePage() {
           </div>
         </div>
       </section>
+      )}
+      {showHomeSeoContent && (
       <section className="bg-[#F9F7F2] border-y border-[#1A1A1A]/10 py-14">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[0.85fr_1.15fr] gap-8 md:gap-12 items-start">
           <div>
@@ -322,8 +338,9 @@ export function HomePage() {
           </div>
         </div>
       </section>
-      <ProductGrid />
-      {reviewCards.length > 0 && (
+      )}
+      {showHomeProductGrid && <ProductGrid />}
+      {showHomeReviews && reviewCards.length > 0 && (
         <section className="bg-white py-16 border-y border-[#2c2826]/10">
           <div className="max-w-7xl mx-auto px-6">
             <div className="mb-10 flex flex-col gap-3 text-center">

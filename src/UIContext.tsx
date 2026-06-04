@@ -94,7 +94,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
         className="text-[#F9F7F2]/60 hover:text-[#F9F7F2] ml-auto text-[10px]"
         aria-label="Dismiss notification"
       >
-        ✕
+        X
       </button>
     </div>
   );
