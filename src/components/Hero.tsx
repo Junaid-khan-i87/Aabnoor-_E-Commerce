@@ -11,6 +11,8 @@ export function Hero() {
   const { scrollToShopAndFilter } = useCategory();
   const { settings } = useSite();
   const { productsList } = useProducts();
+  const secondaryCtaUrl = settings.heroSecondaryCtaUrl || '/shop';
+  const secondaryCtaLabel = settings.heroSecondaryCtaLabel || 'Shop Best Sellers';
   const previewProducts = [...productsList]
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 3);
@@ -47,10 +49,10 @@ export function Hero() {
                 </span>
               </Link>
               <Link
-                to={settings.heroSecondaryCtaUrl || '/skin-quiz'}
+                to={secondaryCtaUrl}
                 className="inline-flex items-center justify-center border border-white/20 px-8 py-4 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-all hover:border-white hover:bg-white/5"
               >
-                {settings.heroSecondaryCtaLabel || 'Take Skin Quiz'}
+                {secondaryCtaLabel}
               </Link>
             </div>
           </motion.div>

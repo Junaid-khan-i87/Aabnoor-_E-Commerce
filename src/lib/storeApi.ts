@@ -18,6 +18,17 @@ const canUseSupabase = () => isSupabaseConfigured && supabase;
 
 const naturalIdNumber = (id: string) => Number(id.match(/\d+/)?.[0] || Number.MAX_SAFE_INTEGER);
 
+const stripPrivateReviewFields = <T extends { id: string }>(entity: T): T => {
+  if (!('reviews' in entity) || !Array.isArray((entity as T & { reviews?: unknown }).reviews)) {
+    return entity;
+  }
+
+  return {
+    ...entity,
+    reviews: (entity as T & { reviews: any[] }).reviews.map(({ reviewerHash: _reviewerHash, userId: _userId, userEmail: _userEmail, ...review }) => review),
+  };
+};
+
 export async function listEntities<T extends { id: string }>(table: EntityTable): Promise<T[] | null> {
   if (!canUseSupabase()) return null;
 
@@ -32,7 +43,7 @@ export async function listEntities<T extends { id: string }>(table: EntityTable)
   }
 
   const entities = (data as unknown as StoredEntity<T>[]).map(row => {
-    return { ...row.data, id: row.id };
+    return stripPrivateReviewFields({ ...row.data, id: row.id });
   });
 
   if (table === 'orders') {

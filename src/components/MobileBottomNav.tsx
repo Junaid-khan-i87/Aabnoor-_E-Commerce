@@ -40,9 +40,9 @@ export function MobileBottomNav() {
         </button>
         )}
         {settings.enableHeaderSearch === false && (
-          <NavLink to="/skin-quiz" className={itemClass} aria-label="Skin Quiz">
+          <NavLink to="/track" className={itemClass} aria-label="Track Order">
             <Search className="h-5 w-5" />
-            Quiz
+            Track
           </NavLink>
         )}
         {settings.enableWishlistFeature !== false ? (

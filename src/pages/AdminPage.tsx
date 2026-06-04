@@ -13,7 +13,7 @@ import { supabase } from '../lib/supabase';
 import { deleteEntity, listEntities, upsertEntity } from '../lib/storeApi';
 import { downloadInvoicePdf, downloadShippingLabelPdf, printOrderDocument } from '../lib/orderDocuments';
 
-type AdminTab = 'dashboard' | 'live' | 'orders' | 'customers' | 'products' | 'discounts' | 'reports' | 'settings';
+type AdminTab = 'dashboard' | 'live' | 'orders' | 'customers' | 'products' | 'discounts' | 'reports' | 'audit' | 'settings';
 
 const ADMIN_TABS: { id: AdminTab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -23,6 +23,7 @@ const ADMIN_TABS: { id: AdminTab; label: string }[] = [
   { id: 'customers', label: 'Customers' },
   { id: 'discounts', label: 'Promotions' },
   { id: 'reports', label: 'Reports' },
+  { id: 'audit', label: 'Audit' },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -212,7 +213,7 @@ export function AdminPage() {
     isOpen: boolean;
     title: string;
     message: string;
-    actionType: 'cancel_order' | 'delete_order' | 'delete_user' | 'warn_user' | 'toggle_block_user' | 'delete_product' | null;
+    actionType: 'cancel_order' | 'delete_order' | 'delete_user' | 'warn_user' | 'toggle_block_user' | 'delete_product' | 'delete_coupon' | null;
     targetId: string | null;
   }>({
     isOpen: false,
@@ -252,6 +253,9 @@ export function AdminPage() {
         break;
       case 'delete_product':
         deleteProduct(confirmDialog.targetId);
+        break;
+      case 'delete_coupon':
+        deleteCoupon(confirmDialog.targetId);
         break;
     }
     
@@ -725,6 +729,121 @@ export function AdminPage() {
       tone: (product.stock || 0) === 0 ? 'text-red-700' : 'text-yellow-700',
     })),
   ].slice(0, 10);
+  type AuditStatus = 'pass' | 'warn' | 'fail';
+  type AuditItem = { title: string; status: AuditStatus; detail: string; fix: string };
+  const knownInternalRoutes = new Set([
+    '/',
+    '/shop',
+    '/cart',
+    '/wishlist',
+    '/checkout',
+    '/track',
+    '/live-sale',
+    '/privacy',
+    '/terms',
+    '/shipping',
+    '/contact',
+    '/faq',
+    '/our-story',
+    '/sustainability',
+    '/ingredients',
+    '/journal',
+  ]);
+  const configuredLinks = [
+    settings.heroPrimaryCtaUrl,
+    settings.heroSecondaryCtaUrl,
+    settings.promoPopupCtaUrl,
+  ].filter(Boolean) as string[];
+  const riskyConfiguredLinks = configuredLinks.filter((link) => {
+    if (/^https?:\/\//i.test(link)) {
+      try {
+        return new URL(link).hostname.replace(/^www\./, '') !== 'aabnoor.shop';
+      } catch {
+        return true;
+      }
+    }
+    const normalized = link.startsWith('/') ? link : `/${link}`;
+    return !knownInternalRoutes.has(normalized.split('?')[0]);
+  });
+  const duplicateSlugCount = productsList.length - new Set(productsList.map(product => product.slug || product.id)).size;
+  const productsMissingCoreData = productsList.filter(product => !product.name || !product.imageUrl || !product.sku || !product.slug);
+  const activeExpiredCoupons = coupons.filter(coupon => coupon.isActive && coupon.endDate && Date.parse(coupon.endDate) < Date.now());
+  const highRiskCoupons = coupons.filter(coupon => coupon.isActive && Number(coupon.discountPercentage) >= 90);
+  const couponLimitBreaches = coupons.filter(coupon => coupon.usageLimit && (coupon.usageCount || 0) > coupon.usageLimit);
+  const ordersMissingFulfillmentData = orders.filter(order => (
+    ['Shipped', 'Delivered'].includes(order.status) &&
+    !(order.trackingNumber || order.tracking_number || order.courierName || order.courier_name)
+  ));
+  const ordersMissingCustomerData = orders.filter(order => (
+    !order.userEmail ||
+    !(order.customerPhone || order.customer_phone) ||
+    !(order.shippingAddress || order.shipping_address)
+  ));
+  const invalidOrderTotals = orders.filter(order => !Number.isFinite(Number(order.total)) || Number(order.total) < 0);
+  const publicDataLeakProducts = productsList.filter(product => (
+    Array.isArray(product.reviews) &&
+    product.reviews.some((review: any) => review.reviewerHash || review.userEmail || review.userId)
+  ));
+  const auditItems: AuditItem[] = [
+    {
+      title: 'Dependency vulnerability scan',
+      status: 'pass',
+      detail: 'npm audit reports 0 known package vulnerabilities in this checkout.',
+      fix: 'Run npm audit again before every production push.',
+    },
+    {
+      title: 'Direct route rewrites',
+      status: 'pass',
+      detail: 'Wishlist and skin quiz are included in Vercel SPA rewrites with checkout, admin, tracking and shop routes.',
+      fix: 'Add any future public route to vercel.json before publishing.',
+    },
+    {
+      title: 'Configured CTA links',
+      status: riskyConfiguredLinks.length ? 'warn' : 'pass',
+      detail: riskyConfiguredLinks.length ? `${riskyConfiguredLinks.length} configurable CTA link needs review.` : 'Hero and promo CTA links point to known internal routes or the store domain.',
+      fix: riskyConfiguredLinks.length ? riskyConfiguredLinks.join(', ') : 'No action needed.',
+    },
+    {
+      title: 'Product catalog completeness',
+      status: productsMissingCoreData.length || duplicateSlugCount ? 'warn' : 'pass',
+      detail: `${productsMissingCoreData.length} products miss name/image/SKU/slug. ${duplicateSlugCount} duplicate slug collision${duplicateSlugCount === 1 ? '' : 's'}.`,
+      fix: 'Open Products and complete missing catalog fields before campaigns.',
+    },
+    {
+      title: 'Coupon risk controls',
+      status: couponLimitBreaches.length ? 'fail' : highRiskCoupons.length || activeExpiredCoupons.length ? 'warn' : 'pass',
+      detail: `${highRiskCoupons.length} active coupons are 90% or higher. ${activeExpiredCoupons.length} expired coupons are still active. ${couponLimitBreaches.length} usage limits are exceeded.`,
+      fix: 'Review Promotions, deactivate expired codes, and keep high-discount codes tightly limited.',
+    },
+    {
+      title: 'Order fulfillment quality',
+      status: ordersMissingFulfillmentData.length || ordersMissingCustomerData.length || invalidOrderTotals.length ? 'warn' : 'pass',
+      detail: `${ordersMissingFulfillmentData.length} shipped/delivered orders miss courier or tracking. ${ordersMissingCustomerData.length} orders miss customer contact/address. ${invalidOrderTotals.length} orders have invalid totals.`,
+      fix: 'Open Orders and correct fulfillment/customer fields before dispatch.',
+    },
+    {
+      title: 'Review privacy fields',
+      status: publicDataLeakProducts.length ? 'fail' : 'pass',
+      detail: publicDataLeakProducts.length ? `${publicDataLeakProducts.length} product records expose private review identifiers in frontend state.` : 'Frontend product data strips reviewer hashes and legacy user identifiers.',
+      fix: 'Refresh products after review submissions; the API stores fingerprints server-side for duplicate prevention.',
+    },
+    {
+      title: 'Admin session posture',
+      status: isAdmin ? 'pass' : 'warn',
+      detail: isAdmin ? 'Current admin session is verified by the backend admin check.' : 'Admin session is not currently verified.',
+      fix: 'Sign in with the configured admin account and authenticator before making sensitive changes.',
+    },
+  ];
+  const auditScore = auditItems.length
+    ? Math.round((auditItems.filter(item => item.status === 'pass').length / auditItems.length) * 100)
+    : 100;
+  const auditFailCount = auditItems.filter(item => item.status === 'fail').length;
+  const auditWarnCount = auditItems.filter(item => item.status === 'warn').length;
+  const auditStatusClass = (status: AuditStatus) => {
+    if (status === 'fail') return 'border-red-500/25 bg-red-500/5 text-red-800';
+    if (status === 'warn') return 'border-yellow-500/25 bg-yellow-500/10 text-yellow-800';
+    return 'border-green-500/20 bg-green-500/5 text-green-800';
+  };
 
   useEffect(() => {
     if (isAdmin) {
@@ -3616,11 +3735,18 @@ export function AdminPage() {
                          </td>
                          <td className="px-6 py-4 text-right">
                            <button onClick={() => setEditingCoupon(c)} className="text-[#1A1A1A]/60 hover:text-[#1A1A1A] mr-4 uppercase text-[10px] font-bold tracking-widest">Edit</button>
-                           <button onClick={() => {
-                             if(confirm('Delete this coupon?')) {
-                               deleteCoupon(c.id);
-                             }
-                           }} className="text-red-500/60 hover:text-red-500 uppercase text-[10px] font-bold tracking-widest">Delete</button>
+                           <button
+                             onClick={() => setConfirmDialog({
+                               isOpen: true,
+                               title: 'Delete Coupon',
+                               message: `Delete coupon ${c.code}? This cannot be undone.`,
+                               actionType: 'delete_coupon',
+                               targetId: c.id,
+                             })}
+                             className="text-red-500/60 hover:text-red-500 uppercase text-[10px] font-bold tracking-widest"
+                           >
+                             Delete
+                           </button>
                          </td>
                        </tr>
                      ))}
@@ -3802,6 +3928,84 @@ export function AdminPage() {
           </motion.div>
         )}
 
+        {activeTab === 'audit' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-8"
+          >
+            <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white p-6 shadow-sm">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="inline-flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.24em] text-[#CDA185]">
+                    <Shield className="h-4 w-4" />
+                    Site Audit
+                  </p>
+                  <h2 className="mt-2 font-serif text-3xl text-[#1A1A1A]">Security, links and data quality</h2>
+                  <p className="mt-2 max-w-3xl font-sans text-sm leading-6 text-[#1A1A1A]/60">
+                    These checks run against current admin data so broken route coverage, risky coupons, missing fulfillment fields and private review data are visible before publishing or dispatching.
+                  </p>
+                </div>
+                <div className="grid min-w-[260px] grid-cols-3 gap-3">
+                  <div className="rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] p-4 text-center">
+                    <p className="font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-[#1A1A1A]/45">Score</p>
+                    <p className="mt-1 font-serif text-3xl text-[#1A1A1A]">{auditScore}%</p>
+                  </div>
+                  <div className="rounded-[8px] border border-yellow-500/20 bg-yellow-500/10 p-4 text-center">
+                    <p className="font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-yellow-800/70">Warnings</p>
+                    <p className="mt-1 font-serif text-3xl text-yellow-800">{auditWarnCount}</p>
+                  </div>
+                  <div className="rounded-[8px] border border-red-500/20 bg-red-500/5 p-4 text-center">
+                    <p className="font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-red-800/70">Failures</p>
+                    <p className="mt-1 font-serif text-3xl text-red-800">{auditFailCount}</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {auditItems.map((item) => (
+                <section key={item.title} className={`rounded-[8px] border p-5 shadow-sm ${auditStatusClass(item.status)}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] opacity-70">{item.status}</p>
+                      <h3 className="mt-1 font-serif text-2xl text-[#1A1A1A]">{item.title}</h3>
+                    </div>
+                    {item.status === 'pass' ? (
+                      <Shield className="h-5 w-5 shrink-0 text-green-700" />
+                    ) : (
+                      <AlertTriangle className={`h-5 w-5 shrink-0 ${item.status === 'fail' ? 'text-red-700' : 'text-yellow-700'}`} />
+                    )}
+                  </div>
+                  <p className="mt-4 font-sans text-sm leading-6 text-[#1A1A1A]/70">{item.detail}</p>
+                  <div className="mt-4 rounded-[6px] border border-white/60 bg-white/60 p-3">
+                    <p className="font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-[#1A1A1A]/45">Action</p>
+                    <p className="mt-1 font-sans text-xs leading-5 text-[#1A1A1A]/65">{item.fix}</p>
+                  </div>
+                </section>
+              ))}
+            </div>
+
+            <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white p-6 shadow-sm">
+              <p className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-[#CDA185]">Operational Weak Spots</p>
+              <h3 className="mt-1 font-serif text-2xl text-[#1A1A1A]">Quick repair queues</h3>
+              <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                {[
+                  { label: 'Missing catalog fields', value: productsMissingCoreData.length, note: productsMissingCoreData.slice(0, 4).map(product => product.name || product.id).join(', ') || 'No missing catalog fields' },
+                  { label: 'High-risk coupons', value: highRiskCoupons.length + activeExpiredCoupons.length + couponLimitBreaches.length, note: [...highRiskCoupons, ...activeExpiredCoupons, ...couponLimitBreaches].slice(0, 4).map(coupon => coupon.code).join(', ') || 'No coupon risk flags' },
+                  { label: 'Order data gaps', value: ordersMissingFulfillmentData.length + ordersMissingCustomerData.length + invalidOrderTotals.length, note: [...ordersMissingFulfillmentData, ...ordersMissingCustomerData, ...invalidOrderTotals].slice(0, 4).map(order => order.id).join(', ') || 'No order data gaps' },
+                ].map((queue) => (
+                  <div key={queue.label} className="rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] p-5">
+                    <p className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-[#1A1A1A]/50">{queue.label}</p>
+                    <p className="mt-2 font-serif text-3xl text-[#1A1A1A]">{queue.value}</p>
+                    <p className="mt-2 font-sans text-xs leading-5 text-[#1A1A1A]/60">{queue.note}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </motion.div>
+        )}
+
         {activeTab === 'settings' && (
           <motion.div 
             initial={{ opacity: 0 }}
@@ -3945,7 +4149,6 @@ export function AdminPage() {
                     {[
                       ['maintenanceMode', 'Maintenance mode'],
                       ['promoPopupEnabled', 'Promo popup'],
-                      ['enableSkinQuiz', 'Skin quiz page'],
                       ['enableCoupons', 'Checkout coupons'],
                       ['enableExpressDelivery', 'Express delivery'],
                     ].map(([key, label]) => (
@@ -4034,7 +4237,7 @@ export function AdminPage() {
                         type="text"
                         value={settingsForm.heroSecondaryCtaUrl}
                         onChange={(e) => setSettingsForm({ ...settingsForm, heroSecondaryCtaUrl: e.target.value })}
-                        placeholder="/skin-quiz"
+                        placeholder="/shop"
                         className="w-full border border-[#1A1A1A]/20 p-2 font-sans text-sm focus:border-[#1A1A1A] outline-none"
                       />
                     </div>

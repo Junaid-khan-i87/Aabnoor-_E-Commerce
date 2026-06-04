@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
+    "verify:health": "node scripts/verify-site-health.mjs",
     "verify:cleanup": "node scripts/verify-site-cleanup.mjs"
   },
   "dependencies": {

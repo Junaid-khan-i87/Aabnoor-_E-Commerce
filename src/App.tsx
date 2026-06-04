@@ -60,7 +60,6 @@ const CheckoutPage = lazy(() => import('./pages/CheckoutPage').then((module) => 
 const TrackPage = lazy(() => import('./pages/TrackPage').then((module) => ({ default: module.TrackPage })));
 const CartPage = lazy(() => import('./pages/CartPage').then((module) => ({ default: module.CartPage })));
 const WishlistPage = lazy(() => import('./pages/WishlistPage').then((module) => ({ default: module.WishlistPage })));
-const SkinQuizPage = lazy(() => import('./pages/SkinQuizPage').then((module) => ({ default: module.SkinQuizPage })));
 
 function PageFallback() {
   return (
@@ -95,7 +94,6 @@ function AppShell() {
                           <Route path="/profile" element={<ProfilePage />} />
                           <Route path="/cart" element={<CartPage />} />
                           <Route path="/wishlist" element={<WishlistPage />} />
-                          <Route path="/skin-quiz" element={<SkinQuizPage />} />
                           <Route path="/checkout" element={<CheckoutPage />} />
                           <Route path="/track" element={<TrackPage />} />
                           <Route path="/live-sale" element={<LiveSaleHubPage />} />

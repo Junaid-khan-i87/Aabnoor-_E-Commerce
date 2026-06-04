@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createHmac } from 'crypto';
+import { createHmac, randomBytes } from 'crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
@@ -133,7 +133,7 @@ export default async function handler(req: any, res: any) {
 
   const product = productRow.data;
   const currentReviews = Array.isArray(product.reviews) ? product.reviews : [];
-  const reviewerHash = createHmac('sha256', reviewHashSecret).update(user.id).digest('hex');
+  const reviewerHash = createHmac('sha256', reviewHashSecret).update(`${productId}:${user.id}`).digest('hex');
   const alreadyReviewed = currentReviews.some((review: any) => review.reviewerHash === reviewerHash || review.userId === user.id || review.userEmail === user.email);
 
   if (alreadyReviewed) {
@@ -141,7 +141,7 @@ export default async function handler(req: any, res: any) {
   }
 
   const newReview = {
-    id: `rev-${Date.now()}`,
+    id: `rev-${randomBytes(8).toString('hex')}`,
     user: displayName,
     reviewerHash,
     rating,
@@ -154,11 +154,10 @@ export default async function handler(req: any, res: any) {
 
   const nextReviews = [newReview, ...currentReviews].slice(0, 100);
   const averageRating = Math.round((nextReviews.reduce((sum: number, review: any) => sum + Number(review.rating || 0), 0) / nextReviews.length) * 10) / 10;
-  const safeReviews = nextReviews.map(({ reviewerHash: _hidden, userId: _legacyUserId, userEmail: _legacyUserEmail, ...review }: any) => review);
   const nextProduct = {
     ...product,
     id: product.id || productRow.id,
-    reviews: safeReviews,
+    reviews: nextReviews,
     rating: averageRating,
   };
 
@@ -171,5 +170,10 @@ export default async function handler(req: any, res: any) {
   }
 
   const { reviewerHash: _hidden, ...publicReview } = newReview;
-  return res.status(200).json({ product: nextProduct, review: publicReview });
+  const publicProduct = {
+    ...nextProduct,
+    reviews: nextReviews.map(({ reviewerHash: _privateHash, userId: _legacyUserId, userEmail: _legacyUserEmail, ...review }: any) => review),
+  };
+
+  return res.status(200).json({ product: publicProduct, review: publicReview });
 }

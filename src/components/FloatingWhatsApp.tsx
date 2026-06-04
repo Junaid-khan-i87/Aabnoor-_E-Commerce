@@ -20,7 +20,7 @@ export function FloatingWhatsApp() {
     <a
       href={`https://wa.me/${number}?text=${encodeURIComponent(settings.whatsappMessage || 'Hi Aabnoor Beauty, I need help with my order.')}`}
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       className="fixed bottom-20 right-4 z-[85] inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#1f7a45] text-white shadow-xl transition-transform hover:-translate-y-0.5 hover:bg-[#176137] md:bottom-6 md:right-6"
       aria-label="Chat with Aabnoor Beauty on WhatsApp"
     >

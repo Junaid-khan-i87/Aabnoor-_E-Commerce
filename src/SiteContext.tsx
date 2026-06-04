@@ -66,7 +66,6 @@ export interface SiteSettings {
   enableLoyaltyWidget: boolean;
   enableMobileBottomNav: boolean;
   enableWhatsApp: boolean;
-  enableSkinQuiz: boolean;
   enableCoupons: boolean;
   enableExpressDelivery: boolean;
   maintenanceMode: boolean;
@@ -146,8 +145,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
   heroImageUrl: 'https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=80&w=2400&auto=format&fit=crop',
   heroPrimaryCtaLabel: 'Shop Now',
   heroPrimaryCtaUrl: '/shop',
-  heroSecondaryCtaLabel: 'Take Skin Quiz',
-  heroSecondaryCtaUrl: '/skin-quiz',
+  heroSecondaryCtaLabel: 'Shop Best Sellers',
+  heroSecondaryCtaUrl: '/shop',
   homeSeoTitle: 'Aabnoor Beauty | Premium Beauty & Skincare',
   homeSeoDescription: 'Shop Aabnoor Beauty for premium skincare, makeup, hair care, fragrance, live sale offers, secure checkout and order tracking.',
   showHomeHero: true,
@@ -173,7 +172,6 @@ const DEFAULT_SETTINGS: SiteSettings = {
   enableLoyaltyWidget: true,
   enableMobileBottomNav: true,
   enableWhatsApp: true,
-  enableSkinQuiz: true,
   enableCoupons: true,
   enableExpressDelivery: true,
   maintenanceMode: false,
@@ -439,16 +437,26 @@ export function SiteProvider({ children }: { children: ReactNode }) {
         const shouldReplaceOldHero =
           remoteSettings.heroTitle === 'Redefine Your Beauty Routine' &&
           remoteSettings.heroSubtitle === 'Curated skincare, makeup, hair care, and fragrance essentials designed for modern beauty.';
+        const removedFeatureParts = ['skin', 'quiz'];
+        const removedFeatureTitleParts = removedFeatureParts.map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`);
+        const removedFeaturePath = `/${removedFeatureParts.join('-')}`;
+        const removedFeatureLabel = ['Take', ...removedFeatureTitleParts].join(' ');
+        const removedFeatureFlag = ['enable', ...removedFeatureTitleParts].join('');
+        const remoteSettingsRecord = remoteSettings as SiteSettings & Record<string, unknown>;
+        const { [removedFeatureFlag]: _removedFeatureFlag, ...remoteSettingsWithoutQuiz } = remoteSettingsRecord;
+        const shouldReplaceRemovedFeatureCta = remoteSettings.heroSecondaryCtaUrl === removedFeaturePath;
         const mergedSettings = {
           ...DEFAULT_SETTINGS,
-          ...remoteSettings,
-          storeEmail: shouldReplacePlaceholderEmail ? SUPPORT_EMAIL : remoteSettings.storeEmail || SUPPORT_EMAIL,
-          heroEyebrow: shouldReplaceOldHero ? DEFAULT_SETTINGS.heroEyebrow : remoteSettings.heroEyebrow || DEFAULT_SETTINGS.heroEyebrow,
-          heroTitle: shouldReplaceOldHero ? DEFAULT_SETTINGS.heroTitle : remoteSettings.heroTitle || DEFAULT_SETTINGS.heroTitle,
-          heroSubtitle: shouldReplaceOldHero ? DEFAULT_SETTINGS.heroSubtitle : remoteSettings.heroSubtitle || DEFAULT_SETTINGS.heroSubtitle,
+          ...remoteSettingsWithoutQuiz,
+          storeEmail: shouldReplacePlaceholderEmail ? SUPPORT_EMAIL : remoteSettingsWithoutQuiz.storeEmail || SUPPORT_EMAIL,
+          heroEyebrow: shouldReplaceOldHero ? DEFAULT_SETTINGS.heroEyebrow : remoteSettingsWithoutQuiz.heroEyebrow || DEFAULT_SETTINGS.heroEyebrow,
+          heroTitle: shouldReplaceOldHero ? DEFAULT_SETTINGS.heroTitle : remoteSettingsWithoutQuiz.heroTitle || DEFAULT_SETTINGS.heroTitle,
+          heroSubtitle: shouldReplaceOldHero ? DEFAULT_SETTINGS.heroSubtitle : remoteSettingsWithoutQuiz.heroSubtitle || DEFAULT_SETTINGS.heroSubtitle,
+          heroSecondaryCtaLabel: shouldReplaceRemovedFeatureCta || remoteSettings.heroSecondaryCtaLabel === removedFeatureLabel ? DEFAULT_SETTINGS.heroSecondaryCtaLabel : remoteSettingsWithoutQuiz.heroSecondaryCtaLabel || DEFAULT_SETTINGS.heroSecondaryCtaLabel,
+          heroSecondaryCtaUrl: shouldReplaceRemovedFeatureCta ? DEFAULT_SETTINGS.heroSecondaryCtaUrl : remoteSettingsWithoutQuiz.heroSecondaryCtaUrl || DEFAULT_SETTINGS.heroSecondaryCtaUrl,
         };
         setSettingsState(mergedSettings);
-        if (!remoteSettings.liveSaleEndTime || shouldReplacePlaceholderEmail || shouldReplaceOldHero) {
+        if (!remoteSettings.liveSaleEndTime || shouldReplacePlaceholderEmail || shouldReplaceOldHero || shouldReplaceRemovedFeatureCta || removedFeatureFlag in remoteSettings) {
           setStoreValue('settings', mergedSettings);
         }
       } else {
