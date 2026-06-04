@@ -9,6 +9,7 @@ interface ProductContextType {
   updateProduct: (id: string, product: Product, persist?: boolean) => void;
   deleteProduct: (id: string) => void;
   saveProductsList: (newList: Product[]) => void;
+  refreshProducts: () => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
@@ -32,6 +33,11 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  const refreshProducts = React.useCallback(async () => {
+    const remoteProducts = await listEntities<Product>('products');
+    setProductsList(remoteProducts || []);
   }, []);
 
   const addProduct = (product: Product) => {
@@ -64,7 +70,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ProductContext.Provider value={{ productsList, isProductsLoading, addProduct, updateProduct, deleteProduct, saveProductsList }}>
+    <ProductContext.Provider value={{ productsList, isProductsLoading, addProduct, updateProduct, deleteProduct, saveProductsList, refreshProducts }}>
       {children}
     </ProductContext.Provider>
   );

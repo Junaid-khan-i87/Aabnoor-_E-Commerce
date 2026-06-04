@@ -181,7 +181,7 @@ export default async function handler(req: any, res: any) {
     return res.status(200).json(invalid('This coupon has reached its usage limit.'));
   }
 
-  const discountPercentage = Math.min(80, Math.max(0, Number(coupon.discountPercentage || 0)));
+  const discountPercentage = Math.min(100, Math.max(0, Number(coupon.discountPercentage || 0)));
   if (discountPercentage <= 0) {
     return res.status(200).json(invalid('Invalid or inactive coupon code.'));
   }

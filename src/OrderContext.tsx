@@ -22,6 +22,7 @@ interface OrderContextType {
   updateOrderStatus: (id: string, status: OrderStatus, note?: string, coinsAdded?: boolean) => Promise<{ ok: boolean; error?: string }>;
   deleteOrder: (id: string) => void;
   updateOrder: (id: string, updatedOrder: Partial<Order>) => void;
+  refreshOrders: () => Promise<void>;
   getUserOrders: (email: string) => Order[];
   fetchUserOrders: () => Promise<Order[]>;
   trackOrder: (trackingNumber: string) => Order | undefined;
@@ -126,14 +127,14 @@ export function OrderProvider({ children, isAdmin = false }: { children: ReactNo
     return newOrder;
   };
 
-  const refreshOrders = async () => {
+  const refreshOrders = React.useCallback(async () => {
     if (!isAdmin) return;
 
     const remoteOrders = await listEntities<Order>('orders');
     if (remoteOrders) {
       setOrders(remoteOrders);
     }
-  };
+  }, [isAdmin]);
 
   const fetchUserOrders = React.useCallback(async () => {
     const token = (await supabase?.auth.getSession())?.data.session?.access_token;
@@ -232,7 +233,7 @@ export function OrderProvider({ children, isAdmin = false }: { children: ReactNo
   };
 
   return (
-    <OrderContext.Provider value={{ orders, placeOrder, updateOrderStatus, deleteOrder, updateOrder, getUserOrders, fetchUserOrders, trackOrder }}>
+    <OrderContext.Provider value={{ orders, placeOrder, updateOrderStatus, deleteOrder, updateOrder, refreshOrders, getUserOrders, fetchUserOrders, trackOrder }}>
       {children}
     </OrderContext.Provider>
   );

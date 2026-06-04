@@ -307,7 +307,7 @@ export default async function handler(req: any, res: any) {
       subtotal >= Number(coupon.minOrderAmount || 0) &&
       (coupon.usageLimit == null || (Number(coupon.usageCount) || 0) < Number(coupon.usageLimit))
     ) {
-      discountPercentage = Math.min(80, Math.max(0, Number(coupon.discountPercentage || 0)));
+      discountPercentage = Math.min(100, Math.max(0, Number(coupon.discountPercentage || 0)));
     }
   } else {
     const { count } = await supabaseAdmin
@@ -443,7 +443,7 @@ export default async function handler(req: any, res: any) {
             usageCount: (Number(couponRow.data.usageCount) || 0) + 1,
           },
         })
-        .eq('id', couponCode);
+        .eq('id', couponRow.id);
     }
   }
 

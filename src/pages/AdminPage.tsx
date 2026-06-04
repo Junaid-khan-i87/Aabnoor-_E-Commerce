@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, ShoppingBag, Coins, BarChart3, Shield, Key, Package, Edit, Plus, Trash2, ChevronDown, ChevronUp, FileText, Eye, EyeOff, X, Mail } from 'lucide-react';
+import { Users, ShoppingBag, Coins, BarChart3, Shield, Key, Package, Edit, Plus, Trash2, ChevronDown, ChevronUp, FileText, Eye, EyeOff, X, Mail, Download, AlertTriangle, Database, RefreshCw, Radio, Timer, MapPin } from 'lucide-react';
 import { motion } from 'motion/react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { useProducts } from '../ProductContext';
@@ -13,14 +13,16 @@ import { supabase } from '../lib/supabase';
 import { deleteEntity, listEntities, upsertEntity } from '../lib/storeApi';
 import { downloadInvoicePdf, downloadShippingLabelPdf, printOrderDocument } from '../lib/orderDocuments';
 
-type AdminTab = 'dashboard' | 'orders' | 'customers' | 'products' | 'discounts' | 'settings';
+type AdminTab = 'dashboard' | 'live' | 'orders' | 'customers' | 'products' | 'discounts' | 'reports' | 'settings';
 
 const ADMIN_TABS: { id: AdminTab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
+  { id: 'live', label: 'Live Ops' },
   { id: 'orders', label: 'Orders' },
   { id: 'products', label: 'Products' },
   { id: 'customers', label: 'Customers' },
   { id: 'discounts', label: 'Promotions' },
+  { id: 'reports', label: 'Reports' },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -28,6 +30,18 @@ const ORDER_STATUS_VALUES: OrderStatus[] = ['Pending', 'Processing', 'Shipped', 
 
 function useAdminCoupons(isAdmin: boolean) {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+
+  const refreshCoupons = React.useCallback(async () => {
+    if (!isAdmin) {
+      setCoupons([]);
+      return;
+    }
+
+    const remoteCoupons = await listEntities<Coupon>('coupons');
+    if (remoteCoupons) {
+      setCoupons(remoteCoupons);
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     let isMounted = true;
@@ -75,7 +89,7 @@ function useAdminCoupons(isAdmin: boolean) {
     });
   };
 
-  return { coupons, addCoupon, updateCoupon, deleteCoupon };
+  return { coupons, addCoupon, updateCoupon, deleteCoupon, refreshCoupons };
 }
 
 const toDateTimeLocalValue = (isoValue?: string) => {
@@ -144,6 +158,28 @@ const slugifyProductName = (value: string) =>
 const generateSku = (category: string) => {
   const abbreviation = (category.replace(/[^a-z]/gi, '').slice(0, 3) || 'PRD').toUpperCase();
   return `${abbreviation}-${Math.floor(100000 + Math.random() * 900000)}`;
+};
+
+const csvEscape = (value: unknown) => {
+  const text = value === null || value === undefined ? '' : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+};
+
+const rowsToCsv = (headers: string[], rows: Array<Record<string, unknown>>) => [
+  headers.map(csvEscape).join(','),
+  ...rows.map((row) => headers.map((header) => csvEscape(row[header])).join(',')),
+].join('\n');
+
+const downloadTextFile = (filename: string, content: string, type = 'text/csv;charset=utf-8') => {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 };
 
 const uniqueSlug = (baseSlug: string, products: Product[], currentProductId?: string) => {
@@ -222,8 +258,8 @@ export function AdminPage() {
     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
   };
   
-  const { productsList, addProduct, updateProduct, deleteProduct, saveProductsList } = useProducts();
-  const { orders, updateOrderStatus, updateOrder, deleteOrder } = useOrders();
+  const { productsList, addProduct, updateProduct, deleteProduct, saveProductsList, refreshProducts } = useProducts();
+  const { orders, updateOrderStatus, updateOrder, deleteOrder, refreshOrders } = useOrders();
   const { 
     siteName, setSiteName, bannerText, setBannerText, isBannerActive, setIsBannerActive, 
     couponCode, setCouponCode, couponDiscount, setCouponDiscount, 
@@ -233,7 +269,7 @@ export function AdminPage() {
     users, deleteUser, updateUser, warnUser,
     isAuthLoading, isAdmin, refreshAdminStatus,
   } = useSite();
-  const { coupons, addCoupon, updateCoupon, deleteCoupon } = useAdminCoupons(isAdmin);
+  const { coupons, addCoupon, updateCoupon, deleteCoupon, refreshCoupons } = useAdminCoupons(isAdmin);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedSubCatEditing, setSelectedSubCatEditing] = useState<string>('Skin Care');
   const [isCreating, setIsCreating] = useState(false);
@@ -264,6 +300,14 @@ export function AdminPage() {
   const [settingsToast, setSettingsToast] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState(8);
   const [replenishQuantities, setReplenishQuantities] = useState<Record<string, number>>({});
+  const [liveNow, setLiveNow] = useState(Date.now());
+  const [isLiveRefreshing, setIsLiveRefreshing] = useState(false);
+  const [isCouponRefreshing, setIsCouponRefreshing] = useState(false);
+  const [lastLiveRefresh, setLastLiveRefresh] = useState<Date | null>(null);
+  const [liveRefreshSeconds, setLiveRefreshSeconds] = useState(() => {
+    const saved = localStorage.getItem('aabnoor_live_ops_refresh_seconds');
+    return saved ? Math.max(0, Number(saved) || 0) : 0;
+  });
   
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -273,6 +317,53 @@ export function AdminPage() {
   useEffect(() => {
     setSettingsForm(settings);
   }, [settings]);
+
+  const { addCoins } = useLoyalty();
+  const { addToast } = useUI();
+
+  const refreshLiveData = React.useCallback(async () => {
+    setIsLiveRefreshing(true);
+    try {
+      await Promise.all([refreshOrders(), refreshProducts(), refreshCoupons()]);
+      setLastLiveRefresh(new Date());
+    } finally {
+      setIsLiveRefreshing(false);
+    }
+  }, [refreshOrders, refreshProducts, refreshCoupons]);
+
+  const handleRefreshCoupons = React.useCallback(async () => {
+    setIsCouponRefreshing(true);
+    try {
+      await refreshCoupons();
+      addToast('Coupon usage refreshed.', 'success');
+    } catch {
+      addToast('Coupon usage could not be refreshed. Try again.', 'error');
+    } finally {
+      setIsCouponRefreshing(false);
+    }
+  }, [addToast, refreshCoupons]);
+
+  useEffect(() => {
+    if (activeTab !== 'live' || !isAdmin) return undefined;
+    const clockTimer = window.setInterval(() => {
+      setLiveNow(Date.now());
+    }, 1000);
+    let refreshTimer: number | undefined;
+    if (liveRefreshSeconds > 0) {
+      refreshTimer = window.setInterval(() => {
+        void refreshLiveData();
+      }, liveRefreshSeconds * 1000);
+    }
+    return () => {
+      window.clearInterval(clockTimer);
+      if (refreshTimer) window.clearInterval(refreshTimer);
+    };
+  }, [activeTab, isAdmin, refreshLiveData, liveRefreshSeconds]);
+
+  const setLiveRefreshPreference = (seconds: number) => {
+    setLiveRefreshSeconds(seconds);
+    localStorage.setItem('aabnoor_live_ops_refresh_seconds', String(seconds));
+  };
   
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
@@ -283,9 +374,6 @@ export function AdminPage() {
   
   const [orderSort, setOrderSort] = useState('newest');
   const [productSort, setProductSort] = useState('newest');
-
-  const { addCoins } = useLoyalty();
-  const { addToast } = useUI();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -466,6 +554,103 @@ export function AdminPage() {
   }, {} as Record<string, ProductRevenueRow>)) as ProductRevenueRow[])
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
+  const lowStockProducts = [...productsList]
+    .filter(product => (product.stock || 0) <= lowStockThreshold)
+    .sort((a, b) => (a.stock || 0) - (b.stock || 0));
+  const outOfStockProducts = productsList.filter(product => (product.stock || 0) === 0);
+  const categoryReport = Array.from(new Set(productsList.map(product => product.category).filter(Boolean)))
+    .map((category) => {
+      const categoryProducts = productsList.filter(product => product.category === category);
+      return {
+        category,
+        products: categoryProducts.length,
+        stock: categoryProducts.reduce((sum, product) => sum + (product.stock || 0), 0),
+        active: categoryProducts.filter(product => (product.status || 'active') === 'active').length,
+        revenue: orders.reduce((sum, order) => {
+          return sum + order.items.reduce((orderSum, item) => {
+            const product = productsList.find(p => p.id === item.productId || item.productId.startsWith(p.id));
+            return product?.category === category ? orderSum + item.price * item.quantity : orderSum;
+          }, 0);
+        }, 0),
+      };
+    })
+    .sort((a, b) => b.revenue - a.revenue);
+  const customerReport = users.map((user) => {
+    const userOrders = orders.filter(order => order.userEmail === user.email);
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      orders: userOrders.length,
+      spent: userOrders.reduce((sum, order) => sum + order.total, 0),
+      coins: user.coins,
+      status: user.status || 'Active',
+    };
+  }).sort((a, b) => b.spent - a.spent);
+
+  const exportCsv = (filename: string, headers: string[], rows: Array<Record<string, unknown>>) => {
+    downloadTextFile(filename, rowsToCsv(headers, rows));
+    addToast(`${filename} downloaded.`, 'success');
+  };
+
+  const exportOrdersCsv = () => exportCsv('aabnoor-orders.csv', [
+    'id', 'date', 'customer', 'email', 'status', 'payment', 'tracking', 'items', 'total',
+  ], orders.map(order => ({
+    id: order.id,
+    date: order.date,
+    customer: order.userName || order.customerName || order.customer_name || '',
+    email: order.userEmail,
+    status: order.status,
+    payment: order.paymentMethod || '',
+    tracking: order.trackingNumber || order.tracking_number || '',
+    items: order.items.reduce((sum, item) => sum + item.quantity, 0),
+    total: order.total,
+  })));
+
+  const exportProductsCsv = () => exportCsv('aabnoor-products.csv', [
+    'id', 'sku', 'name', 'category', 'subcategory', 'price', 'stock', 'status', 'featured', 'new_arrival', 'best_seller',
+  ], productsList.map(product => ({
+    id: product.id,
+    sku: product.sku || '',
+    name: product.name,
+    category: product.category,
+    subcategory: product.subCategory || '',
+    price: product.price,
+    stock: product.stock || 0,
+    status: product.status || 'active',
+    featured: product.is_featured ? 'yes' : 'no',
+    new_arrival: product.is_new_arrival ? 'yes' : 'no',
+    best_seller: product.is_best_seller ? 'yes' : 'no',
+  })));
+
+  const exportCustomersCsv = () => exportCsv('aabnoor-customers.csv', [
+    'id', 'name', 'email', 'orders', 'spent', 'coins', 'status',
+  ], customerReport);
+
+  const exportCouponsCsv = () => exportCsv('aabnoor-coupons.csv', [
+    'id', 'code', 'discountPercentage', 'startDate', 'endDate', 'usageCount', 'usageLimit', 'minOrderAmount', 'isActive',
+  ], coupons.map(coupon => ({
+    id: coupon.id,
+    code: coupon.code,
+    discountPercentage: coupon.discountPercentage,
+    startDate: coupon.startDate,
+    endDate: coupon.endDate,
+    usageCount: coupon.usageCount,
+    usageLimit: coupon.usageLimit || '',
+    minOrderAmount: coupon.minOrderAmount || '',
+    isActive: coupon.isActive ? 'yes' : 'no',
+  })));
+
+  const exportSettingsBackup = () => {
+    downloadTextFile('aabnoor-store-settings-backup.json', JSON.stringify({
+      exportedAt: new Date().toISOString(),
+      siteName,
+      settings,
+      categories,
+      subCategories,
+    }, null, 2), 'application/json;charset=utf-8');
+    addToast('Settings backup downloaded.', 'success');
+  };
 
   const getOrderCity = (address?: string) => {
     if (!address) return 'Unlisted city';
@@ -480,6 +665,66 @@ export function AdminPage() {
     if (status === 'Cancelled' || status === 'Refunded') return 'bg-red-500/10 text-red-700';
     return 'bg-[#1A1A1A]/10 text-[#1A1A1A]';
   };
+
+  const hoursSince = (dateValue: string) => {
+    const parsed = Date.parse(dateValue);
+    if (Number.isNaN(parsed)) return 0;
+    return Math.max(0, (liveNow - parsed) / (1000 * 60 * 60));
+  };
+  const orderAgeLabel = (dateValue: string) => {
+    const hours = hoursSince(dateValue);
+    if (hours >= 24) return `${Math.floor(hours / 24)}d ${Math.floor(hours % 24)}h`;
+    if (hours >= 1) return `${Math.floor(hours)}h`;
+    return `${Math.max(1, Math.floor(hours * 60))}m`;
+  };
+  const last24HoursOrders = orders.filter(order => hoursSince(order.date) <= 24);
+  const revenueLast24Hours = last24HoursOrders.reduce((sum, order) => sum + order.total, 0);
+  const livePipeline = ORDER_STATUS_VALUES.map(status => ({
+    status,
+    count: orders.filter(order => order.status === status).length,
+    value: orders.filter(order => order.status === status).reduce((sum, order) => sum + order.total, 0),
+  }));
+  const urgentOrders = [...orders]
+    .filter(order => (
+      (order.status === 'Pending' && hoursSince(order.date) >= 2) ||
+      (order.status === 'Processing' && hoursSince(order.date) >= 12) ||
+      (order.status === 'Shipped' && hoursSince(order.date) >= 72)
+    ))
+    .sort((a, b) => hoursSince(b.date) - hoursSince(a.date))
+    .slice(0, 8);
+  const codExposure = orders
+    .filter(order => !['Delivered', 'Cancelled', 'Refunded'].includes(order.status) && /cod|cash/i.test(order.paymentMethod || ''))
+    .reduce((sum, order) => sum + order.total, 0);
+  const liveCityHeat = (Object.values(orders.reduce((acc, order) => {
+    const city = getOrderCity(order.shippingAddress || order.shipping_address || order.city);
+    const current = acc[city] || { city, orders: 0, revenue: 0 };
+    current.orders += 1;
+    current.revenue += order.total;
+    acc[city] = current;
+    return acc;
+  }, {} as Record<string, { city: string; orders: number; revenue: number }>)) as Array<{ city: string; orders: number; revenue: number }>)
+    .sort((a, b) => b.orders - a.orders || b.revenue - a.revenue)
+    .slice(0, 6);
+  const liveAlerts = [
+    ...(pendingOrdersCount > 0 ? [`${pendingOrdersCount} pending order${pendingOrdersCount === 1 ? '' : 's'} need confirmation.`] : []),
+    ...(urgentOrders.length > 0 ? [`${urgentOrders.length} order${urgentOrders.length === 1 ? '' : 's'} are past SLA thresholds.`] : []),
+    ...(outOfStockProducts.length > 0 ? [`${outOfStockProducts.length} product${outOfStockProducts.length === 1 ? '' : 's'} are out of stock.`] : []),
+    ...(codExposure > 0 ? [`Rs. ${codExposure.toFixed(0)} COD exposure is still undelivered.`] : []),
+  ];
+  const liveEvents = [
+    ...recentOrders.map(order => ({
+      id: `order-${order.id}`,
+      title: `Order ${order.id}`,
+      detail: `${order.status} / Rs. ${order.total.toFixed(0)} / ${orderAgeLabel(order.date)} ago`,
+      tone: order.status === 'Cancelled' || order.status === 'Refunded' ? 'text-red-700' : 'text-[#1A1A1A]',
+    })),
+    ...lowStockProducts.slice(0, 4).map(product => ({
+      id: `stock-${product.id}`,
+      title: product.name,
+      detail: `${product.stock || 0} units left in ${product.category}`,
+      tone: (product.stock || 0) === 0 ? 'text-red-700' : 'text-yellow-700',
+    })),
+  ].slice(0, 10);
 
   useEffect(() => {
     if (isAdmin) {
@@ -1510,6 +1755,229 @@ export function AdminPage() {
                   ))}
                 </div>
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'live' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-8"
+          >
+            <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="inline-flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.24em] text-green-700">
+                    <Radio className="h-4 w-4" />
+                    Live Operations
+                  </p>
+                  <h2 className="mt-2 font-serif text-3xl text-[#1A1A1A]">Daraz/Amazon style command center</h2>
+                  <p className="mt-2 font-sans text-sm leading-6 text-[#1A1A1A]/60">
+                    Exact values are calculated from current orders, products, customers, coupons and inventory. Auto-refresh is controlled by you and defaults to manual mode.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] px-4 py-3">
+                    <p className="font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-[#1A1A1A]/45">Current Time</p>
+                    <p className="mt-1 font-sans text-sm font-bold text-[#1A1A1A]">{new Date(liveNow).toLocaleTimeString()}</p>
+                  </div>
+                  <div className="rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] px-4 py-3">
+                    <p className="font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-[#1A1A1A]/45">Last Refresh</p>
+                    <p className="mt-1 font-sans text-sm font-bold text-[#1A1A1A]">{lastLiveRefresh ? lastLiveRefresh.toLocaleTimeString() : 'Just opened'}</p>
+                  </div>
+                  <label className="rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] px-4 py-3">
+                    <span className="block font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-[#1A1A1A]/45">Refresh Rate</span>
+                    <select
+                      value={liveRefreshSeconds}
+                      onChange={(event) => setLiveRefreshPreference(Number(event.target.value))}
+                      className="mt-1 bg-transparent font-sans text-sm font-bold text-[#1A1A1A] outline-none"
+                    >
+                      <option value={0}>Manual</option>
+                      <option value={30}>30 sec</option>
+                      <option value={60}>60 sec</option>
+                      <option value={120}>120 sec</option>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void refreshLiveData()}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#1A1A1A] px-5 py-3 font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#CDA185] disabled:opacity-60"
+                    disabled={isLiveRefreshing}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isLiveRefreshing ? 'animate-spin' : ''}`} />
+                    Refresh Now
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+              {[
+                { label: 'Orders 24h', value: last24HoursOrders.length, note: `Rs. ${revenueLast24Hours.toFixed(0)}` },
+                { label: 'Pending Confirm', value: pendingOrdersCount, note: 'call / verify now' },
+                { label: 'COD Exposure', value: `Rs. ${codExposure.toFixed(0)}`, note: 'undelivered COD value' },
+                { label: 'SLA Risks', value: urgentOrders.length, note: 'late operational queue' },
+                { label: 'Stock Blocks', value: outOfStockProducts.length, note: `${lowStockProducts.length} low stock` },
+              ].map((metric) => (
+                <div key={metric.label} className="rounded-[8px] border border-[#1A1A1A]/10 bg-white p-5 shadow-sm">
+                  <p className="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/55">{metric.label}</p>
+                  <p className="mt-2 font-serif text-3xl text-[#1A1A1A]">{metric.value}</p>
+                  <p className="mt-1 font-sans text-[10px] uppercase tracking-[0.12em] text-[#CDA185]">{metric.note}</p>
+                </div>
+              ))}
+            </div>
+
+            {liveAlerts.length > 0 && (
+              <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {liveAlerts.map((alert) => (
+                  <div key={alert} className="flex items-start gap-3 rounded-[8px] border border-red-500/15 bg-red-500/5 p-4">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
+                    <p className="font-sans text-sm font-bold leading-6 text-red-800">{alert}</p>
+                  </div>
+                ))}
+              </section>
+            )}
+
+            <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white shadow-sm">
+              <div className="border-b border-[#1A1A1A]/10 p-5">
+                <p className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-[#CDA185]">Fulfillment Pipeline</p>
+                <h3 className="mt-1 font-serif text-2xl text-[#1A1A1A]">Exact order status value</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-3 p-5 md:grid-cols-3 xl:grid-cols-6">
+                {livePipeline.map((row) => (
+                  <div key={row.status} className="rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] p-4">
+                    <p className={`inline-flex rounded-full px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-[0.12em] ${getStatusBadgeClass(row.status)}`}>
+                      {row.status}
+                    </p>
+                    <p className="mt-3 font-serif text-3xl text-[#1A1A1A]">{row.count}</p>
+                    <p className="mt-1 font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-[#CDA185]">Rs. {row.value.toFixed(0)}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+              <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white shadow-sm">
+                <div className="border-b border-[#1A1A1A]/10 p-5">
+                  <p className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-[#CDA185]">SLA Queue</p>
+                  <h3 className="mt-1 font-serif text-2xl text-[#1A1A1A]">Orders needing action now</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left font-sans text-sm">
+                    <thead className="bg-[#1A1A1A]/5">
+                      <tr>
+                        <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Order</th>
+                        <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Customer</th>
+                        <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Age</th>
+                        <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Status</th>
+                        <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1A1A1A]/8">
+                      {urgentOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-5 py-8 text-center text-[#1A1A1A]/50">No orders are breaching live SLA thresholds.</td>
+                        </tr>
+                      ) : urgentOrders.map((order) => (
+                        <tr key={order.id}>
+                          <td className="px-5 py-3 font-bold text-[#1A1A1A]">{order.id}</td>
+                          <td className="px-5 py-3 text-[#1A1A1A]/65">{order.userName || order.userEmail}</td>
+                          <td className="px-5 py-3">
+                            <span className="inline-flex items-center gap-1 font-bold text-red-700"><Timer className="h-3.5 w-3.5" />{orderAgeLabel(order.date)}</span>
+                          </td>
+                          <td className="px-5 py-3">
+                            <span className={`rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] ${getStatusBadgeClass(order.status)}`}>{order.status}</span>
+                          </td>
+                          <td className="px-5 py-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveTab('orders');
+                                setOrderSearch(order.id);
+                                setExpandedOrderId(order.id);
+                              }}
+                              className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A] underline underline-offset-4"
+                            >
+                              Open Order
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white p-6 shadow-sm">
+                <p className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-[#CDA185]">Live Event Feed</p>
+                <h3 className="mt-1 font-serif text-2xl text-[#1A1A1A]">Recent store signals</h3>
+                <div className="mt-5 space-y-3">
+                  {liveEvents.length === 0 ? (
+                    <p className="rounded-[8px] bg-[#F9F7F2] p-5 text-center font-sans text-sm text-[#1A1A1A]/50">No live signals yet.</p>
+                  ) : liveEvents.map((event) => (
+                    <div key={event.id} className="rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] p-4">
+                      <p className={`font-sans text-sm font-bold ${event.tone}`}>{event.title}</p>
+                      <p className="mt-1 font-sans text-xs text-[#1A1A1A]/55">{event.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+              <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white shadow-sm">
+                <div className="border-b border-[#1A1A1A]/10 p-5">
+                  <p className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-[#CDA185]">Delivery Heat</p>
+                  <h3 className="mt-1 font-serif text-2xl text-[#1A1A1A]">Top destination cities</h3>
+                </div>
+                <div className="space-y-3 p-5">
+                  {liveCityHeat.length === 0 ? (
+                    <p className="text-center font-sans text-sm text-[#1A1A1A]/50">No city data yet.</p>
+                  ) : liveCityHeat.map((row) => (
+                    <div key={row.city} className="flex items-center justify-between gap-4 rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] p-4">
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-4 w-4 text-[#CDA185]" />
+                        <div>
+                          <p className="font-sans text-sm font-bold text-[#1A1A1A]">{row.city}</p>
+                          <p className="font-sans text-[10px] uppercase tracking-[0.14em] text-[#1A1A1A]/45">{row.orders} orders</p>
+                        </div>
+                      </div>
+                      <p className="font-serif text-lg text-[#1A1A1A]">Rs. {row.revenue.toFixed(0)}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white shadow-sm">
+                <div className="border-b border-[#1A1A1A]/10 p-5">
+                  <p className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-[#CDA185]">Inventory Blockers</p>
+                  <h3 className="mt-1 font-serif text-2xl text-[#1A1A1A]">Products blocking sales</h3>
+                </div>
+                <div className="space-y-3 p-5">
+                  {outOfStockProducts.length === 0 ? (
+                    <p className="text-center font-sans text-sm text-[#1A1A1A]/50">No out-of-stock products right now.</p>
+                  ) : outOfStockProducts.slice(0, 8).map((product) => (
+                    <div key={product.id} className="flex items-center justify-between gap-4 rounded-[8px] border border-red-500/15 bg-red-500/5 p-4">
+                      <div className="min-w-0">
+                        <p className="truncate font-sans text-sm font-bold text-red-800">{product.name}</p>
+                        <p className="font-sans text-[10px] uppercase tracking-[0.14em] text-red-700/70">{product.category} / {product.sku || 'No SKU'}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab('products');
+                          setProductSearch(product.name);
+                          setProductStockFilter('out_of_stock');
+                        }}
+                        className="shrink-0 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-red-800 underline underline-offset-4"
+                      >
+                        Restock
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
           </motion.div>
         )}
@@ -2992,15 +3460,25 @@ export function AdminPage() {
           >
             <div className="bg-white p-6 border border-[#1A1A1A]/10 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
               <h2 className="font-serif italic text-2xl text-[#1A1A1A]">Promotions & Coupons</h2>
-              <button 
-                onClick={() => {
-                  setEditingCoupon(null);
-                  setIsCreatingCoupon(true);
-                }}
-                className="flex items-center gap-2 bg-[#1A1A1A] text-[#F9F7F2] px-4 py-2 font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/90 transition-colors"
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => void handleRefreshCoupons()}
+                  className="flex items-center gap-2 border border-[#1A1A1A]/20 bg-white px-4 py-2 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A] transition-colors hover:border-[#1A1A1A] disabled:opacity-60"
+                  disabled={isCouponRefreshing}
                 >
-                <Plus className="w-4 h-4" /> New Coupon
-              </button>
+                  <RefreshCw className={`h-4 w-4 ${isCouponRefreshing ? 'animate-spin' : ''}`} /> Refresh Usage
+                </button>
+                <button 
+                  onClick={() => {
+                    setEditingCoupon(null);
+                    setIsCreatingCoupon(true);
+                  }}
+                  className="flex items-center gap-2 bg-[#1A1A1A] text-[#F9F7F2] px-4 py-2 font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#1A1A1A]/90 transition-colors"
+                  >
+                  <Plus className="w-4 h-4" /> New Coupon
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -3151,6 +3629,176 @@ export function AdminPage() {
                </div>
             </div>
 
+          </motion.div>
+        )}
+
+        {activeTab === 'reports' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-8"
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+              {[
+                { label: 'Revenue', value: `Rs. ${totalRevenue.toFixed(0)}`, note: `${totalOrders} orders` },
+                { label: 'AOV', value: `Rs. ${averageOrderValue.toFixed(0)}`, note: 'average order value' },
+                { label: 'Delivered', value: deliveredOrdersCount, note: 'completed orders' },
+                { label: 'Low Stock', value: lowStockProducts.length, note: `threshold ${lowStockThreshold}` },
+                { label: 'Out of Stock', value: outOfStockProducts.length, note: 'needs restock' },
+              ].map((metric) => (
+                <div key={metric.label} className="rounded-[8px] border border-[#1A1A1A]/10 bg-white p-5 shadow-sm">
+                  <p className="font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/55">{metric.label}</p>
+                  <p className="mt-2 font-serif text-3xl text-[#1A1A1A]">{metric.value}</p>
+                  <p className="mt-1 font-sans text-[10px] uppercase tracking-[0.12em] text-[#CDA185]">{metric.note}</p>
+                </div>
+              ))}
+            </div>
+
+            <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="font-sans text-[10px] font-bold uppercase tracking-[0.24em] text-[#CDA185]">Business Exports</p>
+                  <h2 className="mt-2 font-serif text-3xl text-[#1A1A1A]">Download store data</h2>
+                  <p className="mt-2 max-w-2xl font-sans text-sm leading-6 text-[#1A1A1A]/60">
+                    Export operational CSV files for accounting, delivery follow-up, inventory review, customer care, and promotion audits.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ['Orders CSV', exportOrdersCsv],
+                    ['Products CSV', exportProductsCsv],
+                    ['Customers CSV', exportCustomersCsv],
+                    ['Coupons CSV', exportCouponsCsv],
+                    ['Settings Backup', exportSettingsBackup],
+                  ].map(([label, action]) => (
+                    <button
+                      key={String(label)}
+                      type="button"
+                      onClick={action as () => void}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#1A1A1A]/12 px-4 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-[#1A1A1A] transition-colors hover:border-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {String(label)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] p-4">
+                <div className="flex items-start gap-3">
+                  <Database className="mt-0.5 h-5 w-5 shrink-0 text-[#CDA185]" />
+                  <p className="font-sans text-xs leading-6 text-[#1A1A1A]/65">
+                    CSV exports are generated from the current admin data in the browser. Settings backup includes store settings, category names, and sub-category mapping so you can keep a configuration snapshot before major changes.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+              <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white shadow-sm">
+                <div className="flex flex-col gap-4 border-b border-[#1A1A1A]/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-[#CDA185]">Inventory Risk</p>
+                    <h3 className="mt-1 font-serif text-2xl text-[#1A1A1A]">Low stock watchlist</h3>
+                  </div>
+                  <label className="flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-[#1A1A1A]/60">
+                    Threshold
+                    <input
+                      type="number"
+                      min={0}
+                      value={lowStockThreshold}
+                      onChange={(event) => setLowStockThreshold(Math.max(0, Number(event.target.value) || 0))}
+                      className="w-20 rounded border border-[#1A1A1A]/15 bg-[#F9F7F2] px-3 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#1A1A1A]"
+                    />
+                  </label>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left font-sans text-sm">
+                    <thead className="bg-[#1A1A1A]/5">
+                      <tr>
+                        <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Product</th>
+                        <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">SKU</th>
+                        <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Category</th>
+                        <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Stock</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1A1A1A]/8">
+                      {lowStockProducts.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-5 py-8 text-center font-sans text-sm text-[#1A1A1A]/50">No products are under the selected threshold.</td>
+                        </tr>
+                      ) : lowStockProducts.slice(0, 12).map((product) => (
+                        <tr key={product.id}>
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-3">
+                              {(product.stock || 0) === 0 && <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />}
+                              <span className="font-medium text-[#1A1A1A]">{product.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3 text-[#1A1A1A]/60">{product.sku || '-'}</td>
+                          <td className="px-5 py-3 text-[#1A1A1A]/60">{product.category}</td>
+                          <td className={`px-5 py-3 font-bold ${(product.stock || 0) === 0 ? 'text-red-700' : 'text-yellow-700'}`}>{product.stock || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white p-6 shadow-sm">
+                <p className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-[#CDA185]">Customer Value</p>
+                <h3 className="mt-1 font-serif text-2xl text-[#1A1A1A]">Top customers</h3>
+                <div className="mt-5 space-y-3">
+                  {customerReport.slice(0, 8).map((customer) => (
+                    <div key={customer.id} className="rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="truncate font-sans text-sm font-bold text-[#1A1A1A]">{customer.name}</p>
+                          <p className="truncate font-sans text-xs text-[#1A1A1A]/55">{customer.email}</p>
+                        </div>
+                        <span className="shrink-0 font-serif text-lg text-[#1A1A1A]">Rs. {customer.spent.toFixed(0)}</span>
+                      </div>
+                      <p className="mt-2 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-[#CDA185]">
+                        {customer.orders} orders / {customer.coins} coins / {customer.status}
+                      </p>
+                    </div>
+                  ))}
+                  {customerReport.length === 0 && (
+                    <p className="rounded-[8px] border border-[#1A1A1A]/10 bg-[#F9F7F2] p-5 text-center font-sans text-sm text-[#1A1A1A]/50">No customers yet.</p>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            <section className="rounded-[8px] border border-[#1A1A1A]/10 bg-white shadow-sm">
+              <div className="border-b border-[#1A1A1A]/10 p-5">
+                <p className="font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-[#CDA185]">Category Performance</p>
+                <h3 className="mt-1 font-serif text-2xl text-[#1A1A1A]">Catalog health by category</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left font-sans text-sm">
+                  <thead className="bg-[#1A1A1A]/5">
+                    <tr>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Category</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Products</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Active</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Stock Units</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A1A1A]/55">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1A1A1A]/8">
+                    {categoryReport.map((row) => (
+                      <tr key={row.category}>
+                        <td className="px-5 py-3 font-bold text-[#1A1A1A]">{row.category}</td>
+                        <td className="px-5 py-3 text-[#1A1A1A]/65">{row.products}</td>
+                        <td className="px-5 py-3 text-[#1A1A1A]/65">{row.active}</td>
+                        <td className="px-5 py-3 text-[#1A1A1A]/65">{row.stock}</td>
+                        <td className="px-5 py-3 font-bold text-[#1A1A1A]">Rs. {row.revenue.toFixed(0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </motion.div>
         )}
 
