@@ -1,3 +1,4 @@
+import { rejectLargeBody, setSecurityHeaders } from './_security';
 import { createHmac, randomInt } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
@@ -6,6 +7,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const resendApiKey = process.env.RESEND_API_KEY;
 const otpSecret = process.env.SIGNUP_OTP_SECRET;
+const ipHashSecret = process.env.IP_HASH_SECRET || process.env.SIGNUP_OTP_SECRET;
 const fromEmail = process.env.AUTH_EMAIL_FROM || process.env.ORDER_EMAIL_FROM;
 const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'https://aabnoor.shop,https://www.aabnoor.shop')
   .split(',')
@@ -36,7 +38,7 @@ const hashOtp = (email: string, otp: string) =>
 
 const hashIp = (ip: string) =>
   ip
-    ? createHmac('sha256', otpSecret || '').update(ip).digest('hex')
+    ? createHmac('sha256', ipHashSecret || '').update(ip).digest('hex')
     : null;
 
 const setCorsHeaders = (req: any, res: any) => {
@@ -53,6 +55,8 @@ const setCorsHeaders = (req: any, res: any) => {
 };
 
 export default async function handler(req: any, res: any) {
+  setSecurityHeaders(res);
+  if (rejectLargeBody(req, res)) return;
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 

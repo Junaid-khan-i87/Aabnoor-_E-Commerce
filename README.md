@@ -95,6 +95,7 @@ AUTH_EMAIL_FROM="Aabnoor <noreply@aabnoor.shop>"
 ORDER_TRACKING_URL="https://aabnoor.shop/track"
 
 SIGNUP_OTP_SECRET=
+IP_HASH_SECRET=
 REVIEW_HASH_SECRET=
 RATE_LIMIT_SECRET=
 ADMIN_EMAIL=

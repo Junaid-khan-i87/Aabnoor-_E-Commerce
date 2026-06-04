@@ -15,9 +15,8 @@ create table if not exists public.admin_users (
   created_at timestamptz not null default now()
 );
 
-insert into public.admin_invite_codes (code_hash, label)
-values (encode(extensions.digest('9A5wqvNqWp98', 'sha256'), 'hex'), 'initial admin invite')
-on conflict (code_hash) do update set is_active = true;
+-- Seed the initial invite code manually via Supabase dashboard or a
+-- one-time CLI command. Never commit plaintext secrets to source control.
 
 alter table public.admin_invite_codes enable row level security;
 alter table public.admin_users enable row level security;

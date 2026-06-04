@@ -1,3 +1,4 @@
+import { rejectLargeBody, setSecurityHeaders } from './_security';
 import { createHmac } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
@@ -37,6 +38,8 @@ const setCorsHeaders = (req: any, res: any) => {
 };
 
 export default async function handler(req: any, res: any) {
+  setSecurityHeaders(res);
+  if (rejectLargeBody(req, res)) return;
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 

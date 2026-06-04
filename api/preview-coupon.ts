@@ -1,3 +1,4 @@
+import { rejectLargeBody, setSecurityHeaders } from './_security';
 import { randomBytes } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
@@ -93,6 +94,8 @@ const checkPreviewRateLimit = async (supabaseAdmin: any, authUserId: string): Pr
 const invalid = (reason: string) => ({ valid: false, reason });
 
 export default async function handler(req: any, res: any) {
+  setSecurityHeaders(res);
+  if (rejectLargeBody(req, res)) return;
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 
@@ -151,7 +154,7 @@ export default async function handler(req: any, res: any) {
     const fallbackResult = await supabaseAdmin
       .from('coupons')
       .select('id,data')
-      .eq('data->>code', couponCode)
+      .ilike('data->>code', couponCode)
       .maybeSingle();
     couponRow = fallbackResult.data;
     couponError = couponError || fallbackResult.error;

@@ -4,26 +4,26 @@ drop policy if exists "admin products delete" on public.products;
 create policy "admin products insert" on public.products
 for insert to authenticated
 with check (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
 create policy "admin products update" on public.products
 for update to authenticated
 using (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 )
 with check (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
 create policy "admin products delete" on public.products
 for delete to authenticated
 using (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
@@ -34,26 +34,26 @@ drop policy if exists "admin coupons delete" on public.coupons;
 create policy "admin coupons insert" on public.coupons
 for insert to authenticated
 with check (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
 create policy "admin coupons update" on public.coupons
 for update to authenticated
 using (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 )
 with check (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
 create policy "admin coupons delete" on public.coupons
 for delete to authenticated
 using (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
@@ -64,26 +64,26 @@ drop policy if exists "admin store settings delete" on public.store_settings;
 create policy "admin store settings insert" on public.store_settings
 for insert to authenticated
 with check (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
 create policy "admin store settings update" on public.store_settings
 for update to authenticated
 using (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 )
 with check (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
 create policy "admin store settings delete" on public.store_settings
 for delete to authenticated
 using (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
@@ -96,7 +96,7 @@ for select to authenticated
 using (
   (data->>'email') = (select auth.email())
   or (
-    (select auth.email()) = 'junaidmushtaq988@gmail.com'
+    exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
     and (select auth.jwt())->>'aal' = 'aal2'
     and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
   )
@@ -106,7 +106,7 @@ for update to authenticated
 using (
   (data->>'email') = (select auth.email())
   or (
-    (select auth.email()) = 'junaidmushtaq988@gmail.com'
+    exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
     and (select auth.jwt())->>'aal' = 'aal2'
     and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
   )
@@ -114,7 +114,7 @@ using (
 with check (
   (data->>'email') = (select auth.email())
   or (
-    (select auth.email()) = 'junaidmushtaq988@gmail.com'
+    exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
     and (select auth.jwt())->>'aal' = 'aal2'
     and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
   )
@@ -122,7 +122,7 @@ with check (
 create policy "admin customers delete" on public.customers
 for delete to authenticated
 using (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
@@ -135,7 +135,7 @@ for select to authenticated
 using (
   (data->>'userEmail') = (select auth.email())
   or (
-    (select auth.email()) = 'junaidmushtaq988@gmail.com'
+    exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
     and (select auth.jwt())->>'aal' = 'aal2'
     and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
   )
@@ -143,19 +143,19 @@ using (
 create policy "admin orders update" on public.orders
 for update to authenticated
 using (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 )
 with check (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );
 create policy "admin orders delete" on public.orders
 for delete to authenticated
 using (
-  (select auth.email()) = 'junaidmushtaq988@gmail.com'
+  exists (select 1 from public.admin_allowed_emails allowed where allowed.email = (select auth.email()))
   and (select auth.jwt())->>'aal' = 'aal2'
   and exists (select 1 from public.admin_users where user_id = (select auth.uid()))
 );

@@ -46,6 +46,10 @@ const scanFiles = [
   return files;
 });
 
+const apiFiles = fs.readdirSync(path.join(root, 'api'), { withFileTypes: true })
+  .filter((entry) => entry.isFile() && /\.ts$/.test(entry.name) && !entry.name.startsWith('_'))
+  .map((entry) => path.join(root, 'api', entry.name));
+
 const hazards = [
   { name: 'dangerouslySetInnerHTML', pattern: /dangerouslySetInnerHTML/ },
   { name: 'innerHTML', pattern: /\.innerHTML\s*=/ },
@@ -63,15 +67,44 @@ for (const file of scanFiles) {
   }
 }
 
+const securityRegressionHits = [];
+const secretPatterns = [
+  { name: 'hardcoded retired admin invite code', pattern: /9A5wqvNqWp98/ },
+  { name: 'hardcoded retired admin email', pattern: /junaidmushtaq988/i },
+  { name: 'manual JWT aal claim decoding', pattern: /decodeJwtPayload|tokenClaims/ },
+  { name: 'fake paid order status', pattern: /paymentStatus:\s*isCod\s*\?\s*['"]COD Due['"]\s*:\s*['"]Paid['"]/ },
+  { name: 'unconditional verified review', pattern: /verified:\s*true/ },
+];
+
+for (const file of scanFiles) {
+  const text = fs.readFileSync(file, 'utf8');
+  for (const check of secretPatterns) {
+    if (check.pattern.test(text)) {
+      securityRegressionHits.push(`${path.relative(root, file)}: ${check.name}`);
+    }
+  }
+}
+
+const unguardedApiFiles = [];
+for (const file of apiFiles) {
+  const text = fs.readFileSync(file, 'utf8');
+  if (!text.includes("from './_security'") || !text.includes('setSecurityHeaders(res)') || !text.includes('rejectLargeBody(req, res)')) {
+    unguardedApiFiles.push(path.relative(root, file));
+  }
+}
+
 const failures = [
   ...missingRewrites.map((route) => `Missing vercel rewrite for ${route}`),
   ...missingHeaders.map((header) => `Missing security header ${header}`),
   ...hazardHits.map((hit) => `Unsafe frontend/API pattern: ${hit}`),
+  ...securityRegressionHits.map((hit) => `Security regression: ${hit}`),
+  ...unguardedApiFiles.map((file) => `API route missing common security guard: ${file}`),
 ];
 
 console.log(`Aabnoor health check`);
 console.log(`Routes checked: ${routePaths.length}`);
 console.log(`Security headers checked: ${requiredHeaders.length}`);
+console.log(`API security guards checked: ${apiFiles.length}`);
 console.log(`Package scripts available: ${Object.keys(packageJson.scripts || {}).sort().join(', ')}`);
 
 if (failures.length) {

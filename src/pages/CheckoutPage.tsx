@@ -190,8 +190,8 @@ export function CheckoutPage() {
         couponCode: appliedCoupon?.code || '',
         coinsToRedeem: normalizedCoinsToRedeem,
       });
-    } catch {
-      addToast('Order could not be saved. Please try again.', 'error');
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Order could not be saved. Please try again.', 'error');
       setIsProcessing(false);
       return;
     }

@@ -1,10 +1,11 @@
+import { rejectLargeBody, setSecurityHeaders } from './_security';
 import { createClient } from '@supabase/supabase-js';
 import { createHmac } from 'crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-const rateLimitSecret = process.env.RATE_LIMIT_SECRET || process.env.SIGNUP_OTP_SECRET;
+const rateLimitSecret = process.env.IP_HASH_SECRET || process.env.RATE_LIMIT_SECRET || process.env.SIGNUP_OTP_SECRET;
 
 const trackingRegex = /^[A-Z]{2}-\d{2}-\d{7}$/i;
 const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'https://aabnoor.shop,https://www.aabnoor.shop')
@@ -75,6 +76,8 @@ const publicTrackingMessage = (status: string) => {
 };
 
 export default async function handler(req: any, res: any) {
+  setSecurityHeaders(res);
+  if (rejectLargeBody(req, res)) return;
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 

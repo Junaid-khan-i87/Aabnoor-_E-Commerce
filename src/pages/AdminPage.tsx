@@ -13,7 +13,7 @@ import { supabase } from '../lib/supabase';
 import { deleteEntity, listEntities, upsertEntity } from '../lib/storeApi';
 import { downloadInvoicePdf, downloadShippingLabelPdf, printOrderDocument } from '../lib/orderDocuments';
 
-type AdminTab = 'dashboard' | 'live' | 'orders' | 'customers' | 'products' | 'discounts' | 'reports' | 'audit' | 'settings';
+type AdminTab = 'dashboard' | 'live' | 'orders' | 'customers' | 'products' | 'discounts' | 'reports' | 'audit' | 'access' | 'settings';
 
 const ADMIN_TABS: { id: AdminTab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -24,8 +24,24 @@ const ADMIN_TABS: { id: AdminTab; label: string }[] = [
   { id: 'discounts', label: 'Promotions' },
   { id: 'reports', label: 'Reports' },
   { id: 'audit', label: 'Audit' },
+  { id: 'access', label: 'Access' },
   { id: 'settings', label: 'Settings' },
 ];
+
+type AdminAccessEntry = {
+  email: string;
+  role: 'super_admin' | 'admin';
+  status: 'active' | 'revoked';
+  invitedBy: string;
+  invitedAt: string;
+  revokedBy: string;
+  revokedAt: string;
+  lastLoginAt: string;
+  updatedAt: string;
+  note: string;
+  userId: string;
+  activatedAt: string;
+};
 
 const ORDER_STATUS_VALUES: OrderStatus[] = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded'];
 
@@ -213,7 +229,7 @@ export function AdminPage() {
     isOpen: boolean;
     title: string;
     message: string;
-    actionType: 'cancel_order' | 'delete_order' | 'delete_user' | 'warn_user' | 'toggle_block_user' | 'delete_product' | 'delete_coupon' | null;
+    actionType: 'cancel_order' | 'delete_order' | 'delete_user' | 'warn_user' | 'toggle_block_user' | 'delete_product' | 'delete_coupon' | 'revoke_admin_access' | null;
     targetId: string | null;
   }>({
     isOpen: false,
@@ -257,6 +273,9 @@ export function AdminPage() {
       case 'delete_coupon':
         deleteCoupon(confirmDialog.targetId);
         break;
+      case 'revoke_admin_access':
+        void revokeAdminAccess(confirmDialog.targetId);
+        break;
     }
     
     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
@@ -271,7 +290,7 @@ export function AdminPage() {
     categories, addCategory, removeCategory,
     subCategories, addSubCategory, removeSubCategory,
     users, deleteUser, updateUser, warnUser,
-    isAuthLoading, isAdmin, refreshAdminStatus,
+    isAuthLoading, isAdmin, isSuperAdmin, adminRole, refreshAdminStatus,
   } = useSite();
   const { coupons, addCoupon, updateCoupon, deleteCoupon, refreshCoupons } = useAdminCoupons(isAdmin);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -317,6 +336,12 @@ export function AdminPage() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [adminAccessList, setAdminAccessList] = useState<AdminAccessEntry[]>([]);
+  const [accessEmail, setAccessEmail] = useState('');
+  const [accessNote, setAccessNote] = useState('');
+  const [accessMessage, setAccessMessage] = useState('');
+  const [accessError, setAccessError] = useState('');
+  const [isAccessLoading, setIsAccessLoading] = useState(false);
 
   useEffect(() => {
     setSettingsForm(settings);
@@ -347,6 +372,91 @@ export function AdminPage() {
     }
   }, [addToast, refreshCoupons]);
 
+  const callAdminAccessApi = React.useCallback(async (payload: Record<string, unknown>) => {
+    const { data: sessionResult } = await supabase?.auth.getSession() || { data: { session: null } };
+    const token = sessionResult.session?.access_token;
+    if (!token) {
+      throw new Error('Sign in again with authenticator before managing access.');
+    }
+
+    const response = await fetch('/api/admin-access', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(result?.error || 'Admin access could not be updated.');
+    }
+
+    return result as { admins?: AdminAccessEntry[]; message?: string };
+  }, []);
+
+  const refreshAdminAccess = React.useCallback(async () => {
+    if (!isSuperAdmin) {
+      setAdminAccessList([]);
+      return;
+    }
+
+    setIsAccessLoading(true);
+    setAccessError('');
+    try {
+      const result = await callAdminAccessApi({ action: 'list' });
+      setAdminAccessList(Array.isArray(result.admins) ? result.admins : []);
+    } catch (error) {
+      setAccessError(error instanceof Error ? error.message : 'Admin access list could not be loaded.');
+    } finally {
+      setIsAccessLoading(false);
+    }
+  }, [callAdminAccessApi, isSuperAdmin]);
+
+  const grantAdminAccess = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsAccessLoading(true);
+    setAccessError('');
+    setAccessMessage('');
+    try {
+      const result = await callAdminAccessApi({
+        action: 'grant',
+        email: accessEmail,
+        note: accessNote,
+      });
+      setAdminAccessList(Array.isArray(result.admins) ? result.admins : []);
+      setAccessEmail('');
+      setAccessNote('');
+      setAccessMessage(result.message || 'Admin access granted.');
+      addToast(result.message || 'Admin access granted.', 'success');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Admin access could not be granted.';
+      setAccessError(message);
+      addToast(message, 'error');
+    } finally {
+      setIsAccessLoading(false);
+    }
+  };
+
+  async function revokeAdminAccess(email: string) {
+    setIsAccessLoading(true);
+    setAccessError('');
+    setAccessMessage('');
+    try {
+      const result = await callAdminAccessApi({ action: 'revoke', email });
+      setAdminAccessList(Array.isArray(result.admins) ? result.admins : []);
+      setAccessMessage(result.message || 'Admin access revoked.');
+      addToast(result.message || 'Admin access revoked.', 'success');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Admin access could not be revoked.';
+      setAccessError(message);
+      addToast(message, 'error');
+    } finally {
+      setIsAccessLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (activeTab !== 'live' || !isAdmin) return undefined;
     const clockTimer = window.setInterval(() => {
@@ -368,6 +478,18 @@ export function AdminPage() {
     setLiveRefreshSeconds(seconds);
     localStorage.setItem('aabnoor_live_ops_refresh_seconds', String(seconds));
   };
+
+  useEffect(() => {
+    if (activeTab === 'access') {
+      void refreshAdminAccess();
+    }
+  }, [activeTab, refreshAdminAccess]);
+
+  useEffect(() => {
+    if (activeTab === 'access' && !isSuperAdmin) {
+      setActiveTab('dashboard');
+    }
+  }, [activeTab, isSuperAdmin]);
   
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
@@ -1004,7 +1126,7 @@ export function AdminPage() {
           <h1 className="font-serif text-4xl mb-1 text-[#2c2826]">Admin Console</h1>
           <p className="font-sans text-xs uppercase tracking-widest text-[#c9847a] font-bold mb-6">Aabnoor Management Studio</p>
           <p className="font-sans text-xs text-[#7a706a] leading-relaxed mb-6">
-            Sign in with the configured admin email, then verify the code from your authenticator app.
+            Sign in with the main admin email or a granted admin email, then verify the code from your authenticator app.
           </p>
 
           {loginError && (
@@ -1450,6 +1572,13 @@ export function AdminPage() {
     await downloadShippingLabelPdf(getOrderDocumentContext(order));
   };
 
+  const visibleAdminTabs = ADMIN_TABS.filter(tab => tab.id !== 'access' || isSuperAdmin);
+  const formatAccessDate = (value: string) => {
+    if (!value) return 'Not yet';
+    const timestamp = Date.parse(value);
+    return Number.isNaN(timestamp) ? 'Not yet' : new Date(timestamp).toLocaleString();
+  };
+
   return (
     <div className="admin-redesign min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(201,132,122,0.18),transparent_30%),#faf6f1] pt-40 pb-12 px-4 md:px-8 text-[#2c2826]">
       <div className="max-w-7xl mx-auto">
@@ -1458,11 +1587,16 @@ export function AdminPage() {
             <div>
               <p className="mb-3 font-sans text-[10px] font-bold uppercase tracking-[0.32em] text-[#c9847a]">Aabnoor Control Room</p>
               <h1 className="font-serif text-4xl md:text-5xl text-white">Admin Console</h1>
-              <p className="mt-3 max-w-2xl font-sans text-sm leading-6 text-[#9a9088]">Manage orders, products, customers, discounts and storefront settings from live backend data.</p>
+              <p className="mt-3 max-w-2xl font-sans text-sm leading-6 text-[#9a9088]">
+                Manage orders, products, customers, discounts and storefront settings from live backend data.
+                <span className="mt-1 block text-[11px] uppercase tracking-[0.18em] text-[#c9847a]">
+                  {adminRole === 'super_admin' ? 'Main admin session' : 'Delegated admin session'}
+                </span>
+              </p>
             </div>
 
             <div className="relative z-0 flex max-w-full gap-2 overflow-x-auto rounded-[6px] border border-white/10 bg-white/[0.06] p-1">
-              {ADMIN_TABS.map((tab) => (
+              {visibleAdminTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
@@ -4003,6 +4137,162 @@ export function AdminPage() {
                 ))}
               </div>
             </section>
+          </motion.div>
+        )}
+
+        {activeTab === 'access' && isSuperAdmin && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            <div className="rounded-[8px] border border-[#2c2826]/10 bg-[#fffaf7] p-6 shadow-sm">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-[#c9847a]">Admin Access</p>
+                  <h2 className="mt-2 font-serif text-3xl text-[#2c2826]">Team permissions</h2>
+                  <p className="mt-2 max-w-2xl font-sans text-sm leading-6 text-[#7a706a]">
+                    Grant access by email. The user must sign in with the same Supabase account and pass authenticator verification before the admin panel unlocks.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void refreshAdminAccess()}
+                  disabled={isAccessLoading}
+                  className="inline-flex items-center justify-center gap-2 rounded-[4px] border border-[#2c2826]/15 px-4 py-2.5 font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-[#2c2826] hover:bg-[#2c2826]/5 disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isAccessLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
+
+              <form onSubmit={grantAdminAccess} className="mt-6 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                <div>
+                  <label className="mb-2 block font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-[#7a706a]">User email</label>
+                  <input
+                    type="email"
+                    value={accessEmail}
+                    onChange={(event) => setAccessEmail(event.target.value)}
+                    placeholder="team@example.com"
+                    className="w-full border border-[#2c2826]/15 bg-white px-3 py-3 font-sans text-sm outline-none focus:border-[#2c2826]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-[#7a706a]">Internal note</label>
+                  <input
+                    type="text"
+                    value={accessNote}
+                    onChange={(event) => setAccessNote(event.target.value)}
+                    placeholder="Role, branch, or reason"
+                    className="w-full border border-[#2c2826]/15 bg-white px-3 py-3 font-sans text-sm outline-none focus:border-[#2c2826]"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isAccessLoading}
+                  className="mt-6 inline-flex items-center justify-center gap-2 rounded-[4px] bg-[#2c2826] px-5 py-3 font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-white hover:bg-[#8a4f48] disabled:opacity-50 lg:self-end"
+                >
+                  <Plus className="h-4 w-4" />
+                  Grant Access
+                </button>
+              </form>
+
+              {(accessMessage || accessError) && (
+                <div className={`mt-4 rounded-[4px] border px-4 py-3 font-sans text-xs font-bold ${accessError ? 'border-red-200 bg-red-50 text-red-700' : 'border-green-200 bg-green-50 text-green-700'}`}>
+                  {accessError || accessMessage}
+                </div>
+              )}
+            </div>
+
+            <div className="overflow-hidden rounded-[8px] border border-[#2c2826]/10 bg-white shadow-sm">
+              <div className="grid grid-cols-1 gap-3 border-b border-[#2c2826]/10 bg-[#f7f0e8] px-5 py-4 md:grid-cols-4">
+                {[
+                  { label: 'Active admins', value: adminAccessList.filter(entry => entry.status === 'active').length },
+                  { label: 'Pending setup', value: adminAccessList.filter(entry => entry.status === 'active' && !entry.userId).length },
+                  { label: 'Revoked', value: adminAccessList.filter(entry => entry.status === 'revoked').length },
+                  { label: 'Main admin', value: adminAccessList.filter(entry => entry.role === 'super_admin').length || 1 },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <p className="font-sans text-[9px] font-bold uppercase tracking-[0.18em] text-[#7a706a]">{item.label}</p>
+                    <p className="mt-1 font-serif text-2xl text-[#2c2826]">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[920px] text-left font-sans text-sm">
+                  <thead className="bg-[#2c2826]/5">
+                    <tr>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#7a706a]">Admin</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#7a706a]">Role</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#7a706a]">Status</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#7a706a]">Last login</th>
+                      <th className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#7a706a]">Note</th>
+                      <th className="px-5 py-3 text-right text-[10px] font-bold uppercase tracking-[0.16em] text-[#7a706a]">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#2c2826]/10">
+                    {adminAccessList.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-5 py-10 text-center text-[#7a706a]">
+                          {isAccessLoading ? 'Loading admin access...' : 'No delegated admins yet.'}
+                        </td>
+                      </tr>
+                    ) : adminAccessList.map((entry) => (
+                      <tr key={entry.email} className={entry.status === 'revoked' ? 'bg-red-50/40 text-[#7a706a]' : ''}>
+                        <td className="px-5 py-4">
+                          <p className="font-bold text-[#2c2826]">{entry.email}</p>
+                          <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-[#7a706a]">
+                            {entry.userId ? `Activated ${formatAccessDate(entry.activatedAt)}` : 'Pending account or MFA setup'}
+                          </p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="rounded-full bg-[#2c2826]/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#2c2826]">
+                            {entry.role === 'super_admin' ? 'Main Admin' : 'Admin'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${entry.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                            {entry.status}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-[#7a706a]">{formatAccessDate(entry.lastLoginAt)}</td>
+                        <td className="max-w-[220px] px-5 py-4 text-[#7a706a]">{entry.note || '-'}</td>
+                        <td className="px-5 py-4 text-right">
+                          {entry.role === 'super_admin' ? (
+                            <span className="font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-[#7a706a]">Protected</span>
+                          ) : entry.status === 'active' ? (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDialog({
+                                isOpen: true,
+                                title: 'Remove admin access?',
+                                message: `${entry.email} will no longer be able to open the admin panel or perform admin actions.`,
+                                actionType: 'revoke_admin_access',
+                                targetId: entry.email,
+                              })}
+                              className="inline-flex items-center gap-2 font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Revoke
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAccessEmail(entry.email);
+                                setAccessNote(entry.note || '');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className="font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-[#2c2826] hover:text-[#8a4f48]"
+                            >
+                              Re-grant
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </motion.div>
         )}
 

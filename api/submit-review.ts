@@ -1,3 +1,4 @@
+import { rejectLargeBody, setSecurityHeaders } from './_security';
 import { createClient } from '@supabase/supabase-js';
 import { createHmac, randomBytes } from 'crypto';
 
@@ -49,6 +50,8 @@ const isAllowedPhotoUrl = (url: string) => {
 };
 
 export default async function handler(req: any, res: any) {
+  setSecurityHeaders(res);
+  if (rejectLargeBody(req, res)) return;
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 
@@ -117,6 +120,21 @@ export default async function handler(req: any, res: any) {
     },
   });
 
+  const { data: deliveredOrderRows, error: purchaseError } = await supabaseAdmin
+    .from('orders')
+    .select('id,data')
+    .eq('data->>authUserId', user.id)
+    .eq('data->>status', 'Delivered')
+    .limit(50);
+
+  const isVerifiedPurchase = !purchaseError && (deliveredOrderRows || []).some((row: any) => {
+    const items = Array.isArray(row.data?.items) ? row.data.items : [];
+    return items.some((item: any) => {
+      const orderedProductId = String(item?.productId || '');
+      return orderedProductId === productId || orderedProductId.startsWith(`${productId}-`);
+    });
+  });
+
   const { data: productRow, error: productError } = await supabaseAdmin
     .from('products')
     .select('id,data')
@@ -147,9 +165,9 @@ export default async function handler(req: any, res: any) {
     rating,
     comment,
     date: new Date().toISOString(),
-    tags: tags.length > 0 ? tags : ['Verified Purchase'],
+    tags: tags.length > 0 ? tags : (isVerifiedPurchase ? ['Verified Purchase'] : ['Unverified']),
     photos,
-    verified: true,
+    verified: isVerifiedPurchase,
   };
 
   const nextReviews = [newReview, ...currentReviews].slice(0, 100);

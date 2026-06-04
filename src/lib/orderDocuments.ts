@@ -284,7 +284,7 @@ const invoiceHtml = (context: OrderDocumentContext) => {
         <div class="soft"><div class="tiny">Order #</div><strong>${clean(order.id)}</strong></div>
         <div class="soft"><div class="tiny">Invoice Date</div><strong>${clean(orderDate(order))}</strong></div>
         <div class="soft"><div class="tiny">Payment Method</div><strong>${clean(order.paymentMethod || 'N/A')}</strong></div>
-        <div class="soft"><div class="tiny">Payment Status</div><strong>${clean(order.paymentStatus || order.payment_status || (isCodPayment(order.paymentMethod) ? 'COD Due' : 'Paid'))}</strong></div>
+        <div class="soft"><div class="tiny">Payment Status</div><strong>${clean(order.paymentStatus || order.payment_status || (isCodPayment(order.paymentMethod) ? 'COD Due' : 'Pending Payment'))}</strong></div>
         <div class="soft"><div class="tiny">Tracking / CN</div><strong>${clean(trackingNumber(order))}</strong></div>
       </section>
 
@@ -576,7 +576,7 @@ export const downloadInvoicePdf = async (context: OrderDocumentContext) => {
   doc.text(`Date: ${orderDate(order)}`, margin + 132, y);
   y += 6;
   doc.text(`Payment: ${order.paymentMethod || 'N/A'}`, margin, y);
-  doc.text(`Status: ${order.paymentStatus || order.payment_status || (isCodPayment(order.paymentMethod) ? 'COD Due' : 'Paid')}`, margin + 68, y);
+  doc.text(`Status: ${order.paymentStatus || order.payment_status || (isCodPayment(order.paymentMethod) ? 'COD Due' : 'Pending Payment')}`, margin + 68, y);
   doc.text(`Tracking: ${trackingNumber(order)}`, margin + 132, y);
   y += 10;
 

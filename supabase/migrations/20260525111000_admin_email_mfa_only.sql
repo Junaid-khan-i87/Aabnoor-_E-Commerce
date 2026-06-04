@@ -3,9 +3,9 @@ create table if not exists public.admin_allowed_emails (
   created_at timestamptz not null default now()
 );
 
-insert into public.admin_allowed_emails (email)
-values ('junaidmushtaq988@gmail.com')
-on conflict (email) do nothing;
+-- Add allowed admin emails via the Supabase dashboard or a secure one-time
+-- migration that reads from an environment variable. Never hardcode real email
+-- addresses in source-controlled migrations.
 
 alter table public.admin_allowed_emails enable row level security;
 

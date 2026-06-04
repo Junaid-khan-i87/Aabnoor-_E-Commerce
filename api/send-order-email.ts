@@ -1,3 +1,4 @@
+import { rejectLargeBody, setSecurityHeaders } from './_security';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
@@ -36,6 +37,8 @@ const setCorsHeaders = (req: any, res: any) => {
 };
 
 export default async function handler(req: any, res: any) {
+  setSecurityHeaders(res);
+  if (rejectLargeBody(req, res)) return;
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 

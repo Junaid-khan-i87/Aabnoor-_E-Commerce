@@ -239,6 +239,8 @@ interface SiteContextType {
   authUserId: string | null;
   isAuthLoading: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  adminRole: 'super_admin' | 'admin' | null;
   refreshAdminStatus: () => Promise<boolean>;
   loginDiscountUsed: boolean;
   setLoginDiscountUsed: (used: boolean) => void;
@@ -293,6 +295,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [adminRole, setAdminRole] = useState<'super_admin' | 'admin' | null>(null);
   const [siteName, setSiteNameState] = useState('Aabnoor');
 
   const [categories, setCategoriesState] = useState<string[]>([]);
@@ -322,6 +326,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
   const refreshAdminStatus = React.useCallback(async () => {
     if (!supabase) {
       setIsAdmin(false);
+      setIsSuperAdmin(false);
+      setAdminRole(null);
       return false;
     }
 
@@ -329,6 +335,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     const token = sessionResult.session?.access_token;
     if (!token) {
       setIsAdmin(false);
+      setIsSuperAdmin(false);
+      setAdminRole(null);
       return false;
     }
 
@@ -343,12 +351,17 @@ export function SiteProvider({ children }: { children: ReactNode }) {
 
     if (!response.ok) {
       setIsAdmin(false);
+      setIsSuperAdmin(false);
+      setAdminRole(null);
       return false;
     }
 
     const result = await response.json().catch(() => null);
     const nextIsAdmin = Boolean(result?.isAdmin);
+    const nextRole = result?.adminRole === 'super_admin' ? 'super_admin' : result?.adminRole === 'admin' ? 'admin' : null;
     setIsAdmin(nextIsAdmin);
+    setIsSuperAdmin(Boolean(result?.isSuperAdmin));
+    setAdminRole(nextRole);
     return nextIsAdmin;
   }, []);
 
@@ -386,6 +399,8 @@ export function SiteProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('aura_current_user');
       }
       setIsAdmin(false);
+      setIsSuperAdmin(false);
+      setAdminRole(null);
       refreshAdminStatus();
     });
 
@@ -636,7 +651,7 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       siteName, setSiteName, bannerText, setBannerText, isBannerActive, setIsBannerActive, 
       couponCode, setCouponCode, couponDiscount, setCouponDiscount, 
       settings, updateSettings,
-      currentUser, setCurrentUser, authUserId, isAuthLoading, isAdmin, refreshAdminStatus, loginDiscountUsed, setLoginDiscountUsed, 
+      currentUser, setCurrentUser, authUserId, isAuthLoading, isAdmin, isSuperAdmin, adminRole, refreshAdminStatus, loginDiscountUsed, setLoginDiscountUsed, 
       categories, addCategory, removeCategory,
       subCategories, addSubCategory, removeSubCategory,
       users, deleteUser, updateUser, warnUser 

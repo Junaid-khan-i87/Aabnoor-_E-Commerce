@@ -1,3 +1,4 @@
+import { rejectLargeBody, setSecurityHeaders } from './_security';
 const html = `<!doctype html>
 <html lang="en">
   <head>
@@ -29,7 +30,9 @@ const html = `<!doctype html>
   </body>
 </html>`;
 
-export default function handler(_req: any, res: any) {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+export default function handler(req: any, res: any) {
+  setSecurityHeaders(res);
+  if (rejectLargeBody(req, res)) return;
+res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.status(404).send(html);
 }

@@ -1,10 +1,10 @@
+import { rejectLargeBody, setSecurityHeaders } from './_security';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { requireAdminSession } from './_adminAuth';
 
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
 const resendApiKey = process.env.RESEND_API_KEY;
 const fromEmail = process.env.ORDER_EMAIL_FROM;
 const trackingUrl = process.env.ORDER_TRACKING_URL || 'https://aabnoor.shop/track';
@@ -28,17 +28,6 @@ const escapeHtml = (value: unknown) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 
-const decodeJwtPayload = (token: string) => {
-  const payload = token.split('.')[1];
-  if (!payload) return null;
-
-  try {
-    return JSON.parse(Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
-  } catch {
-    return null;
-  }
-};
-
 const setCorsHeaders = (req: any, res: any) => {
   const origin = String(req.headers.origin || '');
   if (origin && allowedOrigins.includes(origin)) {
@@ -53,6 +42,8 @@ const setCorsHeaders = (req: any, res: any) => {
 };
 
 export default async function handler(req: any, res: any) {
+  setSecurityHeaders(res);
+  if (rejectLargeBody(req, res)) return;
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 
@@ -65,7 +56,7 @@ export default async function handler(req: any, res: any) {
     return res.status(415).json({ error: 'Content-Type must be application/json' });
   }
 
-  if (!supabaseUrl || !supabaseSecretKey || !supabasePublishableKey || !resendApiKey || !fromEmail) {
+  if (!supabaseUrl || !supabaseSecretKey || !resendApiKey || !fromEmail) {
     return res.status(500).json({ error: 'Delivery email service is not configured.' });
   }
 
@@ -79,27 +70,9 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'A valid order id is required.' });
   }
 
-  const userClient = createClient(supabaseUrl, supabasePublishableKey, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-
-  const { data: userResult, error: userError } = await userClient.auth.getUser(token);
-  const user = userResult?.user;
-  if (userError || !user?.id || !ADMIN_EMAIL || user.email?.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ error: 'Only the configured admin can send order emails.' });
-  }
-
-  const tokenClaims = decodeJwtPayload(token);
-  if (tokenClaims?.aal !== 'aal2') {
-    return res.status(403).json({ error: 'Authenticator verification is required before sending order emails.' });
+  const adminSession = await requireAdminSession(req);
+  if ('failure' in adminSession) {
+    return res.status(adminSession.failure.status).json(adminSession.failure.body);
   }
 
   const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
@@ -108,16 +81,6 @@ export default async function handler(req: any, res: any) {
       persistSession: false,
     },
   });
-
-  const { data: adminRow, error: adminError } = await supabaseAdmin
-    .from('admin_users')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (adminError || !adminRow) {
-    return res.status(403).json({ error: 'Admin account is not registered.' });
-  }
 
   const { data: orderRow, error: orderError } = await supabaseAdmin
     .from('orders')

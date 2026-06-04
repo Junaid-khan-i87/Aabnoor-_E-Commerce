@@ -1,3 +1,4 @@
+import { rejectLargeBody, setSecurityHeaders } from './_security';
 import { createClient } from '@supabase/supabase-js';
 import { randomBytes, randomInt } from 'crypto';
 
@@ -68,7 +69,6 @@ const DEFAULT_SETTINGS = {
   taxEnabled: false,
 };
 
-const allowedPaymentMethods = new Set(['Credit Card', 'Cash on Delivery']);
 const allowedDeliveryMethods = new Set(['standard', 'express']);
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -97,26 +97,6 @@ const getServerPrice = (product: any, cartProductId: string) => {
     : basePrice;
 };
 
-const findCouponRow = async (supabaseAdmin: any, couponCode: string) => {
-  let { data: couponRow, error: couponError } = await supabaseAdmin
-    .from('coupons')
-    .select('id,data')
-    .eq('id', couponCode)
-    .maybeSingle();
-
-  if (!couponRow) {
-    const fallbackResult = await supabaseAdmin
-      .from('coupons')
-      .select('id,data')
-      .eq('data->>code', couponCode)
-      .maybeSingle();
-    couponRow = fallbackResult.data;
-    couponError = couponError || fallbackResult.error;
-  }
-
-  return { couponRow, couponError };
-};
-
 const setCorsHeaders = (req: any, res: any) => {
   const origin = String(req.headers.origin || '');
   if (origin && allowedOrigins.includes(origin)) {
@@ -131,6 +111,8 @@ const setCorsHeaders = (req: any, res: any) => {
 };
 
 export default async function handler(req: any, res: any) {
+  setSecurityHeaders(res);
+  if (rejectLargeBody(req, res)) return;
   setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 
@@ -196,7 +178,9 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Complete name, phone, and shipping address are required.' });
   }
 
-  if (!allowedPaymentMethods.has(paymentMethod) || !allowedDeliveryMethods.has(deliveryMethod)) {
+  const isCodMethod = /cash|cod|delivery/i.test(paymentMethod);
+  const isOfflineOrPendingPaymentMethod = isCodMethod || /^credit card$/i.test(paymentMethod);
+  if (!isOfflineOrPendingPaymentMethod || !allowedDeliveryMethods.has(deliveryMethod)) {
     return res.status(400).json({ error: 'A valid payment and delivery method are required.' });
   }
 
@@ -241,9 +225,20 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Cart contains invalid product quantities.' });
   }
 
+  const cartLookupIds = normalizedItems.flatMap(item => {
+    const ids = [item.productId];
+    const firstDash = item.productId.indexOf('-');
+    const lastDash = item.productId.lastIndexOf('-');
+    if (firstDash > 0) ids.push(item.productId.slice(0, firstDash));
+    if (lastDash > 0) ids.push(item.productId.slice(0, lastDash));
+    return ids;
+  });
+  const uniqueBaseIds = [...new Set(cartLookupIds)].slice(0, 100);
+
   const { data: productRows, error: productError } = await supabaseAdmin
     .from('products')
-    .select('id,data');
+    .select('id,data')
+    .in('id', uniqueBaseIds);
 
   if (productError) {
     return res.status(500).json({ error: 'Products could not be loaded.' });
@@ -294,21 +289,32 @@ export default async function handler(req: any, res: any) {
   const settings = { ...DEFAULT_SETTINGS, ...(settingsRow?.value || {}) };
 
   let discountPercentage = 0;
+  let claimedCouponCode = '';
   if (couponCode) {
-    const { couponRow } = await findCouponRow(supabaseAdmin, couponCode);
-    const coupon = couponRow?.data;
-    const now = Date.now();
-    const starts = coupon?.startDate ? Date.parse(coupon.startDate) : 0;
-    const ends = coupon?.endDate ? Date.parse(coupon.endDate) : Number.MAX_SAFE_INTEGER;
-    if (
-      coupon?.isActive &&
-      now >= starts &&
-      now <= ends &&
-      subtotal >= Number(coupon.minOrderAmount || 0) &&
-      (coupon.usageLimit == null || (Number(coupon.usageCount) || 0) < Number(coupon.usageLimit))
-    ) {
-      discountPercentage = Math.min(100, Math.max(0, Number(coupon.discountPercentage || 0)));
+    const { data: couponResult, error: couponRpcError } = await supabaseAdmin
+      .rpc('claim_coupon', {
+        coupon_code: couponCode,
+        required_min_amount: subtotal,
+      });
+
+    if (couponRpcError) {
+      return res.status(500).json({ error: 'Coupon could not be applied. Please try again.' });
     }
+
+    if (!couponResult?.ok) {
+      const couponMessages: Record<string, string> = {
+        not_found: 'Invalid or inactive coupon code.',
+        inactive: 'Invalid or inactive coupon code.',
+        expired: 'This coupon is expired or not active yet.',
+        below_minimum: 'This coupon does not meet the minimum order amount.',
+        limit_reached: 'This coupon has reached its usage limit.',
+        invalid_discount: 'This coupon discount is not valid.',
+      };
+      return res.status(400).json({ error: couponMessages[String(couponResult?.reason || '')] || 'Coupon could not be applied.' });
+    }
+
+    discountPercentage = Math.min(100, Math.max(0, Number(couponResult.discountPercentage || 0)));
+    claimedCouponCode = couponCode;
   } else {
     const { count } = await supabaseAdmin
       .from('orders')
@@ -334,13 +340,17 @@ export default async function handler(req: any, res: any) {
   const coinDiscount = Math.min(totalBeforeCoinDiscount, Math.floor(coinsToRedeem / 10));
   const total = Math.round((totalBeforeCoinDiscount - coinDiscount) * 100) / 100;
   const coinsEarned = Math.floor(total / 10);
-  const coinBalance = customerCoins - coinsToRedeem + coinsEarned;
+  let coinBalance = customerCoins - coinsToRedeem + coinsEarned;
   const nowIso = new Date().toISOString();
   const id = orderId();
   const tracking = trackingNumber();
   const invoice = `INV-${id.replace(/^ORD-/i, '').slice(0, 10).toUpperCase()}`;
   const shippingAddress = cleanMultilineText(`${home}\n${state}, ${country}\nPhone: ${phone}\nEmail: ${userEmail}`, 600);
-  const isCod = /cash|cod/i.test(paymentMethod);
+  const isCod = /cash|cod|delivery/i.test(paymentMethod);
+  // TODO: Integrate a real payment gateway (e.g. Stripe) here.
+  // Until integration is complete, all non-COD orders are created as
+  // 'Pending Payment' and must be manually confirmed by the admin.
+  const paymentStatus = isCod ? 'COD Due' : 'Pending Payment';
 
   const order = {
     id,
@@ -380,12 +390,12 @@ export default async function handler(req: any, res: any) {
     postalCode: '',
     postal_code: '',
     paymentMethod,
-    paymentStatus: isCod ? 'COD Due' : 'Paid',
-    payment_status: isCod ? 'COD Due' : 'Paid',
+    paymentStatus,
+    payment_status: paymentStatus,
     codAmount: isCod ? total : 0,
     cod_amount: isCod ? total : 0,
-    amountPaid: isCod ? 0 : total,
-    amount_paid: isCod ? 0 : total,
+    amountPaid: 0,
+    amount_paid: 0,
     courierName: '',
     courier_name: '',
     parcelWeight: '',
@@ -406,46 +416,49 @@ export default async function handler(req: any, res: any) {
     .insert({ id, data: order });
 
   if (insertError) {
+    if (claimedCouponCode) {
+      await supabaseAdmin.rpc('release_coupon_claim', { coupon_code: claimedCouponCode });
+    }
     return res.status(500).json({ error: 'Order could not be saved.' });
   }
 
-  const nextCustomerData = {
+  const nextCustomerProfile = {
     ...customerData,
     id: customerData.id || customerRow?.id || customerId,
     email: userEmail,
     name: customerData.name || userName,
-    coins: coinBalance,
     joined: customerData.joined || new Date().toISOString().slice(0, 10),
     warnings: Number(customerData.warnings) || 0,
     status: customerData.status || 'Active',
   };
 
-  const { error: customerUpdateError } = await supabaseAdmin
-    .from('customers')
-    .upsert({
-      id: customerRow?.id || customerId,
-      data: nextCustomerData,
+  const { coins: _currentCoins, ...customerPatch } = nextCustomerProfile;
+  const { data: coinResult, error: coinError } = await supabaseAdmin
+    .rpc('redeem_and_credit_coins', {
+      p_customer_id: customerRow?.id || customerId,
+      p_coins_to_spend: coinsToRedeem,
+      p_coins_earned: coinsEarned,
+      p_customer_patch: customerPatch,
     });
 
-  if (customerUpdateError) {
-    return res.status(500).json({ error: 'Loyalty coins could not be updated.' });
-  }
-
-  if (couponCode && discountPercentage > 0) {
-    const { couponRow } = await findCouponRow(supabaseAdmin, couponCode);
-
-    if (couponRow?.data) {
-      await supabaseAdmin
-        .from('coupons')
-        .update({
-          data: {
-            ...couponRow.data,
-            usageCount: (Number(couponRow.data.usageCount) || 0) + 1,
-          },
-        })
-        .eq('id', couponRow.id);
+  if (coinError || !coinResult?.ok) {
+    await supabaseAdmin.from('orders').delete().eq('id', id);
+    if (claimedCouponCode) {
+      await supabaseAdmin.rpc('release_coupon_claim', { coupon_code: claimedCouponCode });
     }
+    return res.status(400).json({
+      error: coinResult?.reason === 'insufficient_coins'
+        ? 'Insufficient loyalty coins.'
+        : 'Loyalty coins could not be updated.',
+    });
   }
+
+  coinBalance = Number(coinResult.new_balance);
+  order.coinBalance = coinBalance;
+  await supabaseAdmin
+    .from('orders')
+    .update({ data: order })
+    .eq('id', id);
 
   return res.status(200).json({ order, coinsEarned, coinBalance });
 }
