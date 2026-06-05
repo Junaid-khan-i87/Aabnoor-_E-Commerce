@@ -5,3 +5,6 @@
 ## 2024-10-24 - Icon-Only Button Accessibility in Chip Bars
 **Learning:** In dense UI elements like the "Active filters" chip bar in `ProductGrid.tsx`, small icon-only buttons (like an "x" to remove a filter) are often overlooked for accessibility. Without ARIA labels, screen readers announce them unhelpfully (e.g., "x" or "button").
 **Action:** Always verify that every interactive element, especially icon-only utility buttons within larger components, has a descriptive `aria-label` explaining the exact action it performs.
+## 2024-06-05 - Add visual loading state to Auth buttons
+**Learning:** Adding visual loading spinners (like `Loader2` with `animate-spin`) next to "Please wait..." text provides clear, immediate feedback for asynchronous operations, preventing user confusion or multiple clicks.
+**Action:** Always include both disabled state and a visual indicator (like a spinner) in addition to text changes when submitting forms or performing async actions.
