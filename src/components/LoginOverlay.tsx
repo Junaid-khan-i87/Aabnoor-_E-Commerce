@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Lock, Mail, User } from 'lucide-react';
+import { X, Lock, Mail, User, Loader2 } from 'lucide-react';
 import { useUI } from '../UIContext';
 import { useSite } from '../SiteContext';
 import { supabase } from '../lib/supabase';
@@ -289,7 +289,7 @@ export function LoginOverlay() {
                 onClick={handleGoogleLogin}
                 className="w-full min-h-11 bg-white border border-[#1A1A1A]/15 text-[#1A1A1A] py-3 px-4 rounded-full font-sans text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.13em] sm:tracking-[0.16em] hover:border-[#1A1A1A] hover:bg-[#1A1A1A]/5 transition-all flex items-center justify-center gap-2 cursor-pointer mb-4 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <GoogleIcon />
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
                 Continue with Google
               </button>
 
@@ -356,6 +356,7 @@ export function LoginOverlay() {
                   disabled={isLoading}
                   className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-3.5 sm:py-4 rounded-full font-sans text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.18em] sm:tracking-[0.2em] hover:bg-[#CDA185] transition-all flex items-center justify-center gap-2 cursor-pointer mt-5 sm:mt-6 shadow-md min-h-12 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {isLoading ? 'Please wait...' : (isRegister && otpSent ? 'Verify OTP' : isRegister ? 'Create Account' : 'Sign In')}
                 </button>
               </form>
