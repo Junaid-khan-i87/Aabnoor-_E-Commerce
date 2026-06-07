@@ -125,8 +125,10 @@ export function Footer() {
                 <p className="font-sans text-sm text-[#9a9088] mb-4 leading-6">
                   Get early access to launches, offers and delivery updates.
                 </p>
-                <form className="flex border border-white/12 bg-white/[0.04] group" onSubmit={handleSubscribe}>
+                <form className="flex border border-white/12 bg-white/[0.04] group focus-within:border-white/40 focus-within:bg-white/[0.08] transition-colors" onSubmit={handleSubscribe}>
+                  <label htmlFor="newsletter-email" className="sr-only">Email address</label>
                   <input 
+                    id="newsletter-email"
                     type="email" 
                     placeholder="Email address" 
                     value={email}
@@ -136,7 +138,7 @@ export function Footer() {
                   />
                   <button 
                     type="submit"
-                    className="bg-[#faf6f1] px-4 font-sans text-[10px] uppercase tracking-[0.2em] font-bold text-[#2c2826] hover:bg-[#ede0c8] transition-colors cursor-pointer"
+                    className="bg-[#faf6f1] px-4 font-sans text-[10px] uppercase tracking-[0.2em] font-bold text-[#2c2826] hover:bg-[#ede0c8] focus-visible:bg-[#ede0c8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#2c2826] transition-colors cursor-pointer"
                   >
                     Join
                   </button>
