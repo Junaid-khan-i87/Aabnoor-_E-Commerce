@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Coins, CheckCircle, ShoppingBag, ChevronDown, ChevronUp, CreditCard, ShieldCheck, Truck } from 'lucide-react';
+import { Coins, CheckCircle, ShoppingBag, ChevronDown, ChevronUp, CreditCard, ShieldCheck, Truck, Loader2 } from 'lucide-react';
 import { useCart } from '../CartContext';
 import { useOrders } from '../OrderContext';
 import { useSite } from '../SiteContext';
@@ -602,7 +602,10 @@ export function CheckoutPage() {
                 disabled={isProcessing}
                 className="w-full bg-[#1A1A1A] text-[#F9F7F2] py-4 rounded-full font-sans text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-[#CDA185] transition-all flex flex-col items-center justify-center gap-1 leading-none disabled:opacity-50 cursor-pointer shadow-md"
               >
-                <span>{isProcessing ? 'Processing Securely...' : settings.orderButtonLabel}</span>
+                <span className="flex items-center gap-2">
+                  {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isProcessing ? 'Processing Securely...' : settings.orderButtonLabel}
+                </span>
                 <span className="text-[9px] text-[#F9F7F2]/60 tracking-wider normal-case font-normal flex items-center gap-1.5 mt-1 font-semibold">
                   <Coins className="w-3.5 h-3.5 text-[#CDA185]" /> Earn {coinsToEarn} Aabnoor Coins
                 </span>
