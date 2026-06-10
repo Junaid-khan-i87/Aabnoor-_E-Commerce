@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Lock, Mail, User, Loader2 } from 'lucide-react';
+import { X, Lock, Mail, User, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useUI } from '../UIContext';
 import { useSite } from '../SiteContext';
 import { supabase } from '../lib/supabase';
@@ -38,6 +38,7 @@ export function LoginOverlay() {
   const [error, setError] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [pendingName, setPendingName] = useState('');
   const [pendingPassword, setPendingPassword] = useState('');
 
@@ -333,7 +334,7 @@ export function LoginOverlay() {
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40" />
                   <input 
-                    type={isRegister && otpSent ? 'text' : 'password'} 
+                    type={isRegister && otpSent ? 'text' : showPassword ? 'text' : 'password'}
                     inputMode={isRegister && otpSent ? 'numeric' : undefined}
                     autoComplete={isRegister && otpSent ? 'one-time-code' : 'current-password'}
                     value={password}
@@ -347,8 +348,18 @@ export function LoginOverlay() {
                     aria-label={isRegister && otpSent ? 'Enter Email OTP Code' : 'Password'}
                     required
                     disabled={isLoading}
-                    className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-4 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-white border border-[#1A1A1A]/20 pl-10 pr-10 py-3 font-sans text-sm outline-none focus:border-[#1A1A1A] focus:ring-1 focus:ring-[#1A1A1A] transition-all rounded-sm min-h-11 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
+                  {!(isRegister && otpSent) && (
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 hover:bg-[#1A1A1A]/5 rounded-full transition-colors cursor-pointer text-[#1A1A1A]/40 hover:text-[#1A1A1A]"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  )}
                 </div>
                 
                 <button 
