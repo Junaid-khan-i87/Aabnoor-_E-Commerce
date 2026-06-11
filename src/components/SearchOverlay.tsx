@@ -80,6 +80,7 @@ export function SearchOverlay() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 bg-transparent text-xl md:text-2xl font-serif italic outline-none placeholder:text-[#1A1A1A]/30 text-[#1A1A1A]"
+                aria-label="Search products"
               />
               <button 
                 onClick={() => setIsSearchOpen(false)} 
