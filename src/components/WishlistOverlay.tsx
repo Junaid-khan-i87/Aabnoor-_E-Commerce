@@ -34,6 +34,7 @@ export function WishlistOverlay() {
               <button 
                 onClick={() => setIsWishlistOpen(false)}
                 className="p-2 hover:bg-[#1A1A1A]/5 rounded-sm transition-colors text-[#1A1A1A]"
+                aria-label="Close wishlist"
               >
                 <X className="w-5 h-5" />
               </button>
